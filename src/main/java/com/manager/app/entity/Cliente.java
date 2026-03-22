@@ -20,8 +20,8 @@ public class Cliente {
     @Id @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    private Integer codigo;
-    private Integer referencia;
+    private String codigo;
+    private String referencia;
     private String nome;
     private String filiacao;
     private String cpf;

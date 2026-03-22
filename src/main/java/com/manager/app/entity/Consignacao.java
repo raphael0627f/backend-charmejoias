@@ -28,12 +28,12 @@ public class Consignacao {
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
 
+    @OneToMany(mappedBy = "consignacao", cascade = CascadeType.ALL)
+    private List<ConsignacaoProduto> produtos;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-    @OneToMany(mappedBy = "consignacao", cascade = CascadeType.ALL)
-    private List<ConsignacaoProduto> produtos;
 }
