@@ -3,7 +3,6 @@ package com.manager.app.infra.validation;
 import com.manager.app.infra.exception.ObjetoExistenteException;
 import com.manager.app.repository.ClienteRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component

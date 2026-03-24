@@ -1,5 +1,6 @@
 package com.manager.app.infra.exception.handler;
 
+import com.manager.app.infra.exception.ObjetoEmUsoException;
 import com.manager.app.infra.exception.ObjetoExistenteException;
 import com.manager.app.infra.exception.ObjetoNaoEncontradoException;
 import org.springframework.http.HttpStatus;
@@ -17,14 +18,21 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ObjetoNaoEncontradoException.class)
     private ResponseEntity<RestErrorMenssage> objetoNaoEncontradoHandler(ObjetoNaoEncontradoException exception, WebRequest request){
         HttpStatus status = HttpStatus.CONFLICT;
-        RestErrorMenssage response = new RestErrorMenssage(new Date(), status,exception.getMessage(),request.getDescription(false));
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
         return ResponseEntity.status(status).body(response);
     }
 
     @ExceptionHandler(ObjetoNaoEncontradoException.class)
     private ResponseEntity<RestErrorMenssage> objetoExistente(ObjetoExistenteException exception, WebRequest request){
         HttpStatus status = HttpStatus.CONFLICT;
-        RestErrorMenssage response = new RestErrorMenssage(new Date(), status,exception.getMessage(),request.getDescription(false));
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
+        return ResponseEntity.status(status).body(response);
+    }
+
+    @ExceptionHandler(ObjetoEmUsoException.class)
+    private ResponseEntity<RestErrorMenssage> grupoEmUso(ObjetoEmUsoException exception, WebRequest request){
+        HttpStatus status = HttpStatus.CONFLICT;
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
         return ResponseEntity.status(status).body(response);
     }
 }
