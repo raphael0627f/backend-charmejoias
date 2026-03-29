@@ -8,6 +8,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "produtos")
@@ -19,7 +20,7 @@ import java.util.List;
 public class Produto {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    private UUID id;
 
     private String codigo;
     private String referencia;
@@ -36,11 +37,11 @@ public class Produto {
 
 
     @ManyToOne
-    @JoinColumn(name = "departamento_id")
+    @JoinColumn(name = "categoria_id")
     private Categoria categoria;
 
     @ManyToOne
-    @JoinColumn(name = "departamento_id")
+    @JoinColumn(name = "fornecedor_id")
     private Fornecedor fornecedor;
 
     @ManyToMany
@@ -52,6 +53,5 @@ public class Produto {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
 
 }

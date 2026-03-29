@@ -1,8 +1,7 @@
 package com.manager.app.dto;
 
-import com.manager.app.entity.Endereco;
-import com.manager.app.entity.Grupo;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -24,6 +23,7 @@ public class ClienteDTO {
 
     @NotBlank(message = "Nome é obrigatório")
     private String nome;
+
     private String filiacao;
     private String cpf;
     private String documento;
@@ -36,14 +36,14 @@ public class ClienteDTO {
     private String email;
     private String observacao;
 
-    @NotBlank(message = "Gênero é obrigatório")
+    @NotNull(message = "Data de nascimento é obrigatória")
     private LocalDate dataNascimento;
 
-    @NotBlank(message = "Gênero é obrigatório")
+    @NotNull(message = "Ativo é obrigatório")
     private boolean ativo;
 
-    private Endereco endereco;
-    private List<Grupo> grupos;
+    private EnderecoDTO endereco;
+    private List<Long> gruposIds;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

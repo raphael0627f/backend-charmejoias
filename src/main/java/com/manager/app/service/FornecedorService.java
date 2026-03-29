@@ -31,9 +31,11 @@ public class FornecedorService {
         return repository.save(fornecedor);
     }
 
+    @Transactional
     public Fornecedor update(Fornecedor fornecedor){
         Fornecedor fornecedorUpdate = repository.findById(fornecedor.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Fornecedor não encontrado. id: " + fornecedor.getId()));
         fornecedorUpdate.setNome(fornecedor.getNome());
+        fornecedorUpdate.setAtivo(fornecedor.isAtivo());
         return fornecedorUpdate;
     }
 

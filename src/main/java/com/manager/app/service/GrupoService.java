@@ -33,9 +33,11 @@ public class GrupoService {
         return repository.save(grupo);
     }
 
+    @Transactional
     public Grupo update(Grupo grupo){
         Grupo grupoUpdate = repository.findById(grupo.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Grupo não encontrado. id: " + grupo.getId()));
         grupoUpdate.setNome(grupo.getNome());
+        grupoUpdate.setAtivo(grupo.isAtivo());
         return grupoUpdate;
     }
 
@@ -49,7 +51,7 @@ public class GrupoService {
     @Transactional
     public void deactivate(Long id){
         Grupo grupo = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Grupo não encontrado. id: " + id));
-        if (clienteRepository.existsByGrupo(grupo) || produtoRepository.existsByGrupo(grupo)) {
+        if (clienteRepository.existsByGrupos(grupo) || produtoRepository.existsByGrupos(grupo)) {
             throw new ObjetoEmUsoException("Grupo está em uso e não pode ser desativado");
         }
         grupo.setAtivo(false);

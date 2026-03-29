@@ -22,7 +22,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(status).body(response);
     }
 
-    @ExceptionHandler(ObjetoNaoEncontradoException.class)
+    @ExceptionHandler(ObjetoExistenteException.class)
     private ResponseEntity<RestErrorMenssage> objetoExistente(ObjetoExistenteException exception, WebRequest request){
         HttpStatus status = HttpStatus.CONFLICT;
         RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
@@ -30,7 +30,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(ObjetoEmUsoException.class)
-    private ResponseEntity<RestErrorMenssage> grupoEmUso(ObjetoEmUsoException exception, WebRequest request){
+    private ResponseEntity<RestErrorMenssage> objetoEmUso(ObjetoEmUsoException exception, WebRequest request){
         HttpStatus status = HttpStatus.CONFLICT;
         RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
         return ResponseEntity.status(status).body(response);

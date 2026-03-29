@@ -5,6 +5,8 @@ import com.manager.app.repository.ClienteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Component
 @RequiredArgsConstructor
 public class ClienteValidation {
@@ -17,7 +19,7 @@ public class ClienteValidation {
             throw new ObjetoExistenteException("Cliente existente com este código: " + codigo);
         }
     }
-    public void codigoExistenteUpdate(String codigo, String id){
+    public void codigoExistenteUpdate(String codigo, UUID id){
         if(repository.existsByCodigoAndIdNot(codigo, id)){
             throw new ObjetoExistenteException("Cliente existente com este código: " + codigo);
         }

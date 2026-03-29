@@ -1,5 +1,6 @@
 package com.manager.app.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -20,10 +21,13 @@ public class Categoria {
     private Long id;
 
     private String nome;
+    private boolean ativo;
 
+    @JsonIgnore
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+    @JsonIgnore
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 }

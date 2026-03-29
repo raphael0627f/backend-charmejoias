@@ -1,5 +1,6 @@
 package com.manager.app.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -27,9 +28,11 @@ public class Endereco {
     private String uf;
     private String cep;
 
+    @JsonIgnore
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+    @JsonIgnore
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 }
