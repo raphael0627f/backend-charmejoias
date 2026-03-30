@@ -17,7 +17,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ObjetoNaoEncontradoException.class)
     private ResponseEntity<RestErrorMenssage> objetoNaoEncontradoHandler(ObjetoNaoEncontradoException exception, WebRequest request){
-        HttpStatus status = HttpStatus.CONFLICT;
+        HttpStatus status = HttpStatus.NOT_FOUND;
         RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
         return ResponseEntity.status(status).body(response);
     }

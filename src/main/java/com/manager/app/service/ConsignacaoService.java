@@ -48,7 +48,7 @@ public class ConsignacaoService {
         for (ConsignacaoProdutoRequestDTO produtoRequest : request.getProdutos()){
             ConsignacaoProduto produto = new ConsignacaoProduto();
 
-            produto.setProduto(produtoService.findById(produtoRequest.getProdutoId()));
+            produto.setProduto(produtoService.findByIdAndAtivo(produtoRequest.getProdutoId()));
             produto.setQuantidade(produtoRequest.getQuantidade());
             produto.setPreco(produtoRequest.getPreco());
 
@@ -98,7 +98,7 @@ public class ConsignacaoService {
 
                 novoProduto.setQuantidade(produtoRequest.getQuantidade());
                 novoProduto.setPreco(produtoRequest.getPreco());
-                novoProduto.setProduto(produtoService.findById(produtoRequest.getProdutoId()));
+                novoProduto.setProduto(produtoService.findByIdAndAtivo(produtoRequest.getProdutoId()));
                 consignacaoUpdate.adicionarProduto(novoProduto);
             }
         }

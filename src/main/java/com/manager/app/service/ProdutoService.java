@@ -37,8 +37,12 @@ public class ProdutoService {
         return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Produto não encontrado. id: " + id));
     }
 
+    public Produto findByIdAndAtivo(UUID id){
+        return repository.findByIdAndAtivoTrue(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Produto não encontrado ou inativo. id: " + id));
+    }
+
     public Produto findByCodigo(String codigo){
-        return repository.findByCodigo(codigo).orElseThrow(() -> new ObjetoNaoEncontradoException("Produto não encontrado. codigo: " + codigo));
+        return repository.findByCodigoAndAtivoTrue(codigo).orElseThrow(() -> new ObjetoNaoEncontradoException("Produto não encontrado. codigo: " + codigo));
     }
 
     @Transactional

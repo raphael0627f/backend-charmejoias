@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -23,11 +24,11 @@ public class Consignacao {
     private String descricao;
 
     @ManyToOne
-    @JoinColumn(name = "cliente_id", nullable = true)
+    @JoinColumn(name = "cliente_id")
     private Cliente cliente;
 
     @OneToMany(mappedBy = "consignacao", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ConsignacaoProduto> produtos;
+    private List<ConsignacaoProduto> produtos = new ArrayList<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;

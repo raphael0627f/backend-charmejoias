@@ -11,7 +11,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ProdutoRepository  extends JpaRepository<Produto, UUID> {
-    Optional<Produto> findByCodigo(String codigo);
+    Optional<Produto> findByIdAndAtivoTrue(UUID id);
+    Optional<Produto> findByCodigoAndAtivoTrue(String codigo);
     List<Produto> findAllByAtivoTrue();
     boolean existsByFornecedor(Fornecedor fornecedor);
     boolean existsByCategoria(Categoria categoria);

@@ -4,12 +4,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.manager.app.entity.Categoria;
 import com.manager.app.entity.Fornecedor;
 import com.manager.app.entity.Grupo;
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
