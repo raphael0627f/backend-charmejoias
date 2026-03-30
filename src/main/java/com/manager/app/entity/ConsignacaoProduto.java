@@ -1,5 +1,6 @@
 package com.manager.app.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,6 +23,7 @@ public class ConsignacaoProduto {
     @Column(precision = 10, scale = 2)
     private BigDecimal preco;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "consignacao_id")
     private Consignacao consignacao;
@@ -30,9 +32,4 @@ public class ConsignacaoProduto {
     @JoinColumn(name = "produto_id")
     private Produto produto;
 
-//    @CreationTimestamp
-//    private LocalDateTime createdAt;
-//
-//    @UpdateTimestamp
-//    private LocalDateTime updatedAt;
 }

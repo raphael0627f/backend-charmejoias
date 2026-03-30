@@ -6,43 +6,44 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
 @Setter
 @NoArgsConstructor
-public class ProdutoDTO {
-
-
+public class ClienteRequestDTO {
     private String id;
 
     @NotBlank(message = "Código é obrigatório")
     private String codigo;
 
-    @NotBlank(message = "Referência é obrigatório")
     private String referencia;
 
     @NotBlank(message = "Nome é obrigatório")
     private String nome;
 
-    private BigDecimal precoCusto;
+    private String filiacao;
+    private String cpf;
+    private String documento;
 
-    @NotNull(message = "Preço Venda é obrigatório")
-    private BigDecimal precoVenda;
+    @NotBlank(message = "Gênero é obrigatório")
+    private String genero;
+
+    private String telefone;
+    private String celular;
+    private String email;
+    private String observacao;
+
+    @NotNull(message = "Data de nascimento é obrigatória")
+    private LocalDate dataNascimento;
 
     @NotNull(message = "Ativo é obrigatório")
     private boolean ativo;
 
-    private String observacoes;
-
-    @NotNull(message = "Categoria é obrigatória")
-    private Long categoriaId;
-
-    private Long fornecedorId;
+    private EnderecoDTO endereco;
     private List<Long> gruposIds;
-
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

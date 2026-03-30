@@ -1,6 +1,6 @@
 package com.manager.app.controller;
 
-import com.manager.app.dto.ProdutoDTO;
+import com.manager.app.dto.ProdutoRequestDTO;
 import com.manager.app.dto.ProdutoRelacoesDTO;
 import com.manager.app.dto.ProdutoResponseDTO;
 import com.manager.app.entity.Produto;
@@ -36,17 +36,17 @@ public class ProdutoController {
     }
 
     @PostMapping
-    public ResponseEntity<ProdutoResponseDTO> create(@RequestBody @Valid ProdutoDTO produtoDTO){
-        ProdutoRelacoesDTO relacoes = new ProdutoRelacoesDTO(produtoDTO.getCategoriaId(), produtoDTO.getFornecedorId(), produtoDTO.getGruposIds());
-        Produto produto = service.create(mapper.toEntity(produtoDTO), relacoes);
+    public ResponseEntity<ProdutoResponseDTO> create(@RequestBody @Valid ProdutoRequestDTO produtoRequestDTO){
+        ProdutoRelacoesDTO relacoes = new ProdutoRelacoesDTO(produtoRequestDTO.getCategoriaId(), produtoRequestDTO.getFornecedorId(), produtoRequestDTO.getGruposIds());
+        Produto produto = service.create(mapper.toEntity(produtoRequestDTO), relacoes);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(produto.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponseDTO(produto));
     }
 
     @PutMapping
-    public ResponseEntity<ProdutoResponseDTO> update(@RequestBody @Valid ProdutoDTO produtoDTO){
-        ProdutoRelacoesDTO relacoes = new ProdutoRelacoesDTO(produtoDTO.getCategoriaId(), produtoDTO.getFornecedorId(), produtoDTO.getGruposIds());
-        Produto produto = service.update(mapper.toEntity(produtoDTO), relacoes);
+    public ResponseEntity<ProdutoResponseDTO> update(@RequestBody @Valid ProdutoRequestDTO produtoRequestDTO){
+        ProdutoRelacoesDTO relacoes = new ProdutoRelacoesDTO(produtoRequestDTO.getCategoriaId(), produtoRequestDTO.getFornecedorId(), produtoRequestDTO.getGruposIds());
+        Produto produto = service.update(mapper.toEntity(produtoRequestDTO), relacoes);
         return ResponseEntity.ok(mapper.toResponseDTO(produto));
     }
 

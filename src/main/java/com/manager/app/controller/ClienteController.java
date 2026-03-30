@@ -1,6 +1,6 @@
 package com.manager.app.controller;
 
-import com.manager.app.dto.ClienteDTO;
+import com.manager.app.dto.ClienteRequestDTO;
 import com.manager.app.dto.ClienteResponseDTO;
 import com.manager.app.entity.Cliente;
 import com.manager.app.mapper.ClienteMapper;
@@ -35,15 +35,15 @@ public class ClienteController {
     }
 
     @PostMapping
-    public ResponseEntity<ClienteResponseDTO> create(@RequestBody @Valid ClienteDTO clienteDTO){
-        Cliente cliente = service.create(mapper.toEntity(clienteDTO), clienteDTO.getGruposIds());
+    public ResponseEntity<ClienteResponseDTO> create(@RequestBody @Valid ClienteRequestDTO clienteRequestDTO){
+        Cliente cliente = service.create(mapper.toEntity(clienteRequestDTO), clienteRequestDTO.getGruposIds());
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(cliente.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponseDTO(cliente));
     }
 
     @PutMapping
-    public ResponseEntity<ClienteResponseDTO> update(@RequestBody @Valid ClienteDTO clienteDTO){
-        Cliente cliente = service.update(mapper.toEntity(clienteDTO), clienteDTO.getGruposIds());
+    public ResponseEntity<ClienteResponseDTO> update(@RequestBody @Valid ClienteRequestDTO clienteRequestDTO){
+        Cliente cliente = service.update(mapper.toEntity(clienteRequestDTO), clienteRequestDTO.getGruposIds());
         ClienteResponseDTO response = mapper.toResponseDTO(cliente);
         return ResponseEntity.ok(response);
     }

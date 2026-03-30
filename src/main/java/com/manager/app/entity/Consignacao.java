@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "categorias")
+@Table(name = "consignacoes")
 @EqualsAndHashCode(of = "id")
 @Getter
 @Setter
@@ -20,14 +20,13 @@ public class Consignacao {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private boolean clienteNovo;
     private String descricao;
 
     @ManyToOne
-    @JoinColumn(name = "cliente_id")
+    @JoinColumn(name = "cliente_id", nullable = true)
     private Cliente cliente;
 
-    @OneToMany(mappedBy = "consignacao", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "consignacao", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ConsignacaoProduto> produtos;
 
     @CreationTimestamp
@@ -35,4 +34,14 @@ public class Consignacao {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    public void adicionarProduto(ConsignacaoProduto produto) {
+        produto.setConsignacao(this);
+        this.produtos.add(produto);
+    }
+
+    public void removerProduto(ConsignacaoProduto produto) {
+        produto.setConsignacao(null);
+        this.produtos.remove(produto);
+    }
 }
