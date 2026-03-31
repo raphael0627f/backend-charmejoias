@@ -1,8 +1,8 @@
 package com.manager.app.controller;
 
-import com.manager.app.dto.ProdutoRequestDTO;
-import com.manager.app.dto.ProdutoRelacoesDTO;
-import com.manager.app.dto.ProdutoResponseDTO;
+import com.manager.app.dto.produto.ProdutoRequestDTO;
+import com.manager.app.dto.produto.ProdutoRelacoesDTO;
+import com.manager.app.dto.produto.ProdutoResponseDTO;
 import com.manager.app.entity.Produto;
 import com.manager.app.mapper.ProdutoMapper;
 import com.manager.app.service.ProdutoService;

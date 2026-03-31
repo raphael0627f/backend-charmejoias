@@ -1,6 +1,7 @@
 package com.manager.app.controller;
 
-import com.manager.app.dto.*;
+import com.manager.app.dto.consignacao.ConsignacaoRequestDTO;
+import com.manager.app.dto.consignacao.ConsignacaoResponseDTO;
 import com.manager.app.entity.Consignacao;
 import com.manager.app.mapper.ConsignacaoMapper;
 import com.manager.app.service.ConsignacaoService;
@@ -28,7 +29,7 @@ public class ConsignacaoController {
     }
 
     @GetMapping(value = "/{id}")
-    public ResponseEntity<ConsignacaoResponseDTO> findById(@PathVariable long id){
+    public ResponseEntity<ConsignacaoResponseDTO> findById(@PathVariable Long id){
         return ResponseEntity.ok(mapper.toResponseDTO(service.findById(id)));
     }
 

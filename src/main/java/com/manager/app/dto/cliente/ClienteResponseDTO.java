@@ -1,14 +1,13 @@
-package com.manager.app.dto;
+package com.manager.app.dto.cliente;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.manager.app.entity.Categoria;
-import com.manager.app.entity.Fornecedor;
+import com.manager.app.entity.Endereco;
 import com.manager.app.entity.Grupo;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -21,28 +20,37 @@ import java.util.UUID;
         "codigo",
         "referencia",
         "nome",
-        "precoCusto",
-        "precoVenda",
+        "filiacao",
+        "cpf",
+        "documento",
+        "genero",
+        "telefone",
+        "celular",
+        "email",
+        "observacao",
+        "dataNascimento",
         "ativo",
-        "observacoes",
-        "categoria",
-        "fornecedor",
+        "endereco",
         "grupos",
         "createdAt",
         "updatedAt"
 })
-public class ProdutoResponseDTO {
-
+public class ClienteResponseDTO {
     private UUID id;
     private String codigo;
     private String referencia;
     private String nome;
-    private BigDecimal precoCusto;
-    private BigDecimal precoVenda;
+    private String filiacao;
+    private String cpf;
+    private String documento;
+    private String genero;
+    private String telefone;
+    private String celular;
+    private String email;
+    private String observacao;
+    private LocalDate dataNascimento;
     private boolean ativo;
-    private String observacoes;
-    private Categoria categoria;
-    private Fornecedor fornecedor;
+    private Endereco endereco;
     private List<Grupo> grupos;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

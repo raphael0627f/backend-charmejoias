@@ -1,4 +1,4 @@
-package com.manager.app.dto;
+package com.manager.app.dto.consignacao;
 
 public class ConsignacaoProdutoResponseDTO {
 }

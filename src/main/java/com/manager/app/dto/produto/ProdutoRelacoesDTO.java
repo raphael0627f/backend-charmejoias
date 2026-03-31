@@ -1,4 +1,4 @@
-package com.manager.app.dto;
+package com.manager.app.dto.produto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

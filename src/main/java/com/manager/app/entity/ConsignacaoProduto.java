@@ -24,11 +24,11 @@ public class ConsignacaoProduto {
     private BigDecimal preco;
 
     @JsonIgnore
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "consignacao_id")
     private Consignacao consignacao;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "produto_id")
     private Produto produto;
 

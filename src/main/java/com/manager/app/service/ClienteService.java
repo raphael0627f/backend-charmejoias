@@ -33,6 +33,10 @@ public class ClienteService {
         return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. id: " + id));
     }
 
+    public Cliente findByIdAndAtivo(UUID id){
+        return repository.findByIdAndAtivoTrue(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado ou inativo. id: " + id));
+    }
+
     public Cliente findByCodigo(String codigo){
         return repository.findByCodigo(codigo).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. codigo: " + codigo));
     }

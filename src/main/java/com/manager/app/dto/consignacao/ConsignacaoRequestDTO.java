@@ -1,6 +1,5 @@
-package com.manager.app.dto;
+package com.manager.app.dto.consignacao;
 
-import com.manager.app.entity.Cliente;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

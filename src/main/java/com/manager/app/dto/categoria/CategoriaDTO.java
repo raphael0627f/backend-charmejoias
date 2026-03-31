@@ -1,4 +1,4 @@
-package com.manager.app.dto;
+package com.manager.app.dto.categoria;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.validation.constraints.NotBlank;

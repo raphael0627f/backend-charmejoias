@@ -1,12 +1,11 @@
 package com.manager.app.service;
 
-import com.manager.app.dto.ConsignacaoProdutoRequestDTO;
-import com.manager.app.dto.ConsignacaoRequestDTO;
+import com.manager.app.dto.consignacao.ConsignacaoProdutoRequestDTO;
+import com.manager.app.dto.consignacao.ConsignacaoRequestDTO;
 import com.manager.app.entity.Consignacao;
 import com.manager.app.entity.ConsignacaoProduto;
 import com.manager.app.infra.exception.ObjetoNaoEncontradoException;
 import com.manager.app.infra.validation.ConsignacaoValidation;
-import com.manager.app.repository.ConsignacaoProdutoRepository;
 import com.manager.app.repository.ConsignacaoRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,6 @@ import java.util.List;
 public class ConsignacaoService {
 
     private final ConsignacaoRepository repository;
-    private final ConsignacaoProdutoRepository consignacaoProdutoRepository;
     private final ClienteService clienteService;
     private final ProdutoService produtoService;
     private final ConsignacaoValidation validation;
@@ -38,7 +36,7 @@ public class ConsignacaoService {
         Consignacao consignacao = new Consignacao();
 
         if (!validation.clienteNovo(request.getClienteId())){
-            consignacao.setCliente(clienteService.findById(request.getClienteId()));
+            consignacao.setCliente(clienteService.findByIdAndAtivo(request.getClienteId()));
         } else {
             consignacao.setCliente(null);
         }
@@ -63,7 +61,7 @@ public class ConsignacaoService {
         Consignacao consignacaoUpdate = this.findById(request.getId());
 
         if (!validation.clienteNovo(request.getClienteId())){
-            consignacaoUpdate.setCliente(clienteService.findById(request.getClienteId()));
+            consignacaoUpdate.setCliente(clienteService.findByIdAndAtivo(request.getClienteId()));
         } else {
             consignacaoUpdate.setCliente(null);
         }

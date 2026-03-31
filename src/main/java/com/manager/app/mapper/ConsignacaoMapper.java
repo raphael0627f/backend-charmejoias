@@ -1,7 +1,7 @@
 package com.manager.app.mapper;
 
-import com.manager.app.dto.ConsignacaoRequestDTO;
-import com.manager.app.dto.ConsignacaoResponseDTO;
+import com.manager.app.dto.consignacao.ConsignacaoRequestDTO;
+import com.manager.app.dto.consignacao.ConsignacaoResponseDTO;
 import com.manager.app.entity.Consignacao;
 import org.mapstruct.Mapper;
 

@@ -1,14 +1,11 @@
 package com.manager.app.service;
 
-import com.manager.app.dto.ProdutoRelacoesDTO;
-import com.manager.app.entity.Categoria;
-import com.manager.app.entity.Cliente;
+import com.manager.app.dto.produto.ProdutoRelacoesDTO;
 import com.manager.app.entity.Grupo;
 import com.manager.app.entity.Produto;
 import com.manager.app.infra.exception.ObjetoNaoEncontradoException;
 import com.manager.app.infra.validation.GrupoValidation;
 import com.manager.app.infra.validation.ProdutoValidation;
-import com.manager.app.repository.FornecedorRepository;
 import com.manager.app.repository.GrupoRepository;
 import com.manager.app.repository.ProdutoRepository;
 import jakarta.transaction.Transactional;

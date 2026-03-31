@@ -1,7 +1,7 @@
 package com.manager.app.mapper;
 
-import com.manager.app.dto.ClienteRequestDTO;
-import com.manager.app.dto.ClienteResponseDTO;
+import com.manager.app.dto.cliente.ClienteRequestDTO;
+import com.manager.app.dto.cliente.ClienteResponseDTO;
 import com.manager.app.entity.Cliente;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

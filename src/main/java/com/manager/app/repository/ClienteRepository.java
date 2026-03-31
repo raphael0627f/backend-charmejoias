@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ClienteRepository  extends JpaRepository<Cliente, UUID> {
+    Optional<Cliente> findByIdAndAtivoTrue(UUID id);
     Optional<Cliente> findByCodigo(String codigo);
     List<Cliente> findAllByAtivoTrue();
     boolean existsByCodigoAndIdNot(String codigo, UUID id);

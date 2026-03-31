@@ -1,14 +1,11 @@
-package com.manager.app.dto;
+package com.manager.app.dto.consignacao;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.manager.app.entity.Cliente;
 import com.manager.app.entity.ConsignacaoProduto;
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -1,7 +1,7 @@
 package com.manager.app.controller;
 
-import com.manager.app.dto.ClienteRequestDTO;
-import com.manager.app.dto.ClienteResponseDTO;
+import com.manager.app.dto.cliente.ClienteRequestDTO;
+import com.manager.app.dto.cliente.ClienteResponseDTO;
 import com.manager.app.entity.Cliente;
 import com.manager.app.mapper.ClienteMapper;
 import com.manager.app.service.ClienteService;

@@ -1,5 +1,6 @@
-package com.manager.app.dto;
+package com.manager.app.dto.cliente;
 
+import com.manager.app.dto.endereco.EnderecoDTO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;

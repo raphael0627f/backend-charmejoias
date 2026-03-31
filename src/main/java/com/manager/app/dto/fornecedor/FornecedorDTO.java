@@ -1,4 +1,4 @@
-package com.manager.app.dto;
+package com.manager.app.dto.fornecedor;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.validation.constraints.NotBlank;
@@ -10,13 +10,11 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @JsonPropertyOrder({ "id", "nome", "ativo" })
-public class GrupoDTO {
+public class FornecedorDTO {
 
     private Long id;
 
     @NotBlank(message = "Nome é obrigatório")
     private String nome;
-
     private boolean ativo;
-
 }

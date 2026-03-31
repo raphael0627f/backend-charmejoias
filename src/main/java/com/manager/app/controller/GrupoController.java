@@ -1,6 +1,6 @@
 package com.manager.app.controller;
 
-import com.manager.app.dto.GrupoDTO;
+import com.manager.app.dto.grupo.GrupoDTO;
 import com.manager.app.entity.Grupo;
 import com.manager.app.mapper.GrupoMapper;
 import com.manager.app.service.GrupoService;

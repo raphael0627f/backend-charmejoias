@@ -1,6 +1,6 @@
 package com.manager.app.mapper;
 
-import com.manager.app.dto.EnderecoDTO;
+import com.manager.app.dto.endereco.EnderecoDTO;
 import com.manager.app.entity.Endereco;
 import org.mapstruct.Mapper;
 

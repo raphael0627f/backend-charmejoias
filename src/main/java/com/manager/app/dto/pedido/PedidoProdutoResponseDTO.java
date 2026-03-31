@@ -1,4 +1,4 @@
-package com.manager.app.dto;
+package com.manager.app.dto.pedido;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,9 +10,13 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ConsignacaoProdutoRequestDTO {
+public class PedidoProdutoResponseDTO {
 
-    private UUID produtoId;
+    private String descricao;
+    private String variacao;
     private Integer quantidade;
     private BigDecimal preco;
+    private UUID produtoId;
+    private String produtoCodigo;
+    private String produtoNome;
 }

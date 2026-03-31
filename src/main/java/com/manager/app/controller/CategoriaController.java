@@ -1,6 +1,6 @@
 package com.manager.app.controller;
 
-import com.manager.app.dto.CategoriaDTO;
+import com.manager.app.dto.categoria.CategoriaDTO;
 import com.manager.app.entity.Categoria;
 import com.manager.app.mapper.CategoriaMapper;
 import com.manager.app.service.CategoriaService;

@@ -1,6 +1,6 @@
 package com.manager.app.controller;
 
-import com.manager.app.dto.FornecedorDTO;
+import com.manager.app.dto.fornecedor.FornecedorDTO;
 import com.manager.app.entity.Fornecedor;
 import com.manager.app.mapper.FornecedorMapper;
 import com.manager.app.service.FornecedorService;

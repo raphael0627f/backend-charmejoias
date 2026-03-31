@@ -1,4 +1,4 @@
-package com.manager.app.dto;
+package com.manager.app.dto.produto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

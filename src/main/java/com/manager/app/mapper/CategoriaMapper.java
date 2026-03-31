@@ -1,6 +1,6 @@
 package com.manager.app.mapper;
 
-import com.manager.app.dto.CategoriaDTO;
+import com.manager.app.dto.categoria.CategoriaDTO;
 import com.manager.app.entity.Categoria;
 import org.mapstruct.Mapper;
 
