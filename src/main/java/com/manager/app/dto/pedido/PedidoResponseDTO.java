@@ -1,7 +1,7 @@
 package com.manager.app.dto.pedido;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.manager.app.infra.restEnum.StatusPedido;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,6 +14,16 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
+@JsonPropertyOrder({
+        "id",
+        "observacao",
+        "dataEntrega",
+        "status",
+        "clienteId",
+        "clienteCodigo",
+        "clienteNome",
+        "produtosResponse",
+})
 public class PedidoResponseDTO {
 
     private Long id;
@@ -23,5 +33,5 @@ public class PedidoResponseDTO {
     private UUID clienteId;
     private String clienteCodigo;
     private String clienteNome;
-    private List<PedidoProdutoResponseDTO> produtosRequest = new ArrayList<>();
+    private List<PedidoProdutoResponseDTO> produtosResponse = new ArrayList<>();
 }

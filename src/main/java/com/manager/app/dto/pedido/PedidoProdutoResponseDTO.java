@@ -1,5 +1,6 @@
 package com.manager.app.dto.pedido;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,6 +11,16 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
+@JsonPropertyOrder({
+        "descricao",
+        "variacao",
+        "dataEntrega",
+        "quantidade",
+        "preco",
+        "produtoId",
+        "produtoCodigo",
+        "produtoNome",
+})
 public class PedidoProdutoResponseDTO {
 
     private String descricao;
