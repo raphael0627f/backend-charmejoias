@@ -45,7 +45,7 @@ public class FornecedorController {
         return ResponseEntity.ok(mapper.toDTO(fornecedor));
     }
 
-    @PutMapping(value = "activate/{id}")
+    @PutMapping(value = "/activate/{id}")
     public ResponseEntity<FornecedorDTO> activate(@PathVariable Long id){
         return ResponseEntity.ok(mapper.toDTO(service.activate(id)));
     }
