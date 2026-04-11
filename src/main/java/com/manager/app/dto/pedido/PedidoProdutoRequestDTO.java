@@ -1,9 +1,5 @@
 package com.manager.app.dto.pedido;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.manager.app.entity.Pedido;
-import com.manager.app.entity.Produto;
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

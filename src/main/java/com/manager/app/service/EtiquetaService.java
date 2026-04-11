@@ -24,7 +24,6 @@ public class EtiquetaService {
 
     private final ProdutoService produtoService;
 
-
     private List<EtiquetaDTO> dataEtiqueta(EtiquetaRequestDTO request){
         List<EtiquetaDTO> etiquetas = new ArrayList<>();
         EtiquetaDTO etiquetaVazia = new EtiquetaDTO(null, null);

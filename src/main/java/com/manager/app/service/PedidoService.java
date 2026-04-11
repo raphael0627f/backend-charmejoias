@@ -6,7 +6,6 @@ import com.manager.app.dto.pedido.PedidoStatusRequestDTO;
 import com.manager.app.entity.Pedido;
 import com.manager.app.entity.PedidoProduto;
 import com.manager.app.infra.exception.ObjetoNaoEncontradoException;
-import com.manager.app.infra.restEnum.StatusPedido;
 import com.manager.app.infra.validation.PedidoValidation;
 import com.manager.app.repository.PedidoRepository;
 import jakarta.transaction.Transactional;

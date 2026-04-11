@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +36,14 @@ public class Consignacao {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    public Integer getQuantidadeTotal() {
+        return produtos.stream().mapToInt(ConsignacaoProduto::getQuantidade).sum();
+    }
+
+    public BigDecimal getValorTotal() {
+        return produtos.stream().map(p -> p.getPreco().multiply(BigDecimal.valueOf(p.getQuantidade()))).reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
 
     public void adicionarProduto(ConsignacaoProduto produto) {
         produto.setConsignacao(this);
