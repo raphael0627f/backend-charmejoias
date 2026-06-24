@@ -14,5 +14,7 @@ public class AcertoResponseDTO {
     private List<AcertoConsignacaoResponseDTO> consignacoes = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private BigDecimal ValorPagarConsignacaoMaleta;
+    private BigDecimal ValorPagarAcessorios;
 
 }
