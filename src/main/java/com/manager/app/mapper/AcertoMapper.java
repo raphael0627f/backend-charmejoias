@@ -8,7 +8,13 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", uses = {AcertoConsignacaoMapper.class})
 public interface AcertoMapper {
 
-    @Mapping(target = "ValorPagarConsignacaoMaleta", expression = "java(entity.valorPagarConsignacoesMaleta())")
-    @Mapping(target = "ValorPagarAcessorios", expression = "java(entity.valorPagarAcessorios())")
+    @Mapping(
+            target = "valorPagarConsignacaoMaleta",
+            expression = "java(entity.valorPagarConsignacoesMaleta())"
+    )
+    @Mapping(
+            target = "valorPagarAcessorios",
+            expression = "java(entity.valorPagarAcessorios())"
+    )
     AcertoResponseDTO toResponseDTO(Acerto entity);
 }

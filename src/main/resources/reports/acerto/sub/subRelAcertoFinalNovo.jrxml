@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.20.0.final using JasperReports Library version 6.20.0-2bc7ab61c56f459e8176eb05c7705e145cd400ad  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test" pageWidth="120" pageHeight="842" columnWidth="120" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="9c2b0e13-d6ff-4cf2-8310-281f09f7597a">
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="padrao"/>
+	<field name="NumeroKIT" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NumeroKIT"/>
+		<property name="com.jaspersoft.studio.field.label" value="NumeroKIT"/>
+	</field>
+	<field name="QTDEPecas" class="java.lang.Integer">
+		<property name="com.jaspersoft.studio.field.name" value="QTDEPecas"/>
+		<property name="com.jaspersoft.studio.field.label" value="QTDEPecas"/>
+	</field>
+	<field name="ValorTotal" class="java.lang.Double">
+		<property name="com.jaspersoft.studio.field.name" value="ValorTotal"/>
+		<property name="com.jaspersoft.studio.field.label" value="ValorTotal"/>
+	</field>
+	<variable name="NumeroKIT1" class="java.lang.Integer" calculation="Count">
+		<variableExpression><![CDATA[$F{NumeroKIT}]]></variableExpression>
+	</variable>
+	<variable name="QTDEPecas1" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{QTDEPecas}]]></variableExpression>
+	</variable>
+	<variable name="ValorTotalSum" class="java.lang.Double" calculation="Sum">
+		<variableExpression><![CDATA[$F{ValorTotal}]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<detail>
+		<band height="13" splitType="Stretch">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<textField>
+				<reportElement x="0" y="0" width="30" height="13" uuid="f586ee32-bff2-44fe-9c81-1bac075d060f">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="2.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{NumeroKIT}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="30" y="0" width="39" height="13" uuid="7ffa7a9a-63d6-4ffe-8c3f-341878cdae7b">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{QTDEPecas}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="69" y="0" width="51" height="13" uuid="3bd2d7cd-4676-4f51-82ef-c064ad8f261a">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="2.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[new BigDecimal($F{ValorTotal}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="26">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<textField>
+				<reportElement x="0" y="0" width="60" height="13" uuid="9fae39bc-c689-4c57-8594-5fc48b55fbb9">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="2.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$V{NumeroKIT1}+" KITS"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="60" y="0" width="60" height="13" uuid="16c85daa-109b-47b6-a3c4-2e2f46e5a032">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="2.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$V{QTDEPecas1}+" PEÇAS"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="13" width="120" height="13" uuid="98ba982b-f093-4d90-b2ab-b7b59b4f279a">
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box>
+					<leftPen lineWidth="2.0"/>
+					<bottomPen lineWidth="2.0"/>
+					<rightPen lineWidth="2.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["R$ "+new BigDecimal($V{ValorTotalSum}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

@@ -10,10 +10,21 @@ import com.manager.app.repository.AcertoRepository;
 import com.manager.app.repository.ConsignacaoRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.data.JRMapCollectionDataSource;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.export.SimpleExporterInput;
+import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -196,6 +207,157 @@ public class AcertoService {
         }
 
         return acertoUpdate;
+    }
+
+    private BigDecimal nullSafe(BigDecimal valor){
+        return valor != null ? valor : BigDecimal.ZERO;
+    }
+
+    private BigDecimal somaPorTipo(Acerto acerto, TipoConsignacaoAcerto tipo){
+        BigDecimal total = BigDecimal.ZERO;
+
+        for (AcertoConsignacao consignacao : acerto.getConsignacoes()){
+            if (consignacao.getTipo() == tipo){
+                total = total.add(nullSafe(consignacao.getValorTotal()));
+            }
+        }
+
+        return total;
+    }
+
+    private List<JasperPrint> gerarPaginasConsignacoes(Acerto acerto){
+        List<JasperPrint> paginas = new ArrayList<>();
+
+        try {
+            for (AcertoConsignacao acertoConsignacao : acerto.getConsignacoes()){
+                if (acertoConsignacao.getConsignacao() == null) continue;
+
+                JRMapCollectionDataSource dataSource = new JRMapCollectionDataSource(consignacaoService.dataConsignacao(acertoConsignacao.getConsignacao()));
+                InputStream jasperStream = getClass().getResourceAsStream("/reports/acerto/relAcerto.jasper");
+                paginas.add(JasperFillManager.fillReport(jasperStream, new HashMap<>(), dataSource));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao gerar relatório de acerto", e);
+        }
+
+        return paginas;
+    }
+
+    private List<Map<String, ?>> dataSubRelatorioKitOuNovo(Acerto acerto, TipoConsignacaoAcerto tipo){
+        List<Map<String, ?>> linhas = new ArrayList<>();
+
+        for (AcertoConsignacao consignacao : acerto.getConsignacoes()){
+            if (consignacao.getTipo() != tipo) continue;
+
+            Map<String, Object> linha = new HashMap<>();
+            linha.put("NumeroKIT", consignacao.getDescricao());
+            linha.put("QTDEPecas", consignacao.getQuantidadeProdutos());
+            linha.put("ValorTotal", nullSafe(consignacao.getValorTotal()).doubleValue());
+            linhas.add(linha);
+        }
+
+        return linhas;
+    }
+
+    private List<Map<String, ?>> dataSubRelatorioMaleta(Acerto acerto){
+        List<Map<String, ?>> linhas = new ArrayList<>();
+
+        for (AcertoConsignacao consignacao : acerto.getConsignacoes()){
+            if (consignacao.getTipo() != TipoConsignacaoAcerto.MALETA) continue;
+
+            Map<String, Object> linha = new HashMap<>();
+            linha.put("Pecas", consignacao.getDescricao());
+            linha.put("QTDE", consignacao.getQuantidadeProdutos());
+            linha.put("ValorTotal", nullSafe(consignacao.getValorTotal()).doubleValue());
+            linhas.add(linha);
+        }
+
+        return linhas;
+    }
+
+    private Map<String, ?> dataAcertoFinal(Acerto acerto){
+        BigDecimal valorTotalKits = nullSafe(acerto.getValorConsignacoes());
+        BigDecimal valorTotalMaleta = nullSafe(acerto.getValorMaleta());
+        BigDecimal valorTotalAcessorios = nullSafe(acerto.getValorAcessorios());
+
+        BigDecimal totalMercadorias = valorTotalKits.add(valorTotalMaleta);
+        BigDecimal devolvidoMercadorias = somaPorTipo(acerto, TipoConsignacaoAcerto.KIT)
+                .add(somaPorTipo(acerto, TipoConsignacaoAcerto.KIT_NOVO))
+                .add(somaPorTipo(acerto, TipoConsignacaoAcerto.MALETA));
+        BigDecimal diferencaMercadorias = totalMercadorias.subtract(devolvidoMercadorias);
+        BigDecimal totalPagarMercadorias = acerto.valorPagarConsignacoesMaleta();
+
+        BigDecimal acessoriosDevolvido = somaPorTipo(acerto, TipoConsignacaoAcerto.ACESSORIO);
+        BigDecimal diferencaAcessorios = valorTotalAcessorios.subtract(acessoriosDevolvido);
+        BigDecimal totalAcessorios = acerto.valorPagarAcessorios();
+
+        BigDecimal valorTotalAcerto = totalPagarMercadorias.add(totalAcessorios);
+
+        Map<String, Object> linha = new HashMap<>();
+        linha.put("ValorTotalKITS", valorTotalKits.doubleValue());
+        linha.put("ValorTotalMaleta", valorTotalMaleta.doubleValue());
+        linha.put("ValorTotalAcessorios", valorTotalAcessorios.doubleValue());
+        linha.put("TotalMercadorias", totalMercadorias.doubleValue());
+        linha.put("DiferencaMercadorias", diferencaMercadorias.doubleValue());
+        linha.put("TotalPagarMercadorias", totalPagarMercadorias.doubleValue());
+        linha.put("ValorTotal", acessoriosDevolvido.doubleValue());
+        linha.put("DiferencaAcessorios", diferencaAcessorios.doubleValue());
+        linha.put("TotalAcessorios", totalAcessorios.doubleValue());
+        linha.put("ValorTotalAcerto", valorTotalAcerto.doubleValue());
+
+        return linha;
+    }
+
+    private JasperPrint gerarPaginaFinal(Acerto acerto){
+        try {
+            Map<String, Object> params = new HashMap<>();
+            params.put("SUBREPORT_KIT", getClass().getResourceAsStream("/reports/acerto/sub/subRelAcertoFinalKIT.jasper"));
+            params.put("SUBREPORT_MALETA", getClass().getResourceAsStream("/reports/acerto/sub/subRelAcertoFinalMaleta.jasper"));
+            params.put("SUBREPORT_NOVO", getClass().getResourceAsStream("/reports/acerto/sub/subRelAcertoFinalNovo.jasper"));
+            params.put("DS_KIT", new JRMapCollectionDataSource(dataSubRelatorioKitOuNovo(acerto, TipoConsignacaoAcerto.KIT)));
+            params.put("DS_MALETA", new JRMapCollectionDataSource(dataSubRelatorioMaleta(acerto)));
+            params.put("DS_NOVO", new JRMapCollectionDataSource(dataSubRelatorioKitOuNovo(acerto, TipoConsignacaoAcerto.KIT_NOVO)));
+
+            JRMapCollectionDataSource dataSource = new JRMapCollectionDataSource(List.of(dataAcertoFinal(acerto)));
+            InputStream jasperStream = getClass().getResourceAsStream("/reports/acerto/relAcertoFinal.jasper");
+            return JasperFillManager.fillReport(jasperStream, params, dataSource);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao gerar relatório de acerto", e);
+        }
+    }
+
+    public byte[] gerarRelatorio(Long id){
+        try {
+            Acerto acerto = this.findById(id);
+
+            List<JasperPrint> paginas = new ArrayList<>();
+            paginas.add(gerarPaginaFinal(acerto));
+            paginas.addAll(gerarPaginasConsignacoes(acerto));
+
+            return exportarPdf(paginas);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao gerar relatório de acerto", e);
+        }
+    }
+
+    public byte[] gerarRelatorioFinal(Long id){
+        try {
+            Acerto acerto = this.findById(id);
+            return exportarPdf(List.of(gerarPaginaFinal(acerto)));
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao gerar relatório de acerto", e);
+        }
+    }
+
+    private byte[] exportarPdf(List<JasperPrint> paginas) throws Exception {
+        JRPdfExporter exporter = new JRPdfExporter();
+        exporter.setExporterInput(SimpleExporterInput.getInstance(paginas));
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        exporter.setExporterOutput(new SimpleOutputStreamExporterOutput(outputStream));
+        exporter.exportReport();
+
+        return outputStream.toByteArray();
     }
 }
 

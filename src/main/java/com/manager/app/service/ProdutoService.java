@@ -47,7 +47,9 @@ public class ProdutoService {
         validation.codigoExistenteCreate(produto.getCodigo());
 
         produto.setCategoria(categoriaService.findById(relacoes.getCategoriaId()));
-        produto.setFornecedor(fornecedorService.findById(relacoes.getFornecedorId()));
+        produto.setFornecedor(relacoes.getFornecedorId() != null
+                ? fornecedorService.findById(relacoes.getFornecedorId())
+                : null);
 
         if(!grupoValidation.gruposEmpty(relacoes.getGruposIds())){
             List<Grupo> grupos = grupoRepository.findAllById(relacoes.getGruposIds());
@@ -72,7 +74,9 @@ public class ProdutoService {
         produtoUpdate.setAtivo(produto.isAtivo());
         produtoUpdate.setObservacoes(produto.getObservacoes());
         produtoUpdate.setCategoria(categoriaService.findById(relacoes.getCategoriaId()));
-        produtoUpdate.setFornecedor(fornecedorService.findById(relacoes.getFornecedorId()));
+        produtoUpdate.setFornecedor(relacoes.getFornecedorId() != null
+                ? fornecedorService.findById(relacoes.getFornecedorId())
+                : null);
 
         if(!grupoValidation.gruposEmpty(relacoes.getGruposIds())){
             List<Grupo> grupos = grupoRepository.findAllById(relacoes.getGruposIds());

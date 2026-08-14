@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.20.0.final using JasperReports Library version 6.20.0-2bc7ab61c56f459e8176eb05c7705e145cd400ad  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test" pageWidth="151" pageHeight="842" columnWidth="151" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="9c2b0e13-d6ff-4cf2-8310-281f09f7597a">
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="padrao"/>
+	<property name="com.jaspersoft.studio.unit." value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.pageHeight" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.pageWidth" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.topMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.bottomMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.leftMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.rightMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.columnWidth" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.columnSpacing" value="pixel"/>
+	<field name="Pecas" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="Pecas"/>
+		<property name="com.jaspersoft.studio.field.label" value="Pecas"/>
+	</field>
+	<field name="QTDE" class="java.lang.Integer">
+		<property name="com.jaspersoft.studio.field.name" value="QTDE"/>
+		<property name="com.jaspersoft.studio.field.label" value="QTDE"/>
+	</field>
+	<field name="ValorTotal" class="java.lang.Double">
+		<property name="com.jaspersoft.studio.field.name" value="ValorTotal"/>
+		<property name="com.jaspersoft.studio.field.label" value="ValorTotal"/>
+	</field>
+	<variable name="QTDE1" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{QTDE}]]></variableExpression>
+	</variable>
+	<variable name="ValorTotalSum" class="java.lang.Double" calculation="Sum">
+		<variableExpression><![CDATA[$F{ValorTotal}]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<detail>
+		<band height="13" splitType="Stretch">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<textField>
+				<reportElement x="0" y="0" width="61" height="13" uuid="b8d87a9f-2399-4c2a-bc95-f33701ec737c">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="2.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{Pecas}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="61" y="0" width="39" height="13" uuid="bf59e296-1346-4814-81fd-18e983dc7ed1">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{QTDE}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="100" y="0" width="51" height="13" uuid="9b250cd0-fe94-449f-9488-9f79ffb9e03b">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="2.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="2.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[new BigDecimal($F{ValorTotal}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="26">
+			<textField>
+				<reportElement x="0" y="13" width="151" height="13" uuid="0462e63f-fcbc-4ae2-8f97-3f81a2387b5f">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box>
+					<leftPen lineWidth="2.0"/>
+					<bottomPen lineWidth="2.0"/>
+					<rightPen lineWidth="2.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["R$: "+new BigDecimal($V{ValorTotalSum}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="0" width="151" height="13" uuid="e7b36007-d84b-4b78-99c6-8d8f8ddeb606">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="2.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="2.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{QTDE1}+" PEÇAS"]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

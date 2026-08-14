@@ -9,7 +9,6 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface AcertoConsignacaoMapper {
 
-    @Mapping(source = "consignacao.descricao", target = "descricao")
     @Mapping(source = "consignacao.id", target = "consignacaoId")
     AcertoConsignacaoResponseDTO toDTO(AcertoConsignacao entity);
 

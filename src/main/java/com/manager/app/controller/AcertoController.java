@@ -7,6 +7,7 @@ import com.manager.app.mapper.AcertoMapper;
 import com.manager.app.service.AcertoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -44,5 +45,21 @@ public class AcertoController {
     public ResponseEntity<AcertoResponseDTO> update(@RequestBody @Valid AcertoRequestDTO request){
         Acerto acerto = service.update(request);
         return ResponseEntity.ok(mapper.toResponseDTO(acerto));
+    }
+
+    @GetMapping(value = "/{id}/relatorio")
+    public ResponseEntity<byte[]> gerarRelatorio(@PathVariable Long id){
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "inline; filename=relatorio-acerto.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(service.gerarRelatorio(id));
+    }
+
+    @GetMapping(value = "/{id}/relatorio-final")
+    public ResponseEntity<byte[]> gerarRelatorioFinal(@PathVariable Long id){
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "inline; filename=relatorio-acerto-final.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(service.gerarRelatorioFinal(id));
     }
 }

@@ -2,17 +2,29 @@ package com.manager.app.service;
 
 import com.manager.app.dto.consignacao.ConsignacaoProdutoRequestDTO;
 import com.manager.app.dto.consignacao.ConsignacaoRequestDTO;
+import com.manager.app.entity.Cliente;
 import com.manager.app.entity.Consignacao;
 import com.manager.app.entity.ConsignacaoProduto;
+import com.manager.app.entity.Endereco;
+import com.manager.app.entity.Produto;
 import com.manager.app.infra.exception.ObjetoNaoEncontradoException;
+import com.manager.app.infra.restEnum.TipoRelatorioConsignacao;
 import com.manager.app.infra.validation.ConsignacaoValidation;
 import com.manager.app.repository.ConsignacaoRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import net.sf.jasperreports.engine.JasperExportManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.data.JRMapCollectionDataSource;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
+import java.sql.Date;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -105,6 +117,78 @@ public class ConsignacaoService {
             consignacaoUpdate.removerProduto(removerProduto);
         }
         return consignacaoUpdate;
+    }
+
+    List<Map<String, ?>> dataConsignacao(Consignacao consignacao){
+        List<Map<String, ?>> linhas = new ArrayList<>();
+        Cliente cliente = consignacao.getCliente();
+        Endereco endereco = cliente != null ? cliente.getEndereco() : null;
+
+        for (ConsignacaoProduto consignacaoProduto : consignacao.getProdutos()){
+            Map<String, Object> linha = new HashMap<>();
+            Produto produto = consignacaoProduto.getProduto();
+
+            linha.put("ID", consignacao.getId() != null ? consignacao.getId().intValue() : null);
+            linha.put("DataConsignacao", consignacao.getCreatedAt() != null ? Date.valueOf(consignacao.getCreatedAt().toLocalDate()) : null);
+            linha.put("ValorTotal", consignacao.getValorTotal() != null ? consignacao.getValorTotal().doubleValue() : null);
+            linha.put("QTDEPecas", consignacao.getQuantidadeTotal());
+            linha.put("NuConsig", consignacao.getDescricao());
+
+            linha.put("CodProduto", produto.getCodigo());
+            linha.put("NomeProduto", produto.getNome());
+            linha.put("ValorProdutoU", consignacaoProduto.getPreco() != null ? consignacaoProduto.getPreco().doubleValue() : null);
+            linha.put("QtdeProduto", consignacaoProduto.getQuantidade());
+            linha.put("TipoProduto", produto.getCategoria() != null ? produto.getCategoria().getNome() : null);
+
+            if (cliente != null){
+                linha.put("CodCliente", cliente.getCodigo());
+                linha.put("NomeCliente", cliente.getNome());
+                linha.put("CPF_CNPJ", cliente.getCpf());
+                linha.put("Identidade", cliente.getDocumento());
+                linha.put("Celular1", cliente.getCelular());
+                linha.put("Celular2", cliente.getTelefone());
+            }
+
+            if (endereco != null){
+                linha.put("CEP", endereco.getCep());
+                linha.put("Endereco", endereco.getLogradouro());
+                linha.put("Complemento", endereco.getComplemento());
+                linha.put("NuCasa", endereco.getNumero());
+                linha.put("Cidade", endereco.getMunicipio());
+                linha.put("Bairro", endereco.getBairro());
+                linha.put("UF", endereco.getUf());
+            }
+
+            linhas.add(linha);
+        }
+
+        return linhas;
+    }
+
+    public byte[] gerarRelatorio(Long id, TipoRelatorioConsignacao tipo){
+        try {
+            Consignacao consignacao = this.findById(id);
+            JRMapCollectionDataSource dataSource = new JRMapCollectionDataSource(dataConsignacao(consignacao));
+            boolean semCliente = consignacao.getCliente() == null;
+
+            String relPath;
+            if (tipo == TipoRelatorioConsignacao.JOIAS) {
+                relPath = semCliente
+                        ? "/reports/consignacao/relConsigNovoJoias.jasper"
+                        : "/reports/consignacao/relConsigJoias.jasper";
+            } else {
+                relPath = semCliente
+                        ? "/reports/consignacao/relConsigNovo.jasper"
+                        : "/reports/consignacao/relConsig.jasper";
+            }
+
+            InputStream jasperStream = getClass().getResourceAsStream(relPath);
+            Map<String, Object> params = new HashMap<>();
+            JasperPrint print = JasperFillManager.fillReport(jasperStream, params, dataSource);
+            return JasperExportManager.exportReportToPdf(print);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao gerar relatório de consignação", e);
+        }
     }
 
 }
