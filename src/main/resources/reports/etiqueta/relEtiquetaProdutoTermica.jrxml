@@ -10,6 +10,7 @@
 			<style mode="Opaque" forecolor="#FFFFFF" backcolor="#FFFFFF"/>
 		</conditionalStyle>
 	</style>
+	<parameter name="LOGO" class="java.io.InputStream"/>
 	<queryString>
 		<![CDATA[SELECT `Nome`,
 	`CodProduto`,
@@ -57,7 +58,7 @@ FROM sistemadb.tb_etiqueta]]>
 			</textField>
 			<image hAlign="Left" onErrorType="Blank">
 				<reportElement x="23" y="5" width="51" height="21" uuid="c92bf052-e5bb-4538-9ed1-aca0ae9f90e3"/>
-				<imageExpression><![CDATA[($F{codigoBarras} == null) ? "" : "src/main/resources/images/logo_etiqueta.png"]]></imageExpression>
+				<imageExpression><![CDATA[($F{codigoBarras} == null) ? null : $P{LOGO}]]></imageExpression>
 			</image>
 		</band>
 	</detail>

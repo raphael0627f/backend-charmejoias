@@ -7,14 +7,15 @@ import com.manager.app.mapper.AcertoMapper;
 import com.manager.app.service.AcertoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,8 +26,10 @@ public class AcertoController {
     private final AcertoMapper mapper;
 
     @GetMapping
-    public ResponseEntity<List<AcertoResponseDTO>> findAll(){
-        return ResponseEntity.ok(service.findAll().stream().map(mapper::toResponseDTO).collect(Collectors.toList()));
+    public ResponseEntity<Page<AcertoResponseDTO>> findAll(
+            @RequestParam(required = false) String busca,
+            @PageableDefault(size = 20, sort = "id") Pageable pageable){
+        return ResponseEntity.ok(service.findAll(busca, pageable).map(mapper::toResponseDTO));
     }
 
     @GetMapping(value = "/{id}")

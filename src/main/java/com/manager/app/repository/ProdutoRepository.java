@@ -5,12 +5,13 @@ import com.manager.app.entity.Fornecedor;
 import com.manager.app.entity.Grupo;
 import com.manager.app.entity.Produto;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface ProdutoRepository  extends JpaRepository<Produto, UUID> {
+public interface ProdutoRepository  extends JpaRepository<Produto, UUID>, JpaSpecificationExecutor<Produto> {
     Optional<Produto> findByIdAndAtivoTrue(UUID id);
     Optional<Produto> findByCodigoAndAtivoTrue(String codigo);
     List<Produto> findAllByAtivoTrue();

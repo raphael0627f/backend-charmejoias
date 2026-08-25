@@ -5,6 +5,7 @@ import com.manager.app.dto.acerto.AcertoRequestDTO;
 import com.manager.app.entity.*;
 import com.manager.app.infra.exception.ObjetoNaoEncontradoException;
 import com.manager.app.infra.restEnum.TipoConsignacaoAcerto;
+import com.manager.app.infra.specification.SpecificationUtils;
 import com.manager.app.infra.validation.AcertoValidation;
 import com.manager.app.repository.AcertoRepository;
 import com.manager.app.repository.ConsignacaoRepository;
@@ -16,6 +17,9 @@ import net.sf.jasperreports.engine.data.JRMapCollectionDataSource;
 import net.sf.jasperreports.engine.export.JRPdfExporter;
 import net.sf.jasperreports.export.SimpleExporterInput;
 import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -35,8 +39,16 @@ public class AcertoService {
     private final ConsignacaoService consignacaoService;
     private final AcertoValidation validation;
 
-    public List<Acerto> findAll(){
-        return repository.findAll();
+    public Page<Acerto> findAll(String busca, Pageable pageable){
+        return repository.findAll(comBusca(busca), pageable);
+    }
+
+    private Specification<Acerto> comBusca(String busca){
+        if (busca == null || busca.isBlank()) return null;
+        return (root, query, cb) -> cb.or(
+                SpecificationUtils.likeIgnoreCase(cb, root.get("id").as(String.class), busca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("createdAt").as(String.class), busca)
+        );
     }
 
     public Acerto findById(Long id){
@@ -243,6 +255,21 @@ public class AcertoService {
         return paginas;
     }
 
+    private String descricaoOuFallback(AcertoConsignacao consignacao){
+        if (consignacao.getConsignacao() != null
+                && consignacao.getConsignacao().getDescricao() != null
+                && !consignacao.getConsignacao().getDescricao().isBlank()){
+            return consignacao.getConsignacao().getDescricao();
+        }
+        if (consignacao.getDescricao() != null && !consignacao.getDescricao().isBlank()){
+            return consignacao.getDescricao();
+        }
+        if (consignacao.getConsignacao() != null){
+            return String.valueOf(consignacao.getConsignacao().getId());
+        }
+        return String.valueOf(consignacao.getId());
+    }
+
     private List<Map<String, ?>> dataSubRelatorioKitOuNovo(Acerto acerto, TipoConsignacaoAcerto tipo){
         List<Map<String, ?>> linhas = new ArrayList<>();
 
@@ -250,7 +277,7 @@ public class AcertoService {
             if (consignacao.getTipo() != tipo) continue;
 
             Map<String, Object> linha = new HashMap<>();
-            linha.put("NumeroKIT", consignacao.getDescricao());
+            linha.put("NumeroKIT", descricaoOuFallback(consignacao));
             linha.put("QTDEPecas", consignacao.getQuantidadeProdutos());
             linha.put("ValorTotal", nullSafe(consignacao.getValorTotal()).doubleValue());
             linhas.add(linha);
@@ -266,7 +293,7 @@ public class AcertoService {
             if (consignacao.getTipo() != TipoConsignacaoAcerto.MALETA) continue;
 
             Map<String, Object> linha = new HashMap<>();
-            linha.put("Pecas", consignacao.getDescricao());
+            linha.put("Pecas", descricaoOuFallback(consignacao));
             linha.put("QTDE", consignacao.getQuantidadeProdutos());
             linha.put("ValorTotal", nullSafe(consignacao.getValorTotal()).doubleValue());
             linhas.add(linha);

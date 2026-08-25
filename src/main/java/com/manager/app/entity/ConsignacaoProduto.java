@@ -32,4 +32,8 @@ public class ConsignacaoProduto {
     @JoinColumn(name = "produto_id")
     private Produto produto;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "joia_id")
+    private Joia joia;
+
 }

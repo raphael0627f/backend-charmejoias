@@ -121,7 +121,7 @@
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font isBold="true"/>
 				</textElement>
-				<textFieldExpression><![CDATA["R$ "+new BigDecimal($V{ValorTotalSum}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
+				<textFieldExpression><![CDATA["R$ "+new BigDecimal($V{ValorTotalSum}==null?0d:$V{ValorTotalSum}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
 			</textField>
 		</band>
 	</summary>

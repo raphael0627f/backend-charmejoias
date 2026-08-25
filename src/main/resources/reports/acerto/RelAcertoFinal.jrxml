@@ -77,7 +77,7 @@
 		<band height="135">
 			<image>
 				<reportElement x="230" y="1" width="120" height="79" uuid="6d4753bb-4347-42aa-88b1-afdfa775dbf7"/>
-				<imageExpression><![CDATA["src/main/resources/images/logo_beijo.png"]]></imageExpression>
+				<imageExpression><![CDATA["images/logo_beijo.png"]]></imageExpression>
 			</image>
 			<staticText>
 				<reportElement x="183" y="80" width="216" height="30" uuid="2d8b396c-658d-4c0a-8aac-14ba2a8ed7f9"/>

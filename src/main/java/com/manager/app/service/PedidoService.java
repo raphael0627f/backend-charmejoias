@@ -6,6 +6,7 @@ import com.manager.app.dto.pedido.PedidoStatusRequestDTO;
 import com.manager.app.entity.Pedido;
 import com.manager.app.entity.PedidoProduto;
 import com.manager.app.infra.exception.ObjetoNaoEncontradoException;
+import com.manager.app.infra.restEnum.TipoItem;
 import com.manager.app.infra.validation.PedidoValidation;
 import com.manager.app.repository.PedidoRepository;
 import jakarta.transaction.Transactional;
@@ -22,6 +23,7 @@ public class PedidoService {
     private final PedidoRepository repository;
     private final ClienteService clienteService;
     private final ProdutoService produtoService;
+    private final JoiaService joiaService;
     private final PedidoValidation validation;
 
     public List<Pedido> findAll(){
@@ -32,6 +34,24 @@ public class PedidoService {
         return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Pedido não encontrada. id: " + id));
     }
 
+    private void preencherItem(PedidoProduto produto, PedidoProdutoRequestDTO produtoRequest, TipoItem tipo){
+        validation.validarItem(tipo, produtoRequest.getProdutoId(), produtoRequest.getJoiaId());
+
+        if (tipo == TipoItem.JOIA){
+            produto.setDescricao(null);
+            produto.setJoia(joiaService.findByIdAndAtivo(produtoRequest.getJoiaId()));
+            produto.setProduto(null);
+        } else if (!validation.produtoNovo(produtoRequest.getProdutoId())){
+            produto.setDescricao(null);
+            produto.setProduto(produtoService.findByIdAndAtivo(produtoRequest.getProdutoId()));
+            produto.setJoia(null);
+        } else {
+            produto.setDescricao(produtoRequest.getDescricao());
+            produto.setProduto(null);
+            produto.setJoia(null);
+        }
+    }
+
     @Transactional
     public Pedido create(PedidoRequestDTO request){
         Pedido pedido = new Pedido();
@@ -39,18 +59,13 @@ public class PedidoService {
         pedido.setObservacao(request.getObservacao());
         pedido.setDataEntrega(request.getDataEntrega());
         pedido.setStatus(request.getStatus());
+        pedido.setTipo(request.getTipo());
         pedido.setCliente(clienteService.findByIdAndAtivo(request.getClienteId()));
 
         for (PedidoProdutoRequestDTO produtoRequest : request.getProdutosRequest()){
             PedidoProduto produto = new PedidoProduto();
 
-            if(!validation.produtoNovo(produtoRequest.getProdutoId())){
-                produto.setDescricao(null);
-                produto.setProduto(produtoService.findByIdAndAtivo(produtoRequest.getProdutoId()));
-            } else {
-                produto.setDescricao(produtoRequest.getDescricao());
-                produto.setProduto(null);
-            }
+            preencherItem(produto, produtoRequest, request.getTipo());
 
             produto.setVariacao(produtoRequest.getVariacao());
             produto.setQuantidade(produtoRequest.getQuantidade());
@@ -68,6 +83,7 @@ public class PedidoService {
         pedidoUpdate.setObservacao(request.getObservacao());
         pedidoUpdate.setDataEntrega(request.getDataEntrega());
         pedidoUpdate.setStatus(request.getStatus());
+        pedidoUpdate.setTipo(request.getTipo());
         pedidoUpdate.setCliente(clienteService.findByIdAndAtivo(request.getClienteId()));
 
         List<PedidoProduto> produtosAtuais = new ArrayList<>(pedidoUpdate.getProdutos());
@@ -76,7 +92,9 @@ public class PedidoService {
             PedidoProduto produtoExistente = null;
 
             for (PedidoProduto produto : pedidoUpdate.getProdutos()){
-                if (produto.getProduto() != null && produto.getProduto().getId().equals(produtoRequest.getProdutoId())) {
+                boolean mesmoProduto = produto.getProduto() != null && produto.getProduto().getId().equals(produtoRequest.getProdutoId());
+                boolean mesmaJoia = produto.getJoia() != null && produto.getJoia().getId().equals(produtoRequest.getJoiaId());
+                if (mesmoProduto || mesmaJoia) {
                     produtoExistente = produto;
                     break;
                 }
@@ -101,13 +119,7 @@ public class PedidoService {
             } else {
                 PedidoProduto novoProduto = new PedidoProduto();
 
-                if(!validation.produtoNovo(produtoRequest.getProdutoId())){
-                    novoProduto.setDescricao(null);
-                    novoProduto.setProduto(produtoService.findByIdAndAtivo(produtoRequest.getProdutoId()));
-                } else {
-                    novoProduto.setDescricao(produtoRequest.getDescricao());
-                    novoProduto.setProduto(null);
-                }
+                preencherItem(novoProduto, produtoRequest, request.getTipo());
 
                 novoProduto.setVariacao(produtoRequest.getVariacao());
                 novoProduto.setQuantidade(produtoRequest.getQuantidade());

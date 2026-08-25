@@ -6,13 +6,14 @@ import com.manager.app.mapper.FornecedorMapper;
 import com.manager.app.service.FornecedorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,8 +24,10 @@ public class FornecedorController {
     private final FornecedorMapper mapper;
 
     @GetMapping
-    public ResponseEntity<List<FornecedorDTO>> findAll(){
-        return ResponseEntity.ok(service.findAll().stream().map(mapper::toDTO).collect(Collectors.toList()));
+    public ResponseEntity<Page<FornecedorDTO>> findAll(
+            @RequestParam(required = false) String busca,
+            @PageableDefault(size = 20, sort = "id") Pageable pageable){
+        return ResponseEntity.ok(service.findAll(busca, pageable).map(mapper::toDTO));
     }
 
     @GetMapping(value = "/{id}")

@@ -1,6 +1,7 @@
 package com.manager.app.dto.pedido;
 
 import com.manager.app.infra.restEnum.StatusPedido;
+import com.manager.app.infra.restEnum.TipoItem;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,6 +25,9 @@ public class PedidoRequestDTO {
 
     @NotNull(message = "Status é obrigatório")
     private StatusPedido status;
+
+    @NotNull(message = "Tipo é obrigatório")
+    private TipoItem tipo;
 
     @NotNull(message = "clienteId é obrigatório")
     private UUID clienteId;

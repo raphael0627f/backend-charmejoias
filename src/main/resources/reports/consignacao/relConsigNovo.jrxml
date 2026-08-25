@@ -177,7 +177,7 @@ www.grupobeijo.com.br]]></text>
 			</staticText>
 			<image>
 				<reportElement x="0" y="9" width="131" height="71" uuid="bc976160-b87c-4a0d-ae19-83a115debfea"/>
-				<imageExpression><![CDATA["src/main/resources/images/logo_beijo.png"]]></imageExpression>
+				<imageExpression><![CDATA["images/logo_beijo.png"]]></imageExpression>
 			</image>
 			<staticText>
 				<reportElement x="430" y="9" width="88" height="39" uuid="ca2c2ad9-71bd-47f0-8e23-3e859392dfbe"/>
@@ -199,11 +199,11 @@ Rafael]]></text>
 			</staticText>
 			<image>
 				<reportElement x="281" y="9" width="23" height="16" uuid="ce581f32-4485-4ae1-9888-7252fae980cf"/>
-				<imageExpression><![CDATA["src/main/resources/images/instagram.png"]]></imageExpression>
+				<imageExpression><![CDATA["images/instagram.png"]]></imageExpression>
 			</image>
 			<image>
 				<reportElement x="281" y="31" width="23" height="16" uuid="cd44ccd9-6175-449f-a6a6-6ae8645d9ab5"/>
-				<imageExpression><![CDATA["src/main/resources/images/instagram.png"]]></imageExpression>
+				<imageExpression><![CDATA["images/instagram.png"]]></imageExpression>
 			</image>
 			<staticText>
 				<reportElement x="180" y="29" width="97" height="20" uuid="93cf048a-e022-4486-8921-999f7eda956a"/>
@@ -224,7 +224,7 @@ Rafael]]></text>
 				<reportElement x="522" y="12" width="13" height="10" uuid="8eb56ff7-8bbd-4f15-9dbb-f35db55e1152">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
-				<imageExpression><![CDATA["src/main/resources/images/whatsapp.png"]]></imageExpression>
+				<imageExpression><![CDATA["images/whatsapp.png"]]></imageExpression>
 			</image>
 			<line>
 				<reportElement x="0" y="160" width="569" height="1" uuid="a519e7e2-e8be-4fc6-bf5b-430cc2cc811e"/>
@@ -233,7 +233,7 @@ Rafael]]></text>
 				<reportElement x="522" y="25" width="13" height="10" uuid="3b5c6598-4188-47b9-b235-1370efe7fe3d">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
-				<imageExpression><![CDATA["src/main/resources/images/whatsapp.png"]]></imageExpression>
+				<imageExpression><![CDATA["images/whatsapp.png"]]></imageExpression>
 			</image>
 			<staticText>
 				<reportElement x="0" y="88" width="30" height="15" uuid="fbd4fb32-9523-43b3-a547-30f59d9cbd5a">

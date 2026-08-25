@@ -95,7 +95,7 @@
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font isBold="true"/>
 				</textElement>
-				<textFieldExpression><![CDATA["R$: "+new BigDecimal($V{ValorTotalSum}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
+				<textFieldExpression><![CDATA["R$: "+new BigDecimal($V{ValorTotalSum}==null?0d:$V{ValorTotalSum}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
 			</textField>
 			<textField>
 				<reportElement x="0" y="0" width="151" height="13" uuid="e7b36007-d84b-4b78-99c6-8d8f8ddeb606">

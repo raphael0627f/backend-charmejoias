@@ -1,5 +1,6 @@
 package com.manager.app.entity;
 
+import com.manager.app.infra.restEnum.TipoItem;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -23,6 +24,9 @@ public class Consignacao {
     private Long id;
 
     private String descricao;
+
+    @Enumerated(EnumType.STRING)
+    private TipoItem tipo;
 
     @ManyToOne
     @JoinColumn(name = "cliente_id")

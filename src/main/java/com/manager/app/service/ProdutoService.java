@@ -6,10 +6,14 @@ import com.manager.app.entity.Produto;
 import com.manager.app.infra.exception.ObjetoNaoEncontradoException;
 import com.manager.app.infra.validation.GrupoValidation;
 import com.manager.app.infra.validation.ProdutoValidation;
+import com.manager.app.infra.specification.SpecificationUtils;
 import com.manager.app.repository.GrupoRepository;
 import com.manager.app.repository.ProdutoRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,8 +30,34 @@ public class ProdutoService {
     private final ProdutoValidation validation;
     private final GrupoValidation grupoValidation;
 
-    public List<Produto> findAll(){
-        return repository.findAll();
+    public Page<Produto> findAll(String busca, Boolean ativo, Long categoriaId, Long fornecedorId, Pageable pageable){
+        Specification<Produto> spec = comBusca(busca);
+
+        if (ativo != null) {
+            Specification<Produto> ativoSpec = (root, query, cb) -> cb.equal(root.get("ativo"), ativo);
+            spec = spec == null ? ativoSpec : spec.and(ativoSpec);
+        }
+
+        if (categoriaId != null) {
+            Specification<Produto> categoriaSpec = (root, query, cb) -> cb.equal(root.get("categoria").get("id"), categoriaId);
+            spec = spec == null ? categoriaSpec : spec.and(categoriaSpec);
+        }
+
+        if (fornecedorId != null) {
+            Specification<Produto> fornecedorSpec = (root, query, cb) -> cb.equal(root.get("fornecedor").get("id"), fornecedorId);
+            spec = spec == null ? fornecedorSpec : spec.and(fornecedorSpec);
+        }
+
+        return repository.findAll(spec, pageable);
+    }
+
+    private Specification<Produto> comBusca(String busca){
+        if (busca == null || busca.isBlank()) return null;
+        return (root, query, cb) -> cb.or(
+                SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("codigo"), busca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("referencia"), busca)
+        );
     }
 
     public Produto findById(UUID id){

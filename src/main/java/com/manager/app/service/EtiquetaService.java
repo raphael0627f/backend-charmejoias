@@ -3,8 +3,10 @@ package com.manager.app.service;
 import com.manager.app.dto.etiqueta.EtiquetaDTO;
 import com.manager.app.dto.etiqueta.EtiquetaProdutoDTO;
 import com.manager.app.dto.etiqueta.EtiquetaRequestDTO;
+import com.manager.app.entity.Joia;
 import com.manager.app.entity.Produto;
 import com.manager.app.infra.restEnum.Impressora;
+import com.manager.app.infra.restEnum.TipoItem;
 import lombok.RequiredArgsConstructor;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
@@ -23,6 +25,7 @@ import java.util.Map;
 public class EtiquetaService {
 
     private final ProdutoService produtoService;
+    private final JoiaService joiaService;
 
     private List<EtiquetaDTO> dataEtiqueta(EtiquetaRequestDTO request){
         List<EtiquetaDTO> etiquetas = new ArrayList<>();
@@ -34,11 +37,20 @@ public class EtiquetaService {
             }
         }
 
+        boolean isJoia = request.getTipo() == TipoItem.JOIA;
+
         for(EtiquetaProdutoDTO produtoEtiqueta : request.getProdutos()){
             EtiquetaDTO etiqueta = new EtiquetaDTO();
-            Produto produto = produtoService.findById(produtoEtiqueta.getProdutoId());
-            etiqueta.setDescricao(produto.getNome());
-            etiqueta.setCodigoBarras(produto.getCodigo());
+
+            if (isJoia) {
+                Joia joia = joiaService.findById(produtoEtiqueta.getProdutoId());
+                etiqueta.setDescricao(joia.getNome());
+                etiqueta.setCodigoBarras(joia.getCodigo());
+            } else {
+                Produto produto = produtoService.findById(produtoEtiqueta.getProdutoId());
+                etiqueta.setDescricao(produto.getNome());
+                etiqueta.setCodigoBarras(produto.getCodigo());
+            }
 
             for (int i = 0; i < produtoEtiqueta.getQuantidade(); i++) {
                 etiquetas.add(etiqueta);
@@ -52,15 +64,16 @@ public class EtiquetaService {
         try {
             JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(dataEtiqueta(request));
             String relPath;
+            Map<String, Object> params = new HashMap<>();
 
             if(request.getImpressora() == Impressora.TINTA) {
                 relPath = "/reports/etiqueta/relEtiquetaProdutoTinta.jasper";
             } else {
                 relPath = "/reports/etiqueta/relEtiquetaProdutoTermica.jasper";
+                params.put("LOGO", getClass().getResourceAsStream("/images/logo_etiqueta.png"));
             }
 
             InputStream jasperStream = getClass().getResourceAsStream(relPath);
-            Map<String, Object> params = new HashMap<>();
             JasperPrint print = JasperFillManager.fillReport(jasperStream, params, dataSource);
             return JasperExportManager.exportReportToPdf(print);
         } catch (Exception e) {

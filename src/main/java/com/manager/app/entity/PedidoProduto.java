@@ -30,6 +30,10 @@ public class PedidoProduto {
     @JoinColumn(name = "produto_id")
     private Produto produto;
 
+    @ManyToOne
+    @JoinColumn(name = "joia_id")
+    private Joia joia;
+
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "pedido_id")

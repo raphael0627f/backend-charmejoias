@@ -1,5 +1,6 @@
 package com.manager.app.infra.exception.handler;
 
+import com.manager.app.infra.exception.ItemInvalidoException;
 import com.manager.app.infra.exception.ObjetoEmUsoException;
 import com.manager.app.infra.exception.ObjetoExistenteException;
 import com.manager.app.infra.exception.ObjetoNaoEncontradoException;
@@ -40,6 +41,13 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ObjetoEmUsoException.class)
     private ResponseEntity<RestErrorMenssage> objetoEmUso(ObjetoEmUsoException exception, WebRequest request){
         HttpStatus status = HttpStatus.CONFLICT;
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
+        return ResponseEntity.status(status).body(response);
+    }
+
+    @ExceptionHandler(ItemInvalidoException.class)
+    private ResponseEntity<RestErrorMenssage> itemInvalido(ItemInvalidoException exception, WebRequest request){
+        HttpStatus status = HttpStatus.BAD_REQUEST;
         RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
         return ResponseEntity.status(status).body(response);
     }

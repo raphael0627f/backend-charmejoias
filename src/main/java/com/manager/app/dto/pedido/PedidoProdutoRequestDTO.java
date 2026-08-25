@@ -17,4 +17,5 @@ public class PedidoProdutoRequestDTO {
     private Integer quantidade;
     private BigDecimal preco;
     private UUID produtoId;
+    private UUID joiaId;
 }

@@ -6,10 +6,14 @@ import com.manager.app.entity.Grupo;
 import com.manager.app.infra.exception.ObjetoNaoEncontradoException;
 import com.manager.app.infra.validation.ClienteValidation;
 import com.manager.app.infra.validation.GrupoValidation;
+import com.manager.app.infra.specification.SpecificationUtils;
 import com.manager.app.repository.ClienteRepository;
 import com.manager.app.repository.GrupoRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,8 +29,34 @@ public class ClienteService {
     private final ClienteValidation validation;
     private final GrupoValidation grupoValidation;
 
-    public List<Cliente> findAll(){
-        return repository.findAll();
+    public Page<Cliente> findAll(String busca, Boolean ativo, Long grupoId, Pageable pageable){
+        Specification<Cliente> spec = Specification.where(comBusca(busca));
+
+        if (ativo != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("ativo"), ativo));
+        }
+
+        if (grupoId != null) {
+            spec = spec.and((root, query, cb) -> {
+                query.distinct(true);
+                return cb.equal(root.join("grupos").get("id"), grupoId);
+            });
+        }
+
+        return repository.findAll(spec, pageable);
+    }
+
+    private Specification<Cliente> comBusca(String busca){
+        if (busca == null || busca.isBlank()) return (root, query, cb) -> cb.conjunction();
+        return (root, query, cb) -> cb.or(
+                SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("codigo"), busca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("cpf"), busca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("documento"), busca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("telefone"), busca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("celular"), busca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("email"), busca)
+        );
     }
 
     public Cliente findById(UUID id){

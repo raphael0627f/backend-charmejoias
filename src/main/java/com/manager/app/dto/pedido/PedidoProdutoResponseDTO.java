@@ -20,6 +20,9 @@ import java.util.UUID;
         "produtoId",
         "produtoCodigo",
         "produtoNome",
+        "joiaId",
+        "joiaCodigo",
+        "joiaNome",
 })
 public class PedidoProdutoResponseDTO {
 
@@ -30,4 +33,7 @@ public class PedidoProdutoResponseDTO {
     private UUID produtoId;
     private String produtoCodigo;
     private String produtoNome;
+    private UUID joiaId;
+    private String joiaCodigo;
+    private String joiaNome;
 }

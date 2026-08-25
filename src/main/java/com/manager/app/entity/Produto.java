@@ -20,6 +20,7 @@ import java.util.UUID;
 public class Produto {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+
     private UUID id;
 
     private String codigo;

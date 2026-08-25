@@ -1,5 +1,6 @@
 package com.manager.app.dto.consignacao;
 
+import com.manager.app.infra.restEnum.TipoItem;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,9 @@ public class ConsignacaoRequestDTO {
     private Long id;
     private UUID clienteId;
     private String descricao;
+
+    @NotNull(message = "Tipo é obrigatório")
+    private TipoItem tipo;
 
     @NotNull(message = "Esta Consignação precisa ter um ou mais Produtos")
     private List<ConsignacaoProdutoRequestDTO> produtos;

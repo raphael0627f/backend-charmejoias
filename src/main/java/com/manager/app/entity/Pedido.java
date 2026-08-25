@@ -1,6 +1,7 @@
 package com.manager.app.entity;
 
 import com.manager.app.infra.restEnum.StatusPedido;
+import com.manager.app.infra.restEnum.TipoItem;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -30,6 +31,9 @@ public class Pedido {
 
     @Enumerated(EnumType.STRING)
     private StatusPedido status;
+
+    @Enumerated(EnumType.STRING)
+    private TipoItem tipo;
 
     @ManyToOne
     @JoinColumn(name = "cliente_id")
