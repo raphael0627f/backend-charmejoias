@@ -1,0 +1,61 @@
+package com.manager.app.consignacao;
+
+import com.manager.app.consignacao.dto.ConsignacaoRequestDTO;
+import com.manager.app.consignacao.dto.ConsignacaoResponseDTO;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping(value="/consignacoes")
+public class ConsignacaoController {
+
+    private final ConsignacaoService service;
+    private final ConsignacaoMapper mapper;
+
+    @GetMapping
+    public ResponseEntity<Page<ConsignacaoResponseDTO>> findAll(
+            @RequestParam(required = false) String busca,
+            @RequestParam(required = false) Boolean temCliente,
+            @RequestParam(required = false) Boolean temAcerto,
+            @PageableDefault(size = 20, sort = "id") Pageable pageable){
+        return ResponseEntity.ok(service.findAll(busca, temCliente, temAcerto, pageable).map(mapper::toResponseDTO));
+    }
+
+    @GetMapping(value = "/{id}")
+    public ResponseEntity<ConsignacaoResponseDTO> findById(@PathVariable Long id){
+        return ResponseEntity.ok(mapper.toResponseDTO(service.findById(id)));
+    }
+
+    @PostMapping
+    public ResponseEntity<ConsignacaoResponseDTO> create(@RequestBody @Valid ConsignacaoRequestDTO request){
+        Consignacao consignacao = service.create(request);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(consignacao.getId()).toUri();
+        return ResponseEntity.created(location).body(mapper.toResponseDTO(consignacao));
+    }
+
+    @PutMapping
+    public ResponseEntity<ConsignacaoResponseDTO> update(@RequestBody @Valid ConsignacaoRequestDTO request){
+        Consignacao consignacao = service.update(request);
+        return ResponseEntity.ok(mapper.toResponseDTO(consignacao));
+    }
+
+    @GetMapping(value = "/{id}/relatorio")
+    public ResponseEntity<byte[]> gerarRelatorio(@PathVariable Long id,
+                                                  @RequestParam(value = "tipo", defaultValue = "PADRAO") TipoRelatorioConsignacao tipo){
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "inline; filename=relatorio-consignacao.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(service.gerarRelatorio(id, tipo));
+    }
+
+}
