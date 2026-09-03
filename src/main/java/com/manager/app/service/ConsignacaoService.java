@@ -2,6 +2,7 @@ package com.manager.app.service;
 
 import com.manager.app.dto.consignacao.ConsignacaoProdutoRequestDTO;
 import com.manager.app.dto.consignacao.ConsignacaoRequestDTO;
+import com.manager.app.entity.AcertoConsignacao;
 import com.manager.app.entity.Cliente;
 import com.manager.app.entity.Consignacao;
 import com.manager.app.entity.ConsignacaoProduto;
@@ -15,6 +16,7 @@ import com.manager.app.infra.specification.SpecificationUtils;
 import com.manager.app.infra.validation.ConsignacaoValidation;
 import com.manager.app.repository.ConsignacaoRepository;
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Subquery;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import net.sf.jasperreports.engine.JasperExportManager;
@@ -29,6 +31,7 @@ import org.springframework.stereotype.Service;
 import java.io.InputStream;
 import java.sql.Date;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,13 +40,21 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ConsignacaoService {
 
+    private static final List<String> ORDEM_CATEGORIAS_PADRAO = List.of(
+            "COSMÉTICOS", "ACESSÓRIOS", "LINGERIES", "FANTASIAS", "CALCINHAS", "CUECAS"
+    );
+
+    private static final List<String> ORDEM_CATEGORIAS_JOIA = List.of(
+            "ANÉIS", "BRINCOS", "CORDÕES", "PINGENTES", "PULSEIRAS", "TORNOZELEIRAS", "ACESSÓRIOS"
+    );
+
     private final ConsignacaoRepository repository;
     private final ClienteService clienteService;
     private final ProdutoService produtoService;
     private final JoiaService joiaService;
     private final ConsignacaoValidation validation;
 
-    public Page<Consignacao> findAll(String busca, Boolean temCliente, Pageable pageable){
+    public Page<Consignacao> findAll(String busca, Boolean temCliente, Boolean temAcerto, Pageable pageable){
         Specification<Consignacao> spec = comBusca(busca);
 
         if (temCliente != null) {
@@ -51,6 +62,17 @@ public class ConsignacaoService {
                     ? cb.isNotNull(root.get("cliente"))
                     : cb.isNull(root.get("cliente"));
             spec = spec == null ? temClienteSpec : spec.and(temClienteSpec);
+        }
+
+        if (temAcerto != null) {
+            Specification<Consignacao> temAcertoSpec = (root, query, cb) -> {
+                Subquery<Long> subquery = query.subquery(Long.class);
+                var acertoConsignacaoRoot = subquery.from(AcertoConsignacao.class);
+                subquery.select(acertoConsignacaoRoot.get("id"))
+                        .where(cb.equal(acertoConsignacaoRoot.get("consignacao"), root));
+                return temAcerto ? cb.exists(subquery) : cb.not(cb.exists(subquery));
+            };
+            spec = spec == null ? temAcertoSpec : spec.and(temAcertoSpec);
         }
 
         return repository.findAll(spec, pageable);
@@ -160,21 +182,61 @@ public class ConsignacaoService {
         return consignacaoUpdate;
     }
 
+    private String categoriaDe(ConsignacaoProduto item){
+        if (item.getProduto() != null){
+            return item.getProduto().getCategoria() != null ? item.getProduto().getCategoria().getNome() : "";
+        }
+        return item.getJoia().getCategoria() != null ? item.getJoia().getCategoria().getNome() : "";
+    }
+
+    private int indiceCategoria(String categoria, List<String> ordem){
+        for (int i = 0; i < ordem.size(); i++){
+            if (ordem.get(i).equalsIgnoreCase(categoria.trim())) return i;
+        }
+        return Integer.MAX_VALUE;
+    }
+
+    private long codigoNumerico(String codigo){
+        if (codigo == null) return Long.MAX_VALUE;
+        String digitos = codigo.replaceAll("\\D", "");
+        if (digitos.isBlank()) return Long.MAX_VALUE;
+        try {
+            return Long.parseLong(digitos);
+        } catch (NumberFormatException e) {
+            return Long.MAX_VALUE;
+        }
+    }
+
+    private List<ConsignacaoProduto> ordenarProdutos(Consignacao consignacao){
+        List<ConsignacaoProduto> produtos = new ArrayList<>(consignacao.getProdutos());
+        boolean joia = consignacao.getTipo() == TipoItem.JOIA;
+        List<String> ordemCategorias = joia ? ORDEM_CATEGORIAS_JOIA : ORDEM_CATEGORIAS_PADRAO;
+
+        Comparator<ConsignacaoProduto> porCategoria = Comparator
+                .comparingInt((ConsignacaoProduto item) -> indiceCategoria(categoriaDe(item), ordemCategorias))
+                .thenComparing(item -> categoriaDe(item).toLowerCase());
+
+        Comparator<ConsignacaoProduto> porItem = joia
+                ? Comparator.comparingLong(item -> codigoNumerico(item.getJoia().getCodigo()))
+                : Comparator.comparing(item -> item.getProduto().getNome() == null ? "" : item.getProduto().getNome().toLowerCase());
+
+        produtos.sort(porCategoria.thenComparing(porItem));
+        return produtos;
+    }
+
     public List<Map<String, ?>> dataConsignacao(Consignacao consignacao){
         List<Map<String, ?>> linhas = new ArrayList<>();
         Cliente cliente = consignacao.getCliente();
         Endereco endereco = cliente != null ? cliente.getEndereco() : null;
 
-        for (ConsignacaoProduto consignacaoProduto : consignacao.getProdutos()){
+        for (ConsignacaoProduto consignacaoProduto : ordenarProdutos(consignacao)){
             Map<String, Object> linha = new HashMap<>();
             Produto produto = consignacaoProduto.getProduto();
             Joia joia = consignacaoProduto.getJoia();
 
             String codigo = produto != null ? produto.getCodigo() : joia.getCodigo();
             String nome = produto != null ? produto.getNome() : joia.getNome();
-            String categoria = produto != null
-                    ? (produto.getCategoria() != null ? produto.getCategoria().getNome() : null)
-                    : (joia.getCategoria() != null ? joia.getCategoria().getNome() : null);
+            String categoria = produto != null ? (produto.getCategoria() != null ? produto.getCategoria().getNome() : null) : (joia.getCategoria() != null ? joia.getCategoria().getNome() : null);
 
             linha.put("ID", consignacao.getId() != null ? consignacao.getId().intValue() : null);
             linha.put("DataConsignacao", consignacao.getCreatedAt() != null ? Date.valueOf(consignacao.getCreatedAt().toLocalDate()) : null);

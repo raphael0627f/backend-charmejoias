@@ -3,6 +3,8 @@
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test" columnCount="4" pageWidth="595" pageHeight="842" columnWidth="142" leftMargin="13" rightMargin="13" topMargin="20" bottomMargin="20" uuid="9c2b0e13-d6ff-4cf2-8310-281f09f7597a">
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="padrao"/>
 	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="net.sf.jasperreports.text.truncate.at.char" value="true"/>
+	<property name="net.sf.jasperreports.export.pdf.force.linebreak.policy" value="true"/>
 	<queryString>
 		<![CDATA[SELECT sistemadb.tb_consignacoes.`ID`,
 	sistemadb.tb_consignacoes.`DataConsignacao`,
@@ -528,10 +530,10 @@ Rafael]]></text>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="0.3"/>
 				</box>
-				<textElement textAlignment="Left" verticalAlignment="Middle">
+				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font size="9"/>
 				</textElement>
-				<textFieldExpression><![CDATA["    "+$F{CodProduto}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{CodProduto}]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>
@@ -583,19 +585,22 @@ para pagamento feito na DATA do ACERTO.
 			<line>
 				<reportElement x="0" y="-1" width="569" height="1" uuid="801d8214-ff79-44a7-a870-6292bccb5b69"/>
 			</line>
-			<textField evaluationTime="Report">
-				<reportElement x="0" y="-1" width="390" height="20" uuid="27ae809a-ecee-4bf9-8135-990423efe076"/>
-				<textElement>
-					<font isBold="true"/>
+			<textField>
+				<reportElement x="0" y="0" width="568" height="20" uuid="658f0e78-1cce-416c-af2a-fba9e7e69a78"/>
+				<textElement markup="html">
+					<font isBold="false"/>
 				</textElement>
-				<textFieldExpression><![CDATA["Nº: "+$F{ID}+"              "+$F{DataConsignacao}.toString().substring(8,10)+$F{DataConsignacao}.toString().substring(5,7)+$F{DataConsignacao}.toString().substring(2,4)+ "              KIT: "+$F{NuConsig}+"        "+"Total de Peças:  "+$F{QTDEPecas}]]></textFieldExpression>
+				<textFieldExpression><![CDATA["<b>Nº: </b>"+$F{ID}+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+"<b>"+$F{DataConsignacao}.toString().substring(8,10)+$F{DataConsignacao}.toString().substring(5,7)+$F{DataConsignacao}.toString().substring(2,4)+"</b>"+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+ "<b>KIT: </b>"+$F{NuConsig}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="386" y="0" width="178" height="18" uuid="85de1d22-5025-4109-856e-48a4591ed7de"/>
-				<textElement textAlignment="Right">
-					<font isBold="true"/>
+				<reportElement x="10" y="0" width="558" height="20" uuid="ca407e6f-7330-4895-97f3-29436f432556">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" markup="html">
+					<font isBold="false"/>
 				</textElement>
-				<textFieldExpression><![CDATA["Valor Total: R$ "+new BigDecimal($F{ValorTotal}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
+				<textFieldExpression><![CDATA["<b>Total de Produtos: </b>"+$F{QTDEPecas}+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+"<b>Valor Total: R$ </b>"+new BigDecimal($F{ValorTotal}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
 			</textField>
 		</band>
 	</pageFooter>

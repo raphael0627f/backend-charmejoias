@@ -75,6 +75,10 @@ public class ClienteService {
     public Cliente create(Cliente cliente, List<Long> gruposIds){
         validation.codigoExistenteCreate(cliente.getCodigo());
 
+        if (cliente.getEndereco() != null) {
+            cliente.setEndereco(enderecoService.create(cliente.getEndereco()));
+        }
+
         if(!grupoValidation.gruposEmpty(gruposIds)){
             List<Grupo> grupos = grupoRepository.findAllById(gruposIds);
             if (grupos.size() != gruposIds.size()) {

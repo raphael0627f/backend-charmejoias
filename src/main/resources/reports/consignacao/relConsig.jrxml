@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Jaspersoft Studio version 6.21.3.final using JasperReports Library version 6.21.3-4a3078d20785ebe464f18037d738d12fc98c13cf  -->
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test" columnCount="2" pageWidth="595" pageHeight="842" columnWidth="284" leftMargin="13" rightMargin="13" topMargin="20" bottomMargin="20" uuid="9c2b0e13-d6ff-4cf2-8310-281f09f7597a">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Consignação - Beijo ERP" columnCount="2" pageWidth="595" pageHeight="842" columnWidth="284" leftMargin="13" rightMargin="13" topMargin="20" bottomMargin="20" uuid="9c2b0e13-d6ff-4cf2-8310-281f09f7597a">
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="padrao"/>
 	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
 	<property name="com.jaspersoft.studio.unit." value="pixel"/>
@@ -12,6 +12,9 @@
 	<property name="com.jaspersoft.studio.unit.rightMargin" value="pixel"/>
 	<property name="com.jaspersoft.studio.unit.columnWidth" value="pixel"/>
 	<property name="com.jaspersoft.studio.unit.columnSpacing" value="pixel"/>
+	<property name="com.jaspersoft.studio.report.description" value=""/>
+	<property name="net.sf.jasperreports.text.truncate.at.char" value="true"/>
+	<property name="net.sf.jasperreports.export.pdf.force.linebreak.policy" value="true"/>
 	<queryString>
 		<![CDATA[SELECT sistemadb.tb_consignacoes.`ID`,
 	sistemadb.tb_consignacoes.`DataConsignacao`,
@@ -421,9 +424,9 @@ Rafael]]></text>
 		<band height="10" splitType="Stretch">
 			<property name="com.jaspersoft.studio.unit.height" value="px"/>
 			<staticText>
-				<reportElement x="0" y="0" width="62" height="10" uuid="dc6c8db9-9585-418f-8cf7-81f625b924ed">
-					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				<reportElement x="0" y="0" width="55" height="10" uuid="dc6c8db9-9585-418f-8cf7-81f625b924ed">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
 				<box>
 					<pen lineWidth="1.0"/>
@@ -434,7 +437,7 @@ Rafael]]></text>
 				<text><![CDATA[Cód. Produto]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="62" y="0" width="131" height="10" uuid="a99c1e12-877b-4d99-89c1-32d379ba430f">
+				<reportElement x="55" y="0" width="138" height="10" uuid="a99c1e12-877b-4d99-89c1-32d379ba430f">
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
@@ -510,7 +513,7 @@ Rafael]]></text>
 				<text><![CDATA[]]></text>
 			</staticText>
 			<textField>
-				<reportElement mode="Transparent" x="62" y="0" width="131" height="10" uuid="491426c7-6f30-464e-a687-e6e53d41ad06">
+				<reportElement mode="Transparent" x="55" y="0" width="138" height="10" uuid="491426c7-6f30-464e-a687-e6e53d41ad06">
 					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="c05094ab-2afb-40eb-8836-b39ead87dea0"/>
 				</reportElement>
 				<box>
@@ -552,8 +555,10 @@ Rafael]]></text>
 				<textFieldExpression><![CDATA[new BigDecimal($F{ValorProdutoU}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement mode="Transparent" x="0" y="0" width="62" height="10" uuid="dde1c9fe-14ae-4db4-8f79-015c503384c0">
+				<reportElement mode="Transparent" x="0" y="0" width="55" height="10" uuid="dde1c9fe-14ae-4db4-8f79-015c503384c0">
 					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="02850c99-ae34-45cc-b57d-f5baa234f57b"/>
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
 				<box>
 					<topPen lineWidth="0.3"/>
@@ -615,19 +620,22 @@ para pagamento feito na DATA do ACERTO.
 			<line>
 				<reportElement x="0" y="-1" width="569" height="1" uuid="801d8214-ff79-44a7-a870-6292bccb5b69"/>
 			</line>
-			<textField evaluationTime="Report">
-				<reportElement x="0" y="-1" width="390" height="20" uuid="27ae809a-ecee-4bf9-8135-990423efe076"/>
-				<textElement>
-					<font isBold="true"/>
+			<textField>
+				<reportElement x="0" y="0" width="568" height="20" uuid="27ae809a-ecee-4bf9-8135-990423efe076"/>
+				<textElement markup="html">
+					<font isBold="false"/>
 				</textElement>
-				<textFieldExpression><![CDATA["Nº: "+$F{ID}+"                        "+$F{DataConsignacao}.toString().substring(8,10)+$F{DataConsignacao}.toString().substring(5,7)+$F{DataConsignacao}.toString().substring(2,4)+ "                       KIT: "+$F{NuConsig}+"             "+"Total de Produtos: "+$F{QTDEPecas}]]></textFieldExpression>
+				<textFieldExpression><![CDATA["<b>Nº: </b>"+$F{ID}+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+"<b>"+$F{DataConsignacao}.toString().substring(8,10)+$F{DataConsignacao}.toString().substring(5,7)+$F{DataConsignacao}.toString().substring(2,4)+"</b>"+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+ "<b>KIT: </b>"+$F{NuConsig}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="390" y="0" width="178" height="18" uuid="85de1d22-5025-4109-856e-48a4591ed7de"/>
-				<textElement textAlignment="Right">
-					<font isBold="true"/>
+				<reportElement x="10" y="0" width="558" height="20" uuid="85de1d22-5025-4109-856e-48a4591ed7de">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" markup="html">
+					<font isBold="false"/>
 				</textElement>
-				<textFieldExpression><![CDATA["Valor Total: R$ "+new BigDecimal($F{ValorTotal}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
+				<textFieldExpression><![CDATA["<b>Total de Produtos: </b>"+$F{QTDEPecas}+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+"<b>Valor Total: R$ </b>"+new BigDecimal($F{ValorTotal}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
 			</textField>
 		</band>
 	</pageFooter>

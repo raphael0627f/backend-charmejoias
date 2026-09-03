@@ -36,6 +36,12 @@ public class Produto {
     private boolean ativo;
     private String observacoes;
 
+    private String ncm;
+    private Integer origemProduto;
+    private String unidadeComercial;
+    private String codigoSituacaoTributariaIcms;
+    private String codigoSituacaoTributariaPis;
+    private String codigoSituacaoTributariaCofins;
 
     @ManyToOne
     @JoinColumn(name = "categoria_id")

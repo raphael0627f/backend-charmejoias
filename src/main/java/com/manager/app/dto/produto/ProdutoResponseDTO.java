@@ -25,6 +25,12 @@ import java.util.UUID;
         "precoVenda",
         "ativo",
         "observacoes",
+        "ncm",
+        "origemProduto",
+        "unidadeComercial",
+        "codigoSituacaoTributariaIcms",
+        "codigoSituacaoTributariaPis",
+        "codigoSituacaoTributariaCofins",
         "categoria",
         "fornecedor",
         "grupos",
@@ -41,6 +47,12 @@ public class ProdutoResponseDTO {
     private BigDecimal precoVenda;
     private boolean ativo;
     private String observacoes;
+    private String ncm;
+    private Integer origemProduto;
+    private String unidadeComercial;
+    private String codigoSituacaoTributariaIcms;
+    private String codigoSituacaoTributariaPis;
+    private String codigoSituacaoTributariaCofins;
     private Categoria categoria;
     private Fornecedor fornecedor;
     private List<Grupo> grupos;

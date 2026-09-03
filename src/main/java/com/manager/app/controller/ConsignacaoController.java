@@ -30,8 +30,9 @@ public class ConsignacaoController {
     public ResponseEntity<Page<ConsignacaoResponseDTO>> findAll(
             @RequestParam(required = false) String busca,
             @RequestParam(required = false) Boolean temCliente,
+            @RequestParam(required = false) Boolean temAcerto,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, temCliente, pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.ok(service.findAll(busca, temCliente, temAcerto, pageable).map(mapper::toResponseDTO));
     }
 
     @GetMapping(value = "/{id}")

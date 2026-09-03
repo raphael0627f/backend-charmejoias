@@ -27,6 +27,7 @@ public class Endereco {
     private String municipio;
     private String uf;
     private String cep;
+    private String ibge;
 
     @JsonIgnore
     @CreationTimestamp

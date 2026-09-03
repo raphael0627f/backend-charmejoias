@@ -16,8 +16,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +32,8 @@ public class ProdutoService {
     private final CategoriaService categoriaService;
     private final ProdutoValidation validation;
     private final GrupoValidation grupoValidation;
+
+    private static final Pattern CODIGO_NUMERICO = Pattern.compile("^\\d{4}$");
 
     public Page<Produto> findAll(String busca, Boolean ativo, Long categoriaId, Long fornecedorId, Pageable pageable){
         Specification<Produto> spec = comBusca(busca);
@@ -72,6 +77,23 @@ public class ProdutoService {
         return repository.findByCodigoAndAtivoTrue(codigo).orElseThrow(() -> new ObjetoNaoEncontradoException("Produto não encontrado. codigo: " + codigo));
     }
 
+    public String proximoCodigo(){
+        Set<Integer> usados = new HashSet<>();
+        for (String codigo : repository.findAllCodigos()) {
+            if (codigo == null || codigo.length() < 4) continue;
+            String prefixo = codigo.substring(0, 4);
+            if (CODIGO_NUMERICO.matcher(prefixo).matches()) {
+                usados.add(Integer.parseInt(prefixo));
+            }
+        }
+
+        int proximo = 1;
+        while (usados.contains(proximo)) {
+            proximo++;
+        }
+        return String.format("%04d", proximo);
+    }
+
     @Transactional
     public Produto create(Produto produto, ProdutoRelacoesDTO relacoes){
         validation.codigoExistenteCreate(produto.getCodigo());
@@ -103,6 +125,12 @@ public class ProdutoService {
         produtoUpdate.setPrecoVenda(produto.getPrecoVenda());
         produtoUpdate.setAtivo(produto.isAtivo());
         produtoUpdate.setObservacoes(produto.getObservacoes());
+        produtoUpdate.setNcm(produto.getNcm());
+        produtoUpdate.setOrigemProduto(produto.getOrigemProduto());
+        produtoUpdate.setUnidadeComercial(produto.getUnidadeComercial());
+        produtoUpdate.setCodigoSituacaoTributariaIcms(produto.getCodigoSituacaoTributariaIcms());
+        produtoUpdate.setCodigoSituacaoTributariaPis(produto.getCodigoSituacaoTributariaPis());
+        produtoUpdate.setCodigoSituacaoTributariaCofins(produto.getCodigoSituacaoTributariaCofins());
         produtoUpdate.setCategoria(categoriaService.findById(relacoes.getCategoriaId()));
         produtoUpdate.setFornecedor(relacoes.getFornecedorId() != null
                 ? fornecedorService.findById(relacoes.getFornecedorId())

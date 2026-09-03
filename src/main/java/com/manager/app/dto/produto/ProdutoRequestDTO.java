@@ -37,6 +37,13 @@ public class ProdutoRequestDTO {
 
     private String observacoes;
 
+    private String ncm;
+    private Integer origemProduto;
+    private String unidadeComercial;
+    private String codigoSituacaoTributariaIcms;
+    private String codigoSituacaoTributariaPis;
+    private String codigoSituacaoTributariaCofins;
+
     @NotNull(message = "Categoria é obrigatória")
     private Long categoriaId;
 

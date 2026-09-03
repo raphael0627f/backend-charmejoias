@@ -3,6 +3,7 @@ package com.manager.app.controller;
 import com.manager.app.dto.produto.ProdutoRequestDTO;
 import com.manager.app.dto.produto.ProdutoRelacoesDTO;
 import com.manager.app.dto.produto.ProdutoResponseDTO;
+import com.manager.app.dto.produto.ProximoCodigoProdutoResponseDTO;
 import com.manager.app.entity.Produto;
 import com.manager.app.mapper.ProdutoMapper;
 import com.manager.app.service.ProdutoService;
@@ -34,6 +35,11 @@ public class ProdutoController {
             @RequestParam(required = false) Long fornecedorId,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
         return ResponseEntity.ok(service.findAll(busca, ativo, categoriaId, fornecedorId, pageable).map(mapper::toResponseDTO));
+    }
+
+    @GetMapping(value = "/proximo-codigo")
+    public ResponseEntity<ProximoCodigoProdutoResponseDTO> proximoCodigo(){
+        return ResponseEntity.ok(new ProximoCodigoProdutoResponseDTO(service.proximoCodigo()));
     }
 
     @GetMapping(value = "/{id}")

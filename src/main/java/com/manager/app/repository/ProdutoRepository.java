@@ -6,6 +6,7 @@ import com.manager.app.entity.Grupo;
 import com.manager.app.entity.Produto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,4 +21,7 @@ public interface ProdutoRepository  extends JpaRepository<Produto, UUID>, JpaSpe
     boolean existsByCodigoAndIdNot(String codigo, UUID id);
     boolean existsByCodigo(String codigo);
     boolean existsByGrupos(Grupo grupo);
+
+    @Query("SELECT p.codigo FROM Produto p")
+    List<String> findAllCodigos();
 }

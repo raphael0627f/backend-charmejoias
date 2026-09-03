@@ -28,4 +28,6 @@ public class EnderecoDTO {
 
     @NotBlank(message = "CEP é obrigatório")
     private String cep;
+
+    private String ibge;
 }

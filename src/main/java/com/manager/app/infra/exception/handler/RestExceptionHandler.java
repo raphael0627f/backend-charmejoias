@@ -1,5 +1,6 @@
 package com.manager.app.infra.exception.handler;
 
+import com.manager.app.infra.exception.ContoraApiException;
 import com.manager.app.infra.exception.ItemInvalidoException;
 import com.manager.app.infra.exception.ObjetoEmUsoException;
 import com.manager.app.infra.exception.ObjetoExistenteException;
@@ -48,6 +49,13 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ItemInvalidoException.class)
     private ResponseEntity<RestErrorMenssage> itemInvalido(ItemInvalidoException exception, WebRequest request){
         HttpStatus status = HttpStatus.BAD_REQUEST;
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
+        return ResponseEntity.status(status).body(response);
+    }
+
+    @ExceptionHandler(ContoraApiException.class)
+    private ResponseEntity<RestErrorMenssage> contoraApiError(ContoraApiException exception, WebRequest request){
+        HttpStatus status = HttpStatus.BAD_GATEWAY;
         RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
         return ResponseEntity.status(status).body(response);
     }
