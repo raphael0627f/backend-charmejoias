@@ -5,10 +5,12 @@ import com.manager.app.cliente.Cliente;
 import com.manager.app.empresa.Empresa;
 import com.manager.app.notafiscal.AmbienteNfe;
 import com.manager.app.notafiscal.StatusNotaFiscal;
+import com.manager.app.transportadora.Transportadora;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,9 +31,16 @@ import java.util.List;
         "chaveAcesso",
         "protocoloAutorizacao",
         "motivoRejeicao",
+        "motivoRejeicaoCancelamento",
         "contoraDocumentId",
+        "dataSaidaEntrada",
+        "transportadora",
+        "modalidadeFrete",
+        "informacoesComplementares",
+        "descontoTotal",
         "itens",
         "pagamentos",
+        "correcoes",
         "createdAt",
         "updatedAt"
 })
@@ -49,9 +58,16 @@ public class NotaFiscalResponseDTO {
     private String chaveAcesso;
     private String protocoloAutorizacao;
     private String motivoRejeicao;
+    private String motivoRejeicaoCancelamento;
     private String contoraDocumentId;
+    private LocalDateTime dataSaidaEntrada;
+    private Transportadora transportadora;
+    private Integer modalidadeFrete;
+    private String informacoesComplementares;
+    private BigDecimal descontoTotal;
     private List<NotaFiscalItemResponseDTO> itens;
     private List<NotaFiscalPagamentoResponseDTO> pagamentos;
+    private List<NotaFiscalCorrecaoResponseDTO> correcoes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

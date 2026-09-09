@@ -10,12 +10,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,8 +30,13 @@ public class NotaFiscalController {
     private final NotaFiscalMapper mapper;
 
     @GetMapping
-    public ResponseEntity<Page<NotaFiscalResponseDTO>> findAll(@PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(pageable).map(mapper::toResponseDTO));
+    public ResponseEntity<Page<NotaFiscalResponseDTO>> findAll(
+            @RequestParam(required = false) String busca,
+            @RequestParam(required = false) StatusNotaFiscal status,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataInicio,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataFim,
+            @PageableDefault(size = 20, sort = "id") Pageable pageable){
+        return ResponseEntity.ok(service.findAll(busca, status, dataInicio, dataFim, pageable).map(mapper::toResponseDTO));
     }
 
     @GetMapping(value = "/{id}")
@@ -51,6 +58,11 @@ public class NotaFiscalController {
         return ResponseEntity.created(location).body(mapper.toResponseDTO(notaFiscal));
     }
 
+    @PutMapping(value = "/{id}")
+    public ResponseEntity<NotaFiscalResponseDTO> update(@PathVariable Long id, @RequestBody @Valid NotaFiscalRequestDTO notaFiscalRequestDTO){
+        return ResponseEntity.ok(mapper.toResponseDTO(service.update(id, notaFiscalRequestDTO)));
+    }
+
     @PostMapping(value = "/{id}/emitir")
     public ResponseEntity<NotaFiscalResponseDTO> emitir(@PathVariable Long id){
         return ResponseEntity.ok(mapper.toResponseDTO(service.emitir(id)));
@@ -67,14 +79,19 @@ public class NotaFiscalController {
     }
 
     @PostMapping(value = "/{id}/corrigir")
-    public ResponseEntity<Void> corrigir(@PathVariable Long id, @RequestBody @Valid NotaFiscalCorrecaoRequestDTO request){
-        service.corrigir(id, request.getTexto());
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<NotaFiscalResponseDTO> corrigir(@PathVariable Long id, @RequestBody @Valid NotaFiscalCorrecaoRequestDTO request){
+        return ResponseEntity.ok(mapper.toResponseDTO(service.corrigir(id, request.getTexto())));
     }
 
     @GetMapping(value = "/{id}/xml")
     public ResponseEntity<byte[]> baixarXml(@PathVariable Long id){
         byte[] xml = service.baixarArtefato(id, "xml_authorized");
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(xml);
+    }
+
+    @GetMapping(value = "/{id}/xml-correcao")
+    public ResponseEntity<byte[]> baixarXmlCorrecao(@PathVariable Long id){
+        byte[] xml = service.baixarArtefato(id, "xml_correction");
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(xml);
     }
 

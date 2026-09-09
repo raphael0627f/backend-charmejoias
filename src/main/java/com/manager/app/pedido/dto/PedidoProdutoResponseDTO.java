@@ -1,11 +1,13 @@
 package com.manager.app.pedido.dto;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.manager.app.variacao.dto.ItemVariacaoDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -20,6 +22,9 @@ import java.util.UUID;
         "produtoId",
         "produtoCodigo",
         "produtoNome",
+        "produtoVariacaoId",
+        "produtoVariacaoSku",
+        "produtoVariacaoItens",
         "joiaId",
         "joiaCodigo",
         "joiaNome",
@@ -33,6 +38,9 @@ public class PedidoProdutoResponseDTO {
     private UUID produtoId;
     private String produtoCodigo;
     private String produtoNome;
+    private Long produtoVariacaoId;
+    private String produtoVariacaoSku;
+    private List<ItemVariacaoDTO> produtoVariacaoItens;
     private UUID joiaId;
     private String joiaCodigo;
     private String joiaNome;

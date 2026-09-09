@@ -11,6 +11,8 @@ import lombok.Setter;
 import com.manager.app.cliente.Cliente;
 import com.manager.app.empresa.Empresa;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,4 +46,16 @@ public class NotaFiscalRequestDTO {
     @NotEmpty(message = "A nota precisa de ao menos uma forma de pagamento")
     @Valid
     private List<NotaFiscalPagamentoRequestDTO> pagamentos;
+
+    // desconto único aplicado sobre a nota inteira; quando informado, é rateado entre os itens
+    // proporcionalmente ao valor de cada um (mesmo critério que a Contora usa pra frete/seguro),
+    // e substitui qualquer desconto informado individualmente em items[].desconto
+    private BigDecimal descontoTotal;
+
+    private LocalDateTime dataSaidaEntrada;
+
+    private Long transportadoraId;
+    private Integer modalidadeFrete;
+
+    private String informacoesComplementares;
 }

@@ -8,6 +8,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import com.manager.app.cliente.Cliente;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +36,14 @@ public class Consignacao {
 
     @OneToMany(mappedBy = "consignacao", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ConsignacaoProduto> produtos = new ArrayList<>();
+
+    private LocalDate dataEntrega;
+
+    private LocalDate dataPreAcertoConsignacao;
+
+    private LocalDate dataAcertoConsignacao;
+
+    private Boolean confirmada = false;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

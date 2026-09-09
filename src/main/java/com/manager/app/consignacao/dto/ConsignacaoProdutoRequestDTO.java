@@ -13,6 +13,7 @@ import java.util.UUID;
 public class ConsignacaoProdutoRequestDTO {
 
     private UUID produtoId;
+    private Long produtoVariacaoId;
     private UUID joiaId;
     private Integer quantidade;
     private BigDecimal preco;

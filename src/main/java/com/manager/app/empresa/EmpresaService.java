@@ -56,6 +56,7 @@ public class EmpresaService {
         empresaUpdate.setCnpj(empresa.getCnpj());
         empresaUpdate.setInscricaoEstadual(empresa.getInscricaoEstadual());
         empresaUpdate.setCnae(empresa.getCnae());
+        empresaUpdate.setTelefone(empresa.getTelefone());
         empresaUpdate.setRegimeTributario(empresa.getRegimeTributario());
         empresaUpdate.setEndereco(endereco);
 

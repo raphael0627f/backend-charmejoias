@@ -15,4 +15,5 @@ public class ProdutoRelacoesDTO {
     private Long categoriaId;
     private Long fornecedorId;
     private List<Long> gruposIds;
+    private String ncmCodigo;
 }

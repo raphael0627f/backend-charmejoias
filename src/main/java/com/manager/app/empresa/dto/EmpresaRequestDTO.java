@@ -26,6 +26,7 @@ public class EmpresaRequestDTO {
 
     private String inscricaoEstadual;
     private String cnae;
+    private String telefone;
 
     @NotNull(message = "Regime tributário é obrigatório")
     private RegimeTributario regimeTributario;

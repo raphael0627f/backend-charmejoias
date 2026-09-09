@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import com.manager.app.joia.Joia;
 import com.manager.app.produto.Produto;
+import com.manager.app.produto.ProdutoVariacao;
 
 import java.math.BigDecimal;
 
@@ -31,6 +32,10 @@ public class PedidoProduto {
     @ManyToOne
     @JoinColumn(name = "produto_id")
     private Produto produto;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "produto_variacao_id")
+    private ProdutoVariacao produtoVariacao;
 
     @ManyToOne
     @JoinColumn(name = "joia_id")

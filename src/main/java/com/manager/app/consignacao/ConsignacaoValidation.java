@@ -15,13 +15,16 @@ public class ConsignacaoValidation {
         return clienteId == null;
     }
 
-    public void validarItem(TipoItem tipo, UUID produtoId, UUID joiaId){
+    public void validarItem(TipoItem tipo, UUID produtoId, UUID joiaId, Long produtoVariacaoId){
         if (tipo == TipoItem.JOIA) {
             if (joiaId == null) {
                 throw new ItemInvalidoException("joiaId é obrigatório para consignações do tipo JOIA");
             }
             if (produtoId != null) {
                 throw new ItemInvalidoException("Não é possível informar produtoId em uma consignação do tipo JOIA");
+            }
+            if (produtoVariacaoId != null) {
+                throw new ItemInvalidoException("Não é possível informar produtoVariacaoId em uma consignação do tipo JOIA");
             }
         } else {
             if (produtoId == null) {

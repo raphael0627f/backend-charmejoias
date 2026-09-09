@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.3.final using JasperReports Library version 6.21.3-4a3078d20785ebe464f18037d738d12fc98c13cf  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="etiqueta-brinco" printOrder="Horizontal" pageWidth="288" pageHeight="31" columnWidth="288" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="9c2b0e13-d6ff-4cf2-8310-281f09f7597a">
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<property name="com.jaspersoft.studio.report.description" value=""/>
+	<property name="com.jaspersoft.studio.unit." value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.pageHeight" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.topMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.bottomMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.leftMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.rightMargin" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.columnWidth" value="pixel"/>
+	<property name="com.jaspersoft.studio.unit.columnSpacing" value="pixel"/>
+	<style name="fundo BRANCO" mode="Transparent" forecolor="#FFFFFF" backcolor="#DEDE16">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$F{Nome}.equals( "9230090003990" )]]></conditionExpression>
+			<style mode="Opaque" forecolor="#FFFFFF" backcolor="#FFFFFF"/>
+		</conditionalStyle>
+	</style>
+	<parameter name="LOGO" class="java.io.InputStream"/>
+	<queryString>
+		<![CDATA[SELECT `Nome`,
+	`CodProduto`,
+	`CodBarras`
+FROM sistemadb.tb_etiqueta]]>
+	</queryString>
+	<field name="descricao" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="Nome"/>
+		<property name="com.jaspersoft.studio.field.label" value="Nome"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_etiqueta"/>
+	</field>
+	<field name="codigoBarras" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="CodProduto"/>
+		<property name="com.jaspersoft.studio.field.label" value="CodProduto"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_etiqueta"/>
+	</field>
+	<detail>
+		<band height="31" splitType="Stretch">
+			<property name="com.jaspersoft.studio.layout"/>
+			<property name="com.jaspersoft.studio.unit.height" value="mm"/>
+			<componentElement>
+				<reportElement mode="Opaque" x="4" y="4" width="68" height="15" backcolor="rgba(255, 255, 255, 0.0)" uuid="71ae8ff4-3cc1-498a-9ee7-3606e65f261d">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.barHeight" value="mm"/>
+				</reportElement>
+				<jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" type="Code128" drawText="false" checksumRequired="false" barWidth="2" barHeight="42" rotation="None">
+					<jr:codeExpression><![CDATA[$F{codigoBarras}]]></jr:codeExpression>
+				</jr:barbecue>
+			</componentElement>
+			<textField>
+				<reportElement x="10" y="24" width="55" height="3" uuid="c6dc8169-cb45-4656-bf9f-fc18644e9a32">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Center">
+					<font fontName="SansSerif" size="2" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{descricao} == null) ? "" : $F{descricao}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement mode="Opaque" x="10" y="19" width="55" height="5" backcolor="#FFFFFF" uuid="a5c3ca53-0c31-4a38-853d-0d7eca07f8d2">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Center">
+					<font size="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{codigoBarras} == null) ? "" : $F{codigoBarras}]]></textFieldExpression>
+			</textField>
+			<componentElement>
+				<reportElement mode="Opaque" x="75" y="4" width="68" height="15" backcolor="rgba(255, 255, 255, 0.0)" uuid="227f43b2-68f4-4dff-a953-53cb2108cc60">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.barHeight" value="mm"/>
+				</reportElement>
+				<jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" type="Code128" drawText="false" checksumRequired="false" barWidth="2" barHeight="42" rotation="None">
+					<jr:codeExpression><![CDATA[$F{codigoBarras}]]></jr:codeExpression>
+				</jr:barbecue>
+			</componentElement>
+			<textField>
+				<reportElement x="81" y="24" width="55" height="3" uuid="d28ee3bf-8b1f-4984-97e3-7f13390c4ab7">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Center">
+					<font fontName="SansSerif" size="2" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{descricao} == null) ? "" : $F{descricao}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement mode="Opaque" x="81" y="19" width="55" height="5" backcolor="#FFFFFF" uuid="a5f8dbc9-cd7a-4135-918c-2439c41b1b5c">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Center">
+					<font size="3"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{codigoBarras} == null) ? "" : $F{codigoBarras}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

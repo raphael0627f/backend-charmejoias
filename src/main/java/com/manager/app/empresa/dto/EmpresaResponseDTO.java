@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
         "cnpj",
         "inscricaoEstadual",
         "cnae",
+        "telefone",
         "regimeTributario",
         "endereco",
         "contoraCompanyId",
@@ -37,6 +38,7 @@ public class EmpresaResponseDTO {
     private String cnpj;
     private String inscricaoEstadual;
     private String cnae;
+    private String telefone;
     private RegimeTributario regimeTributario;
     private Endereco endereco;
     private String contoraCompanyId;

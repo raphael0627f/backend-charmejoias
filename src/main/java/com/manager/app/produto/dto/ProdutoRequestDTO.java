@@ -1,11 +1,12 @@
 package com.manager.app.produto.dto;
 
+import com.manager.app.produto.TipoProduto;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import com.manager.app.categoria.Categoria;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,8 +20,8 @@ public class ProdutoRequestDTO {
 
     private String id;
 
-    @NotBlank(message = "Código é obrigatório")
-    private String codigo;
+    @NotBlank(message = "SKU é obrigatório")
+    private String sku;
 
     @NotBlank(message = "Referência é obrigatório")
     private String referencia;
@@ -28,17 +29,21 @@ public class ProdutoRequestDTO {
     @NotBlank(message = "Nome é obrigatório")
     private String nome;
 
+    @NotNull(message = "Tipo é obrigatório")
+    private TipoProduto tipo;
+
     private BigDecimal precoCusto;
 
-    @NotNull(message = "Preço Venda é obrigatório")
     private BigDecimal precoVenda;
+
+    private Integer quantidadeEstoque;
 
     @NotNull(message = "Ativo é obrigatório")
     private boolean ativo;
 
     private String observacoes;
 
-    private String ncm;
+    private String ncmCodigo;
     private Integer origemProduto;
     private String unidadeComercial;
     private String codigoSituacaoTributariaIcms;
@@ -50,6 +55,9 @@ public class ProdutoRequestDTO {
 
     private Long fornecedorId;
     private List<Long> gruposIds;
+
+    @Valid
+    private List<ProdutoVariacaoRequestDTO> variacoes;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

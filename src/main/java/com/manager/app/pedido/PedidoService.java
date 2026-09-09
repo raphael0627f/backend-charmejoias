@@ -3,6 +3,8 @@ package com.manager.app.pedido;
 import com.manager.app.pedido.dto.PedidoProdutoRequestDTO;
 import com.manager.app.pedido.dto.PedidoRequestDTO;
 import com.manager.app.pedido.dto.PedidoStatusRequestDTO;
+import com.manager.app.produto.ProdutoVariacao;
+import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
 import com.manager.app.shared.TipoItem;
 import jakarta.transaction.Transactional;
@@ -14,6 +16,7 @@ import com.manager.app.produto.ProdutoService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -34,21 +37,34 @@ public class PedidoService {
     }
 
     private void preencherItem(PedidoProduto produto, PedidoProdutoRequestDTO produtoRequest, TipoItem tipo){
-        validation.validarItem(tipo, produtoRequest.getProdutoId(), produtoRequest.getJoiaId());
+        validation.validarItem(tipo, produtoRequest.getProdutoId(), produtoRequest.getJoiaId(), produtoRequest.getProdutoVariacaoId());
 
         if (tipo == TipoItem.JOIA){
             produto.setDescricao(null);
             produto.setJoia(joiaService.findByIdAndAtivo(produtoRequest.getJoiaId()));
             produto.setProduto(null);
+            produto.setProdutoVariacao(null);
         } else if (!validation.produtoNovo(produtoRequest.getProdutoId())){
             produto.setDescricao(null);
-            produto.setProduto(produtoService.findByIdAndAtivo(produtoRequest.getProdutoId()));
+            var produtoEncontrado = produtoService.findByIdAndAtivo(produtoRequest.getProdutoId());
+            produto.setProduto(produtoEncontrado);
             produto.setJoia(null);
+            produto.setProdutoVariacao(resolverProdutoVariacao(produtoRequest.getProdutoVariacaoId(), produtoEncontrado.getId()));
         } else {
             produto.setDescricao(produtoRequest.getDescricao());
             produto.setProduto(null);
             produto.setJoia(null);
+            produto.setProdutoVariacao(null);
         }
+    }
+
+    private ProdutoVariacao resolverProdutoVariacao(Long produtoVariacaoId, java.util.UUID produtoId){
+        if (produtoVariacaoId == null) return null;
+        ProdutoVariacao variacao = produtoService.findVariacaoById(produtoVariacaoId);
+        if (!variacao.getProduto().getId().equals(produtoId)) {
+            throw new ItemInvalidoException("A combinação informada não pertence ao produto selecionado");
+        }
+        return variacao;
     }
 
     @Transactional
@@ -91,7 +107,9 @@ public class PedidoService {
             PedidoProduto produtoExistente = null;
 
             for (PedidoProduto produto : pedidoUpdate.getProdutos()){
-                boolean mesmoProduto = produto.getProduto() != null && produto.getProduto().getId().equals(produtoRequest.getProdutoId());
+                Long variacaoAtualId = produto.getProdutoVariacao() != null ? produto.getProdutoVariacao().getId() : null;
+                boolean mesmaVariacao = Objects.equals(variacaoAtualId, produtoRequest.getProdutoVariacaoId());
+                boolean mesmoProduto = produto.getProduto() != null && produto.getProduto().getId().equals(produtoRequest.getProdutoId()) && mesmaVariacao;
                 boolean mesmaJoia = produto.getJoia() != null && produto.getJoia().getId().equals(produtoRequest.getJoiaId());
                 if (mesmoProduto || mesmaJoia) {
                     produtoExistente = produto;
@@ -102,7 +120,7 @@ public class PedidoService {
             if(produtoExistente != null){
                 produtoExistente.setDescricao(null);
 
-                if (!produtoExistente.getVariacao().equals(produtoRequest.getVariacao())) {
+                if (!Objects.equals(produtoExistente.getVariacao(), produtoRequest.getVariacao())) {
                     produtoExistente.setVariacao(produtoRequest.getVariacao());
                 }
 

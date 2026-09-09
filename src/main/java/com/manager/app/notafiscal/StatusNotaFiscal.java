@@ -5,5 +5,6 @@ public enum StatusNotaFiscal {
     ENVIADA,
     AUTORIZADA,
     REJEITADA,
+    CANCELAMENTO_SOLICITADO,
     CANCELADA
 }

@@ -5,6 +5,7 @@ import com.manager.app.etiqueta.dto.EtiquetaProdutoDTO;
 import com.manager.app.etiqueta.dto.EtiquetaRequestDTO;
 import com.manager.app.joia.Joia;
 import com.manager.app.produto.Produto;
+import com.manager.app.produto.ProdutoVariacao;
 import com.manager.app.shared.TipoItem;
 import lombok.RequiredArgsConstructor;
 import net.sf.jasperreports.engine.JasperExportManager;
@@ -47,10 +48,14 @@ public class EtiquetaService {
                 Joia joia = joiaService.findById(produtoEtiqueta.getProdutoId());
                 etiqueta.setDescricao(joia.getNome());
                 etiqueta.setCodigoBarras(joia.getCodigo());
+            } else if (produtoEtiqueta.getProdutoVariacaoId() != null) {
+                ProdutoVariacao variacao = produtoService.findVariacaoById(produtoEtiqueta.getProdutoVariacaoId());
+                etiqueta.setDescricao(variacao.getProduto().getNome());
+                etiqueta.setCodigoBarras(variacao.getCodigoBarras());
             } else {
                 Produto produto = produtoService.findById(produtoEtiqueta.getProdutoId());
                 etiqueta.setDescricao(produto.getNome());
-                etiqueta.setCodigoBarras(produto.getCodigo());
+                etiqueta.setCodigoBarras(produto.getSku());
             }
 
             for (int i = 0; i < produtoEtiqueta.getQuantidade(); i++) {
@@ -68,10 +73,10 @@ public class EtiquetaService {
             Map<String, Object> params = new HashMap<>();
 
             if(request.getImpressora() == Impressora.TINTA) {
-                relPath = "/reports/etiqueta/relEtiquetaProdutoTinta.jasper";
+                relPath = "/reports/etiqueta/relEtiquetaProdutoBrincoCharmeJoias.jasper";
             } else {
-                relPath = "/reports/etiqueta/relEtiquetaProdutoTermica.jasper";
-                params.put("LOGO", getClass().getResourceAsStream("/images/logo_etiqueta.png"));
+                relPath = "/reports/etiqueta/relEtiquetaProdutoAnelCharmeJoias.jasper";
+                //params.put("LOGO", getClass().getResourceAsStream("/images/logo_etiqueta.png"));
             }
 
             InputStream jasperStream = getClass().getResourceAsStream(relPath);

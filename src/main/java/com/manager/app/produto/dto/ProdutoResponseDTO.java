@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.manager.app.categoria.Categoria;
 import com.manager.app.fornecedor.Fornecedor;
 import com.manager.app.grupo.Grupo;
+import com.manager.app.ncm.Ncm;
+import com.manager.app.produto.TipoProduto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,11 +20,14 @@ import java.util.UUID;
 @NoArgsConstructor
 @JsonPropertyOrder({
         "id",
-        "codigo",
+        "sku",
         "referencia",
         "nome",
+        "tipo",
+        "imagemUrl",
         "precoCusto",
         "precoVenda",
+        "quantidadeEstoque",
         "ativo",
         "observacoes",
         "ncm",
@@ -34,20 +39,24 @@ import java.util.UUID;
         "categoria",
         "fornecedor",
         "grupos",
+        "variacoes",
         "createdAt",
         "updatedAt"
 })
 public class ProdutoResponseDTO {
 
     private UUID id;
-    private String codigo;
+    private String sku;
     private String referencia;
     private String nome;
+    private TipoProduto tipo;
+    private String imagemUrl;
     private BigDecimal precoCusto;
     private BigDecimal precoVenda;
+    private Integer quantidadeEstoque;
     private boolean ativo;
     private String observacoes;
-    private String ncm;
+    private Ncm ncm;
     private Integer origemProduto;
     private String unidadeComercial;
     private String codigoSituacaoTributariaIcms;
@@ -56,6 +65,7 @@ public class ProdutoResponseDTO {
     private Categoria categoria;
     private Fornecedor fornecedor;
     private List<Grupo> grupos;
+    private List<ProdutoVariacaoResponseDTO> variacoes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -22,6 +22,7 @@ import com.manager.app.notafiscal.NotaFiscal;
 import com.manager.app.notafiscal.NotaFiscalItem;
 import com.manager.app.notafiscal.NotaFiscalPagamento;
 import com.manager.app.produto.Produto;
+import com.manager.app.transportadora.Transportadora;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -189,6 +190,12 @@ public class ContoraClient {
         return body;
     }
 
+    // texto exigido pela Resolução CGSN nº 10/2007, art. 2º, § 2º (redação da Resolução CGSN nº 53/2008)
+    // em toda nota emitida por ME/EPP optante pelo Simples Nacional
+    private static final String AVISO_SIMPLES_NACIONAL =
+            "DOCUMENTO EMITIDO POR ME OU EPP OPTANTE PELO SIMPLES NACIONAL. NÃO GERA DIREITO A CRÉDITO FISCAL DE IPI. " +
+            "(Resolução CGSN nº 10/2007, art. 2º, § 2º, na redação dada pela Resolução CGSN nº 53/2008)";
+
     private Map<String, Object> payloadNota(NotaFiscal notaFiscal, Empresa empresa){
         Map<String, Object> payload = new HashMap<>();
         payload.put("nature_operation", notaFiscal.getNaturezaOperacao());
@@ -198,7 +205,73 @@ public class ContoraClient {
         payload.put("recipient", payloadDestinatario(notaFiscal.getCliente()));
         payload.put("items", notaFiscal.getItens().stream().map(item -> payloadItem(item, empresa, notaFiscal.getCliente())).toList());
         payload.put("payments", notaFiscal.getPagamentos().stream().map(this::payloadPagamento).toList());
+
+        if (notaFiscal.getDataSaidaEntrada() != null) {
+            payload.put("exit_at", notaFiscal.getDataSaidaEntrada().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        }
+
+        Map<String, Object> shipping = payloadShipping(notaFiscal);
+        if (shipping != null) {
+            payload.put("shipping", shipping);
+        }
+
+        String informacoesAdicionais = payloadInformacoesAdicionais(notaFiscal, empresa);
+        if (informacoesAdicionais != null) {
+            payload.put("additional_info", informacoesAdicionais);
+        }
+
         return payload;
+    }
+
+    private Map<String, Object> payloadShipping(NotaFiscal notaFiscal){
+        if (notaFiscal.getTransportadora() == null && notaFiscal.getModalidadeFrete() == null) {
+            return null;
+        }
+
+        Map<String, Object> shipping = new HashMap<>();
+        if (notaFiscal.getModalidadeFrete() != null) {
+            shipping.put("modality", notaFiscal.getModalidadeFrete());
+        }
+
+        Transportadora transportadora = notaFiscal.getTransportadora();
+        if (transportadora != null) {
+            Map<String, Object> carrier = new HashMap<>();
+            carrier.put("name", transportadora.getRazaoSocial());
+            carrier.put("document", transportadora.getDocumento());
+            carrier.put("state_registration", transportadora.getInscricaoEstadual());
+            carrier.put("address", transportadora.getEndereco());
+            carrier.put("city_name", transportadora.getMunicipio());
+            carrier.put("state_code", transportadora.getUf());
+            shipping.put("carrier", carrier);
+
+            if (transportadora.getPlacaVeiculo() != null && !transportadora.getPlacaVeiculo().isBlank()) {
+                Map<String, Object> vehicle = new HashMap<>();
+                vehicle.put("plate", transportadora.getPlacaVeiculo());
+                vehicle.put("state_code", transportadora.getUfVeiculo());
+                vehicle.put("rntc", transportadora.getRntc());
+                shipping.put("vehicle", vehicle);
+            }
+        }
+
+        return shipping;
+    }
+
+    private String payloadInformacoesAdicionais(NotaFiscal notaFiscal, Empresa empresa){
+        boolean simplesNacional = empresa.getRegimeTributario() == RegimeTributario.SIMPLES_NACIONAL
+                || empresa.getRegimeTributario() == RegimeTributario.SIMPLES_NACIONAL_EXCESSO_SUBLIMITE;
+
+        StringBuilder texto = new StringBuilder();
+        if (simplesNacional) {
+            texto.append(AVISO_SIMPLES_NACIONAL);
+        }
+        if (notaFiscal.getInformacoesComplementares() != null && !notaFiscal.getInformacoesComplementares().isBlank()) {
+            if (!texto.isEmpty()) {
+                texto.append("\n");
+            }
+            texto.append(notaFiscal.getInformacoesComplementares());
+        }
+
+        return !texto.isEmpty() ? texto.toString() : null;
     }
 
     private Map<String, Object> payloadDestinatario(Cliente cliente){
@@ -228,15 +301,19 @@ public class ContoraClient {
         Produto produto = item.getProduto();
 
         Map<String, Object> map = new HashMap<>();
-        map.put("code", produto.getCodigo());
+        map.put("code", produto.getSku());
         map.put("name", produto.getNome());
-        map.put("ncm", produto.getNcm());
+        map.put("ncm", produto.getNcm() != null ? produto.getNcm().getCodigo() : null);
         map.put("cfop", item.getCfop());
         map.put("unit", produto.getUnidadeComercial());
         map.put("quantity", item.getQuantidade());
         map.put("unit_price", item.getValorUnitario());
         if (item.getDesconto() != null) {
             map.put("discount", item.getDesconto());
+        }
+        if (produto.getNcm() != null && produto.getNcm().getAliquotaAproximadaTributos() != null) {
+            BigDecimal aliquota = produto.getNcm().getAliquotaAproximadaTributos();
+            map.put("approximate_taxes", item.getValorTotal().multiply(aliquota).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP));
         }
         map.put("taxes", payloadImpostos(item, empresa, cliente));
         return map;
@@ -292,6 +369,7 @@ public class ContoraClient {
         payload.put("trade_name", empresa.getNomeFantasia());
         payload.put("tax_regime", mapearRegime(empresa.getRegimeTributario()));
         payload.put("state_registration", empresa.getInscricaoEstadual());
+        payload.put("phone", empresa.getTelefone());
         payload.put("street", empresa.getEndereco().getLogradouro());
         payload.put("number", empresa.getEndereco().getNumero());
         payload.put("district", empresa.getEndereco().getBairro());

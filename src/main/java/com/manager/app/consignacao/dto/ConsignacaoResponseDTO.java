@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -20,6 +21,10 @@ import java.util.List;
         "tipo",
         "cliente",
         "produtos",
+        "dataEntrega",
+        "dataPreAcertoConsignacao",
+        "dataAcertoConsignacao",
+        "confirmada",
         "createdAt",
         "updatedAt"
 })
@@ -30,6 +35,10 @@ public class ConsignacaoResponseDTO {
     private TipoItem tipo;
     private Cliente cliente;
     private List<ConsignacaoProduto> produtos;
+    private LocalDate dataEntrega;
+    private LocalDate dataPreAcertoConsignacao;
+    private LocalDate dataAcertoConsignacao;
+    private Boolean confirmada;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

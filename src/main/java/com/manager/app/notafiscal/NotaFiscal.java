@@ -6,7 +6,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import com.manager.app.cliente.Cliente;
 import com.manager.app.empresa.Empresa;
+import com.manager.app.transportadora.Transportadora;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,13 +49,33 @@ public class NotaFiscal {
     private String chaveAcesso;
     private String protocoloAutorizacao;
     private String motivoRejeicao;
+    private String motivoRejeicaoCancelamento;
     private String contoraDocumentId;
+
+    private LocalDateTime dataSaidaEntrada;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "transportadora_id")
+    private Transportadora transportadora;
+
+    private Integer modalidadeFrete;
+
+    @Column(columnDefinition = "TEXT")
+    private String informacoesComplementares;
+
+    // desconto único informado pelo usuário pra nota inteira; guardado só pra referência/exibição,
+    // já foi rateado entre os itens (NotaFiscalItem.desconto) no momento da criação/atualização
+    @Column(precision = 10, scale = 2)
+    private BigDecimal descontoTotal;
 
     @OneToMany(mappedBy = "notaFiscal", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<NotaFiscalItem> itens = new ArrayList<>();
 
     @OneToMany(mappedBy = "notaFiscal", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<NotaFiscalPagamento> pagamentos = new ArrayList<>();
+
+    @OneToMany(mappedBy = "notaFiscal", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<NotaFiscalCorrecao> correcoes = new ArrayList<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -79,5 +101,10 @@ public class NotaFiscal {
     public void removerPagamento(NotaFiscalPagamento pagamento) {
         pagamento.setNotaFiscal(null);
         this.pagamentos.remove(pagamento);
+    }
+
+    public void adicionarCorrecao(NotaFiscalCorrecao correcao) {
+        correcao.setNotaFiscal(this);
+        this.correcoes.add(correcao);
     }
 }

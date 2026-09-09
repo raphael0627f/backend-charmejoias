@@ -7,12 +7,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.time.LocalDate;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,8 +29,11 @@ public class ConsignacaoController {
             @RequestParam(required = false) String busca,
             @RequestParam(required = false) Boolean temCliente,
             @RequestParam(required = false) Boolean temAcerto,
+            @RequestParam(required = false) Boolean confirmada,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataInicio,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataFim,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, temCliente, temAcerto, pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.ok(service.findAll(busca, temCliente, temAcerto, confirmada, dataInicio, dataFim, pageable).map(mapper::toResponseDTO));
     }
 
     @GetMapping(value = "/{id}")
@@ -46,6 +51,12 @@ public class ConsignacaoController {
     @PutMapping
     public ResponseEntity<ConsignacaoResponseDTO> update(@RequestBody @Valid ConsignacaoRequestDTO request){
         Consignacao consignacao = service.update(request);
+        return ResponseEntity.ok(mapper.toResponseDTO(consignacao));
+    }
+
+    @PutMapping(value = "/{id}/confirmar")
+    public ResponseEntity<ConsignacaoResponseDTO> confirmar(@PathVariable Long id){
+        Consignacao consignacao = service.confirmar(id);
         return ResponseEntity.ok(mapper.toResponseDTO(consignacao));
     }
 

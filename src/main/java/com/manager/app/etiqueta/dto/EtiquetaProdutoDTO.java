@@ -12,5 +12,6 @@ import java.util.UUID;
 public class EtiquetaProdutoDTO {
 
     private UUID produtoId;
+    private Long produtoVariacaoId;
     private Integer quantidade;
 }

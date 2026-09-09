@@ -1,0 +1,251 @@
+package com.manager.app.preacerto;
+
+import com.manager.app.cliente.Cliente;
+import com.manager.app.cliente.ClienteService;
+import com.manager.app.consignacao.Consignacao;
+import com.manager.app.consignacao.ConsignacaoProduto;
+import com.manager.app.consignacao.ConsignacaoRepository;
+import com.manager.app.consignacao.ConsignacaoValidation;
+import com.manager.app.joia.Joia;
+import com.manager.app.joia.JoiaService;
+import com.manager.app.preacerto.dto.PreAcertoConsignacaoProdutoRequestDTO;
+import com.manager.app.preacerto.dto.PreAcertoConsignacaoRequestDTO;
+import com.manager.app.produto.Produto;
+import com.manager.app.produto.ProdutoService;
+import com.manager.app.produto.ProdutoVariacao;
+import com.manager.app.shared.TipoItem;
+import com.manager.app.shared.exception.ItemInvalidoException;
+import com.manager.app.shared.exception.ObjetoExistenteException;
+import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
+import com.manager.app.shared.specification.SpecificationUtils;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class PreAcertoConsignacaoService {
+
+    private final PreAcertoConsignacaoRepository repository;
+    private final ConsignacaoRepository consignacaoRepository;
+    private final ClienteService clienteService;
+    private final ProdutoService produtoService;
+    private final JoiaService joiaService;
+    private final ConsignacaoValidation consignacaoValidation;
+
+    public Page<PreAcertoConsignacao> findAll(String busca, Long consignacaoId, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
+        Specification<PreAcertoConsignacao> spec = comBusca(busca);
+
+        if (consignacaoId != null) {
+            Specification<PreAcertoConsignacao> consignacaoSpec = (root, query, cb) ->
+                    cb.equal(root.get("consignacao").get("id"), consignacaoId);
+            spec = spec == null ? consignacaoSpec : spec.and(consignacaoSpec);
+        }
+
+        if (dataInicio != null) {
+            Specification<PreAcertoConsignacao> dataInicioSpec = (root, query, cb) ->
+                    SpecificationUtils.criadoAPartirDe(cb, root.get("createdAt"), dataInicio);
+            spec = spec == null ? dataInicioSpec : spec.and(dataInicioSpec);
+        }
+
+        if (dataFim != null) {
+            Specification<PreAcertoConsignacao> dataFimSpec = (root, query, cb) ->
+                    SpecificationUtils.criadoAte(cb, root.get("createdAt"), dataFim);
+            spec = spec == null ? dataFimSpec : spec.and(dataFimSpec);
+        }
+
+        return repository.findAll(spec, pageable);
+    }
+
+    private Specification<PreAcertoConsignacao> comBusca(String busca){
+        if (busca == null || busca.isBlank()) return null;
+        Long comoNumero = SpecificationUtils.comoLong(busca);
+        return (root, query, cb) -> {
+            var cliente = root.join("cliente", JoinType.LEFT);
+            var consignacao = root.join("consignacao", JoinType.LEFT);
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>(List.of(
+                    SpecificationUtils.likeIgnoreCase(cb, root.get("observacoes"), busca),
+                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca),
+                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca)
+            ));
+            if (comoNumero != null) {
+                predicates.add(cb.equal(root.get("id"), comoNumero));
+                predicates.add(cb.equal(consignacao.get("id"), comoNumero));
+            }
+            return cb.or(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+    }
+
+    public PreAcertoConsignacao findById(Long id){
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Pré-acerto de consignação não encontrado. id: " + id));
+    }
+
+    private void validarConsignacaoDisponivel(Long consignacaoId, Long idAtual){
+        boolean emUso = idAtual == null
+                ? repository.existsByConsignacaoId(consignacaoId)
+                : repository.existsByConsignacaoIdAndIdNot(consignacaoId, idAtual);
+        if (emUso) {
+            throw new ObjetoExistenteException("Esta Consignação já possui um Pré-acerto. consignacaoId: " + consignacaoId);
+        }
+    }
+
+    private ProdutoVariacao resolverProdutoVariacao(Long produtoVariacaoId, UUID produtoId){
+        if (produtoVariacaoId == null) return null;
+        ProdutoVariacao variacao = produtoService.findVariacaoById(produtoVariacaoId);
+        if (!variacao.getProduto().getId().equals(produtoId)) {
+            throw new ItemInvalidoException("A combinação informada não pertence ao produto selecionado");
+        }
+        return variacao;
+    }
+
+    private BigDecimal resolverPreco(Consignacao consignacao, Produto produto, ProdutoVariacao produtoVariacao, Joia joia, BigDecimal precoRequest){
+        if (consignacao != null) {
+            for (ConsignacaoProduto item : consignacao.getProdutos()) {
+                Long variacaoItemId = item.getProdutoVariacao() != null ? item.getProdutoVariacao().getId() : null;
+                Long variacaoNovaId = produtoVariacao != null ? produtoVariacao.getId() : null;
+                boolean mesmoProduto = produto != null && item.getProduto() != null
+                        && item.getProduto().getId().equals(produto.getId())
+                        && Objects.equals(variacaoItemId, variacaoNovaId);
+                boolean mesmaJoia = joia != null && item.getJoia() != null && item.getJoia().getId().equals(joia.getId());
+                if (mesmoProduto || mesmaJoia) {
+                    return item.getPreco();
+                }
+            }
+        }
+
+        if (precoRequest == null) {
+            throw new ItemInvalidoException("Preço é obrigatório para produtos que não estão na Consignação de referência");
+        }
+        return precoRequest;
+    }
+
+    private void preencherItem(PreAcertoConsignacaoProduto item, PreAcertoConsignacaoProdutoRequestDTO produtoRequest, Consignacao consignacao, TipoItem tipo){
+        consignacaoValidation.validarItem(tipo, produtoRequest.getProdutoId(), produtoRequest.getJoiaId(), produtoRequest.getProdutoVariacaoId());
+
+        Produto produto = null;
+        ProdutoVariacao produtoVariacao = null;
+        Joia joia = null;
+
+        if (tipo == TipoItem.JOIA) {
+            joia = joiaService.findByIdAndAtivo(produtoRequest.getJoiaId());
+        } else {
+            produto = produtoService.findByIdAndAtivo(produtoRequest.getProdutoId());
+            produtoVariacao = resolverProdutoVariacao(produtoRequest.getProdutoVariacaoId(), produto.getId());
+        }
+
+        item.setProduto(produto);
+        item.setProdutoVariacao(produtoVariacao);
+        item.setJoia(joia);
+        item.setQuantidade(produtoRequest.getQuantidade());
+        item.setPreco(resolverPreco(consignacao, produto, produtoVariacao, joia, produtoRequest.getPreco()));
+    }
+
+    private Consignacao resolverConsignacao(Long consignacaoId){
+        if (consignacaoId == null) return null;
+        return consignacaoRepository.findById(consignacaoId)
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. id: " + consignacaoId));
+    }
+
+    private TipoItem tipoDe(Consignacao consignacao){
+        return consignacao != null ? consignacao.getTipo() : TipoItem.PRODUTO;
+    }
+
+    @Transactional
+    public PreAcertoConsignacao create(PreAcertoConsignacaoRequestDTO request){
+        PreAcertoConsignacao preAcerto = new PreAcertoConsignacao();
+
+        Consignacao consignacao = resolverConsignacao(request.getConsignacaoId());
+        Cliente cliente;
+
+        if (consignacao != null) {
+            validarConsignacaoDisponivel(consignacao.getId(), null);
+            cliente = consignacao.getCliente();
+        } else {
+            if (request.getClienteId() == null) {
+                throw new ItemInvalidoException("clienteId é obrigatório quando não há Consignação de referência");
+            }
+            cliente = clienteService.findByIdAndAtivo(request.getClienteId());
+        }
+
+        preAcerto.setConsignacao(consignacao);
+        preAcerto.setCliente(cliente);
+        preAcerto.setObservacoes(request.getObservacoes());
+
+        TipoItem tipo = tipoDe(consignacao);
+
+        for (PreAcertoConsignacaoProdutoRequestDTO produtoRequest : request.getProdutos()) {
+            PreAcertoConsignacaoProduto item = new PreAcertoConsignacaoProduto();
+            preencherItem(item, produtoRequest, consignacao, tipo);
+            preAcerto.adicionarProduto(item);
+        }
+
+        return repository.save(preAcerto);
+    }
+
+    @Transactional
+    public PreAcertoConsignacao update(PreAcertoConsignacaoRequestDTO request){
+        PreAcertoConsignacao preAcertoUpdate = this.findById(request.getId());
+
+        Consignacao consignacao = resolverConsignacao(request.getConsignacaoId());
+        Cliente cliente;
+
+        if (consignacao != null) {
+            validarConsignacaoDisponivel(consignacao.getId(), preAcertoUpdate.getId());
+            cliente = consignacao.getCliente();
+        } else {
+            if (request.getClienteId() == null) {
+                throw new ItemInvalidoException("clienteId é obrigatório quando não há Consignação de referência");
+            }
+            cliente = clienteService.findByIdAndAtivo(request.getClienteId());
+        }
+
+        preAcertoUpdate.setConsignacao(consignacao);
+        preAcertoUpdate.setCliente(cliente);
+        preAcertoUpdate.setObservacoes(request.getObservacoes());
+
+        TipoItem tipo = tipoDe(consignacao);
+
+        List<PreAcertoConsignacaoProduto> produtosAtuais = new ArrayList<>(preAcertoUpdate.getProdutos());
+
+        for (PreAcertoConsignacaoProdutoRequestDTO produtoRequest : request.getProdutos()) {
+            PreAcertoConsignacaoProduto produtoExistente = null;
+
+            for (PreAcertoConsignacaoProduto produto : preAcertoUpdate.getProdutos()) {
+                Long variacaoAtualId = produto.getProdutoVariacao() != null ? produto.getProdutoVariacao().getId() : null;
+                boolean mesmaVariacao = Objects.equals(variacaoAtualId, produtoRequest.getProdutoVariacaoId());
+                boolean mesmoProduto = produto.getProduto() != null && produto.getProduto().getId().equals(produtoRequest.getProdutoId()) && mesmaVariacao;
+                boolean mesmaJoia = produto.getJoia() != null && produto.getJoia().getId().equals(produtoRequest.getJoiaId());
+                if (mesmoProduto || mesmaJoia) {
+                    produtoExistente = produto;
+                    break;
+                }
+            }
+
+            if (produtoExistente != null) {
+                preencherItem(produtoExistente, produtoRequest, consignacao, tipo);
+                produtosAtuais.remove(produtoExistente);
+            } else {
+                PreAcertoConsignacaoProduto novoProduto = new PreAcertoConsignacaoProduto();
+                preencherItem(novoProduto, produtoRequest, consignacao, tipo);
+                preAcertoUpdate.adicionarProduto(novoProduto);
+            }
+        }
+
+        for (PreAcertoConsignacaoProduto removerProduto : produtosAtuais) {
+            preAcertoUpdate.removerProduto(removerProduto);
+        }
+
+        return preAcertoUpdate;
+    }
+}

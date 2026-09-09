@@ -25,6 +25,7 @@ public class Empresa {
     private String cnpj;
     private String inscricaoEstadual;
     private String cnae;
+    private String telefone;
 
     @Enumerated(EnumType.STRING)
     private RegimeTributario regimeTributario;

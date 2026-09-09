@@ -2,11 +2,14 @@ package com.manager.app.consignacao;
 
 import com.manager.app.consignacao.dto.ConsignacaoProdutoRequestDTO;
 import com.manager.app.consignacao.dto.ConsignacaoRequestDTO;
-import com.manager.app.acerto.AcertoConsignacao;
+import com.manager.app.acertojoia.AcertoJoiaConsignacao;
 import com.manager.app.cliente.Cliente;
 import com.manager.app.endereco.Endereco;
 import com.manager.app.joia.Joia;
 import com.manager.app.produto.Produto;
+import com.manager.app.produto.ProdutoVariacao;
+import com.manager.app.shared.exception.ItemInvalidoException;
+import com.manager.app.shared.exception.ObjetoEmUsoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
 import com.manager.app.shared.TipoItem;
 import com.manager.app.shared.specification.SpecificationUtils;
@@ -28,11 +31,14 @@ import com.manager.app.produto.ProdutoService;
 
 import java.io.InputStream;
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -52,7 +58,7 @@ public class ConsignacaoService {
     private final JoiaService joiaService;
     private final ConsignacaoValidation validation;
 
-    public Page<Consignacao> findAll(String busca, Boolean temCliente, Boolean temAcerto, Pageable pageable){
+    public Page<Consignacao> findAll(String busca, Boolean temCliente, Boolean temAcerto, Boolean confirmada, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
         Specification<Consignacao> spec = comBusca(busca);
 
         if (temCliente != null) {
@@ -65,7 +71,7 @@ public class ConsignacaoService {
         if (temAcerto != null) {
             Specification<Consignacao> temAcertoSpec = (root, query, cb) -> {
                 Subquery<Long> subquery = query.subquery(Long.class);
-                var acertoConsignacaoRoot = subquery.from(AcertoConsignacao.class);
+                var acertoConsignacaoRoot = subquery.from(AcertoJoiaConsignacao.class);
                 subquery.select(acertoConsignacaoRoot.get("id"))
                         .where(cb.equal(acertoConsignacaoRoot.get("consignacao"), root));
                 return temAcerto ? cb.exists(subquery) : cb.not(cb.exists(subquery));
@@ -73,15 +79,41 @@ public class ConsignacaoService {
             spec = spec == null ? temAcertoSpec : spec.and(temAcertoSpec);
         }
 
+        if (confirmada != null) {
+            Specification<Consignacao> confirmadaSpec = (root, query, cb) -> cb.equal(root.get("confirmada"), confirmada);
+            spec = spec == null ? confirmadaSpec : spec.and(confirmadaSpec);
+        }
+
+        if (dataInicio != null) {
+            Specification<Consignacao> dataInicioSpec = (root, query, cb) ->
+                    SpecificationUtils.criadoAPartirDe(cb, root.get("createdAt"), dataInicio);
+            spec = spec == null ? dataInicioSpec : spec.and(dataInicioSpec);
+        }
+
+        if (dataFim != null) {
+            Specification<Consignacao> dataFimSpec = (root, query, cb) ->
+                    SpecificationUtils.criadoAte(cb, root.get("createdAt"), dataFim);
+            spec = spec == null ? dataFimSpec : spec.and(dataFimSpec);
+        }
+
         return repository.findAll(spec, pageable);
     }
 
     private Specification<Consignacao> comBusca(String busca){
         if (busca == null || busca.isBlank()) return null;
-        return (root, query, cb) -> cb.or(
-                SpecificationUtils.likeIgnoreCase(cb, root.get("descricao"), busca),
-                SpecificationUtils.likeIgnoreCase(cb, root.join("cliente", JoinType.LEFT).get("nome"), busca)
-        );
+        Long comoNumero = SpecificationUtils.comoLong(busca);
+        return (root, query, cb) -> {
+            var cliente = root.join("cliente", JoinType.LEFT);
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>(List.of(
+                    SpecificationUtils.likeIgnoreCase(cb, root.get("descricao"), busca),
+                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca),
+                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca)
+            ));
+            if (comoNumero != null) {
+                predicates.add(cb.equal(root.get("id"), comoNumero));
+            }
+            return cb.or(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
     }
 
     public Consignacao findById(Long id){
@@ -89,15 +121,27 @@ public class ConsignacaoService {
     }
 
     private void preencherItem(ConsignacaoProduto produto, ConsignacaoProdutoRequestDTO produtoRequest, TipoItem tipo){
-        validation.validarItem(tipo, produtoRequest.getProdutoId(), produtoRequest.getJoiaId());
+        validation.validarItem(tipo, produtoRequest.getProdutoId(), produtoRequest.getJoiaId(), produtoRequest.getProdutoVariacaoId());
 
         if (tipo == TipoItem.JOIA){
             produto.setJoia(joiaService.findByIdAndAtivo(produtoRequest.getJoiaId()));
             produto.setProduto(null);
+            produto.setProdutoVariacao(null);
         } else {
-            produto.setProduto(produtoService.findByIdAndAtivo(produtoRequest.getProdutoId()));
+            var produtoEncontrado = produtoService.findByIdAndAtivo(produtoRequest.getProdutoId());
+            produto.setProduto(produtoEncontrado);
             produto.setJoia(null);
+            produto.setProdutoVariacao(resolverProdutoVariacao(produtoRequest.getProdutoVariacaoId(), produtoEncontrado.getId()));
         }
+    }
+
+    private ProdutoVariacao resolverProdutoVariacao(Long produtoVariacaoId, UUID produtoId){
+        if (produtoVariacaoId == null) return null;
+        ProdutoVariacao variacao = produtoService.findVariacaoById(produtoVariacaoId);
+        if (!variacao.getProduto().getId().equals(produtoId)) {
+            throw new ItemInvalidoException("A combinação informada não pertence ao produto selecionado");
+        }
+        return variacao;
     }
 
     @Transactional
@@ -112,6 +156,9 @@ public class ConsignacaoService {
 
         consignacao.setDescricao(request.getDescricao());
         consignacao.setTipo(request.getTipo());
+        consignacao.setDataEntrega(request.getDataEntrega());
+        consignacao.setDataPreAcertoConsignacao(request.getDataPreAcertoConsignacao());
+        consignacao.setDataAcertoConsignacao(request.getDataAcertoConsignacao());
 
         for (ConsignacaoProdutoRequestDTO produtoRequest : request.getProdutos()){
             ConsignacaoProduto produto = new ConsignacaoProduto();
@@ -130,6 +177,10 @@ public class ConsignacaoService {
     public Consignacao update(ConsignacaoRequestDTO request){
         Consignacao consignacaoUpdate = this.findById(request.getId());
 
+        if (Boolean.TRUE.equals(consignacaoUpdate.getConfirmada())) {
+            throw new ObjetoEmUsoException("Consignação confirmada não pode ser editada. id: " + consignacaoUpdate.getId());
+        }
+
         if (!validation.clienteNovo(request.getClienteId())){
             consignacaoUpdate.setCliente(clienteService.findByIdAndAtivo(request.getClienteId()));
         } else {
@@ -138,6 +189,9 @@ public class ConsignacaoService {
 
         consignacaoUpdate.setDescricao(request.getDescricao());
         consignacaoUpdate.setTipo(request.getTipo());
+        consignacaoUpdate.setDataEntrega(request.getDataEntrega());
+        consignacaoUpdate.setDataPreAcertoConsignacao(request.getDataPreAcertoConsignacao());
+        consignacaoUpdate.setDataAcertoConsignacao(request.getDataAcertoConsignacao());
 
         List<ConsignacaoProduto> produtosAtuais = new ArrayList<>(consignacaoUpdate.getProdutos());
 
@@ -145,7 +199,9 @@ public class ConsignacaoService {
             ConsignacaoProduto produtoExistente = null;
 
             for (ConsignacaoProduto produto : consignacaoUpdate.getProdutos()){
-                boolean mesmoProduto = produto.getProduto() != null && produto.getProduto().getId().equals(produtoRequest.getProdutoId());
+                Long variacaoAtualId = produto.getProdutoVariacao() != null ? produto.getProdutoVariacao().getId() : null;
+                boolean mesmaVariacao = Objects.equals(variacaoAtualId, produtoRequest.getProdutoVariacaoId());
+                boolean mesmoProduto = produto.getProduto() != null && produto.getProduto().getId().equals(produtoRequest.getProdutoId()) && mesmaVariacao;
                 boolean mesmaJoia = produto.getJoia() != null && produto.getJoia().getId().equals(produtoRequest.getJoiaId());
                 if (mesmoProduto || mesmaJoia) {
                     produtoExistente = produto;
@@ -178,6 +234,22 @@ public class ConsignacaoService {
             consignacaoUpdate.removerProduto(removerProduto);
         }
         return consignacaoUpdate;
+    }
+
+    @Transactional
+    public Consignacao confirmar(Long id){
+        Consignacao consignacao = this.findById(id);
+
+        if (Boolean.TRUE.equals(consignacao.getConfirmada())) {
+            throw new ItemInvalidoException("Consignação já está confirmada. id: " + id);
+        }
+
+        if (consignacao.getCliente() == null) {
+            throw new ItemInvalidoException("Consignação sem cliente não pode ser confirmada. id: " + id);
+        }
+
+        consignacao.setConfirmada(true);
+        return consignacao;
     }
 
     private String categoriaDe(ConsignacaoProduto item){
@@ -231,8 +303,9 @@ public class ConsignacaoService {
             Map<String, Object> linha = new HashMap<>();
             Produto produto = consignacaoProduto.getProduto();
             Joia joia = consignacaoProduto.getJoia();
+            ProdutoVariacao variacao = consignacaoProduto.getProdutoVariacao();
 
-            String codigo = produto != null ? produto.getCodigo() : joia.getCodigo();
+            String codigo = variacao != null ? variacao.getSku() : (produto != null ? produto.getSku() : joia.getCodigo());
             String nome = produto != null ? produto.getNome() : joia.getNome();
             String categoria = produto != null ? (produto.getCategoria() != null ? produto.getCategoria().getNome() : null) : (joia.getCategoria() != null ? joia.getCategoria().getNome() : null);
 

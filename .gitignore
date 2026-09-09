@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Storage local (imagens de produtos) ###
+/storage/
