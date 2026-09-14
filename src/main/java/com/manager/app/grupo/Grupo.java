@@ -23,6 +23,9 @@ public class Grupo {
     private String nome;
     private boolean ativo;
 
+    @Enumerated(EnumType.STRING)
+    private TipoGrupo tipo;
+
     @JsonIgnore
     @CreationTimestamp
     private LocalDateTime createdAt;

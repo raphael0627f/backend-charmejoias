@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.3.final using JasperReports Library version 6.21.3-4a3078d20785ebe464f18037d738d12fc98c13cf  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Consulta SPC - ERP" pageWidth="595" pageHeight="842" columnWidth="569" leftMargin="13" rightMargin="13" topMargin="20" bottomMargin="20" uuid="4f2c9b6d-2f1a-4b2e-8b3a-1c1f7d2a9e10">
+	<property name="net.sf.jasperreports.text.truncate.at.char" value="true"/>
+	<property name="net.sf.jasperreports.export.pdf.force.linebreak.policy" value="true"/>
+	<style name="linha" fontName="SansSerif" fontSize="9" isBold="false">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$F{tipo}.equals("TITULO")]]></conditionExpression>
+			<style fontSize="14" isBold="true"/>
+		</conditionalStyle>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$F{tipo}.equals("SUBTITULO")]]></conditionExpression>
+			<style forecolor="#333333" fontSize="11" isBold="true"/>
+		</conditionalStyle>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$F{tipo}.equals("SEPARADOR")]]></conditionExpression>
+			<style fontSize="1"/>
+		</conditionalStyle>
+	</style>
+	<field name="tipo" class="java.lang.String"/>
+	<field name="texto" class="java.lang.String"/>
+	<pageHeader>
+		<band height="21">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<staticText>
+				<reportElement x="0" y="0" width="569" height="21" uuid="6a2b1a3f-0a1a-4a3a-9a1a-1a2a3a4a5a6a">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Center">
+					<font size="16" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Relatório de Consulta SPC]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="16" splitType="Stretch">
+			<textField textAdjust="StretchHeight">
+				<reportElement style="linha" x="0" y="0" width="569" height="16" uuid="1b2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e"/>
+				<textElement textAlignment="Left" verticalAlignment="Top">
+					<paragraph spacingAfter="2"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{texto}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

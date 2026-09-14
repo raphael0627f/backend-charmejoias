@@ -19,6 +19,9 @@ public class ConsignacaoRequestDTO {
     private UUID clienteId;
     private String descricao;
 
+    @NotNull(message = "Mostruário é obrigatório")
+    private Long mostruarioId;
+
     @NotNull(message = "Tipo é obrigatório")
     private TipoItem tipo;
 

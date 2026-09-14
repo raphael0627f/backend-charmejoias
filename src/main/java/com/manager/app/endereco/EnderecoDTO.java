@@ -30,4 +30,5 @@ public class EnderecoDTO {
     private String cep;
 
     private String ibge;
+    private boolean principal;
 }

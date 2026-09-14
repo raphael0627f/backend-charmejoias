@@ -10,6 +10,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -39,6 +40,7 @@ public class AcertoJoiaController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('ACERTO_JOIA_GERENCIAR')")
     public ResponseEntity<AcertoJoiaResponseDTO> create(@RequestBody @Valid AcertoJoiaRequestDTO request){
         AcertoJoia acertoJoia = service.create(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(acertoJoia.getId()).toUri();
@@ -46,6 +48,7 @@ public class AcertoJoiaController {
     }
 
     @PutMapping
+    @PreAuthorize("hasAuthority('ACERTO_JOIA_GERENCIAR')")
     public ResponseEntity<AcertoJoiaResponseDTO> update(@RequestBody @Valid AcertoJoiaRequestDTO request){
         AcertoJoia acertoJoia = service.update(request);
         return ResponseEntity.ok(mapper.toResponseDTO(acertoJoia));

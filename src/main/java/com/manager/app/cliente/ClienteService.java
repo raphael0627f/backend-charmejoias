@@ -2,6 +2,8 @@ package com.manager.app.cliente;
 
 import com.manager.app.endereco.Endereco;
 import com.manager.app.grupo.Grupo;
+import com.manager.app.grupo.TipoGrupo;
+import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
 import com.manager.app.grupo.GrupoValidation;
 import com.manager.app.shared.specification.SpecificationUtils;
@@ -14,7 +16,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import com.manager.app.endereco.EnderecoService;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -72,16 +76,15 @@ public class ClienteService {
     @Transactional
     public Cliente create(Cliente cliente, List<Long> gruposIds){
         validation.codigoExistenteCreate(cliente.getCodigo());
-
-        if (cliente.getEndereco() != null) {
-            cliente.setEndereco(enderecoService.create(cliente.getEndereco()));
-        }
+        validarEnderecos(cliente.getEnderecos());
+        cliente.getEnderecos().forEach(enderecoService::enriquecerIbge);
 
         if(!grupoValidation.gruposEmpty(gruposIds)){
             List<Grupo> grupos = grupoRepository.findAllById(gruposIds);
             if (grupos.size() != gruposIds.size()) {
                 throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
             }
+            grupoValidation.validarTipo(grupos, TipoGrupo.CLIENTE);
             cliente.setGrupos(grupos);
         }
         return repository.save(cliente);
@@ -90,8 +93,9 @@ public class ClienteService {
     @Transactional
     public Cliente update(Cliente cliente, List<Long> gruposIds){
         validation.codigoExistenteUpdate(cliente.getCodigo(), cliente.getId());
+        validarEnderecos(cliente.getEnderecos());
         Cliente clienteUpdate = repository.findById(cliente.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. id: " + cliente.getId()));
-        Endereco endereco = enderecoService.update(cliente.getEndereco());
+        sincronizarEnderecos(clienteUpdate, cliente.getEnderecos());
 
         clienteUpdate.setCodigo(cliente.getCodigo());
         clienteUpdate.setReferencia(cliente.getReferencia());
@@ -106,17 +110,62 @@ public class ClienteService {
         clienteUpdate.setObservacao(cliente.getObservacao());
         clienteUpdate.setDataNascimento(cliente.getDataNascimento());
         clienteUpdate.setAtivo(cliente.isAtivo());
-        clienteUpdate.setEndereco(endereco);
 
         if(!grupoValidation.gruposEmpty(gruposIds)){
             List<Grupo> grupos = grupoRepository.findAllById(gruposIds);
             if (grupos.size() != gruposIds.size()) {
                 throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
             }
+            grupoValidation.validarTipo(grupos, TipoGrupo.CLIENTE);
             clienteUpdate.setGrupos(grupos);
         }
 
         return clienteUpdate;
+    }
+
+    // cliente precisa ter ao menos um endereço, e exatamente um marcado como principal - é esse
+    // principal que Cliente.getEnderecoPrincipal() devolve pros relatórios/NFe/SPC usarem
+    private void validarEnderecos(List<Endereco> enderecos){
+        if (enderecos == null || enderecos.isEmpty()) {
+            throw new ItemInvalidoException("Cliente precisa ter ao menos um endereço");
+        }
+        long principais = enderecos.stream().filter(Endereco::isPrincipal).count();
+        if (principais != 1) {
+            throw new ItemInvalidoException("Cliente precisa ter exatamente um endereço marcado como principal");
+        }
+    }
+
+    // mesmo padrão de sincronização usado em ProdutoService/ConsignacaoService pras suas listas:
+    // casa por id (atualiza em vigor), o que não bate em nenhum existente é novo, e o que sobra dos
+    // existentes é removido (orphanRemoval cuida do DELETE)
+    private void sincronizarEnderecos(Cliente clienteUpdate, List<Endereco> enderecosRequest){
+        Map<Long, Endereco> existentesPorId = new HashMap<>();
+        for (Endereco existente : clienteUpdate.getEnderecos()) {
+            existentesPorId.put(existente.getId(), existente);
+        }
+
+        for (Endereco enderecoRequest : enderecosRequest) {
+            if (enderecoRequest.getId() != null && existentesPorId.containsKey(enderecoRequest.getId())) {
+                Endereco existente = existentesPorId.remove(enderecoRequest.getId());
+                existente.setLogradouro(enderecoRequest.getLogradouro());
+                existente.setNumero(enderecoRequest.getNumero());
+                existente.setComplemento(enderecoRequest.getComplemento());
+                existente.setBairro(enderecoRequest.getBairro());
+                existente.setMunicipio(enderecoRequest.getMunicipio());
+                existente.setUf(enderecoRequest.getUf());
+                existente.setCep(enderecoRequest.getCep());
+                existente.setIbge(enderecoRequest.getIbge());
+                existente.setPrincipal(enderecoRequest.isPrincipal());
+                enderecoService.enriquecerIbge(existente);
+            } else {
+                enderecoService.enriquecerIbge(enderecoRequest);
+                clienteUpdate.adicionarEndereco(enderecoRequest);
+            }
+        }
+
+        for (Endereco removerEndereco : existentesPorId.values()) {
+            clienteUpdate.removerEndereco(removerEndereco);
+        }
     }
 
     @Transactional

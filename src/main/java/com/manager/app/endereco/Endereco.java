@@ -28,6 +28,7 @@ public class Endereco {
     private String uf;
     private String cep;
     private String ibge;
+    private boolean principal;
 
     @JsonIgnore
     @CreationTimestamp

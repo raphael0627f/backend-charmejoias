@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -22,8 +23,9 @@ public class GrupoController {
     @GetMapping
     public ResponseEntity<Page<GrupoDTO>> findAll(
             @RequestParam(required = false) String busca,
+            @RequestParam(required = false) TipoGrupo tipo,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, pageable).map(mapper::toDTO));
+        return ResponseEntity.ok(service.findAll(busca, tipo, pageable).map(mapper::toDTO));
     }
 
     @GetMapping(value = "/{id}")
@@ -32,6 +34,7 @@ public class GrupoController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('GRUPO_GERENCIAR')")
     public ResponseEntity<GrupoDTO> create(@RequestBody @Valid GrupoDTO grupoDTO){
         Grupo grupo = service.create(mapper.toEntity(grupoDTO));
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(grupo.getId()).toUri();
@@ -39,17 +42,20 @@ public class GrupoController {
     }
 
     @PutMapping
+    @PreAuthorize("hasAuthority('GRUPO_GERENCIAR')")
     public ResponseEntity<GrupoDTO> update(@RequestBody @Valid GrupoDTO grupoDTO){
         Grupo grupo = service.update(mapper.toEntity(grupoDTO));
         return ResponseEntity.ok(mapper.toDTO(grupo));
     }
 
     @PutMapping(value = "activate/{id}")
+    @PreAuthorize("hasAuthority('GRUPO_GERENCIAR')")
     public ResponseEntity<GrupoDTO> activate(@PathVariable Long id){
         return ResponseEntity.ok(mapper.toDTO(service.activate(id)));
     }
 
     @DeleteMapping(value = "/{id}")
+    @PreAuthorize("hasAuthority('GRUPO_GERENCIAR')")
     public ResponseEntity<Void> delete(@PathVariable Long id){
         service.deactivate(id);
         return ResponseEntity.noContent().build();

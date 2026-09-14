@@ -2,6 +2,7 @@ package com.manager.app.acertoconsignacao;
 
 import com.manager.app.acertoconsignacao.dto.AcertoConsignacaoRequestDTO;
 import com.manager.app.acertoconsignacao.dto.AcertoConsignacaoResponseDTO;
+import com.manager.app.acertoconsignacao.dto.AcertoConsignacaoResumoDTO;
 import com.manager.app.acertoconsignacao.dto.ProdutoVendidoDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -26,14 +28,19 @@ public class AcertoConsignacaoController {
     private final AcertoConsignacaoMapper mapper;
 
     @GetMapping
-    public ResponseEntity<Page<AcertoConsignacaoResponseDTO>> findAll(
+    public ResponseEntity<Page<AcertoConsignacaoResumoDTO>> findAll(
             @RequestParam(required = false) String busca,
             @RequestParam(required = false) Long consignacaoId,
             @RequestParam(required = false) Boolean confirmado,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataInicio,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataFim,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataEntregaInicio,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataEntregaFim,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataPreAcertoInicio,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataPreAcertoFim,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataAcertoInicio,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataAcertoFim,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, consignacaoId, confirmado, dataInicio, dataFim, pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.ok(service.findAllResumo(busca, consignacaoId, confirmado,
+                dataEntregaInicio, dataEntregaFim, dataPreAcertoInicio, dataPreAcertoFim, dataAcertoInicio, dataAcertoFim, pageable));
     }
 
     @GetMapping(value = "/{id}")
@@ -42,6 +49,7 @@ public class AcertoConsignacaoController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('ACERTO_CONSIGNACAO_GERENCIAR')")
     public ResponseEntity<AcertoConsignacaoResponseDTO> create(@RequestBody @Valid AcertoConsignacaoRequestDTO request){
         AcertoConsignacao acerto = service.create(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(acerto.getId()).toUri();
@@ -49,12 +57,14 @@ public class AcertoConsignacaoController {
     }
 
     @PutMapping
+    @PreAuthorize("hasAuthority('ACERTO_CONSIGNACAO_GERENCIAR')")
     public ResponseEntity<AcertoConsignacaoResponseDTO> update(@RequestBody @Valid AcertoConsignacaoRequestDTO request){
         AcertoConsignacao acerto = service.update(request);
         return ResponseEntity.ok(mapper.toResponseDTO(acerto));
     }
 
     @PutMapping(value = "/{id}/confirmar")
+    @PreAuthorize("hasAuthority('ACERTO_CONSIGNACAO_GERENCIAR')")
     public ResponseEntity<AcertoConsignacaoResponseDTO> confirmar(@PathVariable Long id){
         AcertoConsignacao acerto = service.confirmar(id);
         return ResponseEntity.ok(mapper.toResponseDTO(acerto));

@@ -21,6 +21,7 @@ import java.util.UUID;
 @JsonPropertyOrder({
         "id",
         "sku",
+        "codigoBarras",
         "referencia",
         "nome",
         "tipo",
@@ -47,6 +48,7 @@ public class ProdutoResponseDTO {
 
     private UUID id;
     private String sku;
+    private String codigoBarras;
     private String referencia;
     private String nome;
     private TipoProduto tipo;

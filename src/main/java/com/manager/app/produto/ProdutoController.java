@@ -14,11 +14,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -35,13 +37,15 @@ public class ProdutoController {
             @RequestParam(required = false) Boolean ativo,
             @RequestParam(required = false) Long categoriaId,
             @RequestParam(required = false) Long fornecedorId,
+            @RequestParam(required = false) Long grupoId,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, ativo, categoriaId, fornecedorId, pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.ok(service.findAll(busca, ativo, categoriaId, fornecedorId, grupoId, pageable).map(mapper::toResponseDTO));
     }
 
     @GetMapping(value = "/proximo-sku")
-    public ResponseEntity<ProximoSkuProdutoResponseDTO> proximoSku(){
-        return ResponseEntity.ok(new ProximoSkuProdutoResponseDTO(service.proximoSku()));
+    public ResponseEntity<ProximoSkuProdutoResponseDTO> proximoSku(
+            @RequestParam(required = false) String letra){
+        return ResponseEntity.ok(new ProximoSkuProdutoResponseDTO(service.proximoSku(letra)));
     }
 
     @GetMapping(value = "/sku-disponivel")
@@ -51,6 +55,11 @@ public class ProdutoController {
             @RequestParam(required = false) Long ignorarProdutoVariacaoId){
         boolean disponivel = service.skuDisponivel(sku, ignorarProdutoId, ignorarProdutoVariacaoId);
         return ResponseEntity.ok(new SkuDisponivelResponseDTO(sku, disponivel));
+    }
+
+    @GetMapping(value = "/busca-exata")
+    public ResponseEntity<List<ProdutoResponseDTO>> buscaExata(@RequestParam String termo){
+        return ResponseEntity.ok(service.buscarExata(termo).stream().map(mapper::toResponseDTO).toList());
     }
 
     @PostMapping(value = "/variacoes/preview")
@@ -64,6 +73,7 @@ public class ProdutoController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('PRODUTO_GERENCIAR')")
     public ResponseEntity<ProdutoResponseDTO> create(@RequestBody @Valid ProdutoRequestDTO produtoRequestDTO){
         ProdutoRelacoesDTO relacoes = new ProdutoRelacoesDTO(produtoRequestDTO.getCategoriaId(), produtoRequestDTO.getFornecedorId(), produtoRequestDTO.getGruposIds(), produtoRequestDTO.getNcmCodigo());
         Produto produto = service.create(mapper.toEntity(produtoRequestDTO), relacoes, produtoRequestDTO.getVariacoes());
@@ -72,6 +82,7 @@ public class ProdutoController {
     }
 
     @PutMapping
+    @PreAuthorize("hasAuthority('PRODUTO_GERENCIAR')")
     public ResponseEntity<ProdutoResponseDTO> update(@RequestBody @Valid ProdutoRequestDTO produtoRequestDTO){
         ProdutoRelacoesDTO relacoes = new ProdutoRelacoesDTO(produtoRequestDTO.getCategoriaId(), produtoRequestDTO.getFornecedorId(), produtoRequestDTO.getGruposIds(), produtoRequestDTO.getNcmCodigo());
         Produto produto = service.update(mapper.toEntity(produtoRequestDTO), relacoes, produtoRequestDTO.getVariacoes());
@@ -79,17 +90,20 @@ public class ProdutoController {
     }
 
     @PutMapping(value = "activate/{id}")
+    @PreAuthorize("hasAuthority('PRODUTO_GERENCIAR')")
     public ResponseEntity<ProdutoResponseDTO> activate(@PathVariable UUID id){
         return ResponseEntity.ok(mapper.toResponseDTO(service.activate(id)));
     }
 
     @DeleteMapping(value = "/{id}")
+    @PreAuthorize("hasAuthority('PRODUTO_GERENCIAR')")
     public ResponseEntity<Void> delete(@PathVariable UUID id){
         service.deactivate(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping(value = "/{id}/imagem", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('PRODUTO_GERENCIAR')")
     public ResponseEntity<ProdutoResponseDTO> uploadImagem(@PathVariable UUID id, @RequestParam("imagem") MultipartFile imagem){
         return ResponseEntity.ok(mapper.toResponseDTO(service.atualizarImagem(id, imagem)));
     }
@@ -106,6 +120,7 @@ public class ProdutoController {
     }
 
     @DeleteMapping(value = "/{id}/imagem")
+    @PreAuthorize("hasAuthority('PRODUTO_GERENCIAR')")
     public ResponseEntity<Void> deleteImagem(@PathVariable UUID id){
         service.removerImagem(id);
         return ResponseEntity.noContent().build();

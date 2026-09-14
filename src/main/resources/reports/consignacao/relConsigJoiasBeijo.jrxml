@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.3.final using JasperReports Library version 6.21.3-4a3078d20785ebe464f18037d738d12fc98c13cf  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test" columnCount="4" pageWidth="595" pageHeight="842" columnWidth="142" leftMargin="13" rightMargin="13" topMargin="20" bottomMargin="20" uuid="9c2b0e13-d6ff-4cf2-8310-281f09f7597a">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="padrao"/>
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="net.sf.jasperreports.text.truncate.at.char" value="true"/>
+	<property name="net.sf.jasperreports.export.pdf.force.linebreak.policy" value="true"/>
+	<property name="com.jaspersoft.studio.unit." value="mm"/>
+	<property name="com.jaspersoft.studio.unit.pageHeight" value="mm"/>
+	<property name="com.jaspersoft.studio.unit.pageWidth" value="mm"/>
+	<property name="com.jaspersoft.studio.unit.topMargin" value="mm"/>
+	<property name="com.jaspersoft.studio.unit.bottomMargin" value="mm"/>
+	<property name="com.jaspersoft.studio.unit.leftMargin" value="mm"/>
+	<property name="com.jaspersoft.studio.unit.rightMargin" value="mm"/>
+	<property name="com.jaspersoft.studio.unit.columnWidth" value="mm"/>
+	<property name="com.jaspersoft.studio.unit.columnSpacing" value="mm"/>
+	<parameter name="cabecalho" class="java.io.InputStream" isForPrompting="false"/>
+	<parameter name="rodape" class="java.io.InputStream" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[SELECT sistemadb.tb_consignacoes.`ID`,
+	sistemadb.tb_consignacoes.`DataConsignacao`,
+	sistemadb.tb_consignacoes.`CodCliente`,
+	sistemadb.tb_consignacoes.`NomeCliente`,
+	sistemadb.tb_consignacoes.`ValorTotal`,
+	sistemadb.tb_consignacoes.`QTDEPecas`,
+	sistemadb.tb_consignacoesprodutos.`CodProduto`,
+	sistemadb.tb_consignacoesprodutos.`NomeProduto`,
+	sistemadb.tb_consignacoesprodutos.`ValorProdutoU`,
+	sistemadb.tb_consignacoesprodutos.`QtdeProduto`,
+	sistemadb.tb_consignacoesprodutos.`TipoProduto`,
+	sistemadb.tb_clientes.`CodCliente`,
+	sistemadb.tb_clientes.`TipoCliente`,
+	sistemadb.tb_clientes.`Nome`,
+	sistemadb.tb_clientes.`CPF_CNPJ`,
+	sistemadb.tb_clientes.`Identidade`,
+	sistemadb.tb_clientes.`DataNascimento`,
+	sistemadb.tb_clientes.`CEP`,
+	sistemadb.tb_clientes.`Endereco`,
+	sistemadb.tb_clientes.`Complemento`,
+	sistemadb.tb_clientes.`NuCasa`,
+	sistemadb.tb_clientes.`Cidade`,
+	sistemadb.tb_clientes.`Bairro`,
+	sistemadb.tb_clientes.`UF`,
+	sistemadb.tb_clientes.`Filiacao`,
+	sistemadb.tb_clientes.`Celular1`,
+	sistemadb.tb_clientes.`Celular2`,
+	sistemadb.tb_consignacoes.`NuConsig`
+FROM sistemadb.tb_consignacoes
+	INNER JOIN sistemadb.tb_consignacoesprodutos ON 
+	 sistemadb.tb_consignacoesprodutos.`IDConsignacao` = sistemadb.tb_consignacoes.`ID` 
+	INNER JOIN sistemadb.tb_clientes ON 
+	 sistemadb.tb_clientes.`CodCliente` = sistemadb.tb_consignacoes.`CodCliente` 
+ORDER BY sistemadb.tb_consignacoesprodutos.`TipoProduto` DESC]]>
+	</queryString>
+	<field name="id" class="java.lang.Integer">
+		<property name="com.jaspersoft.studio.field.name" value="ID"/>
+		<property name="com.jaspersoft.studio.field.label" value="ID"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_consignacoes"/>
+	</field>
+	<field name="dataCriacao" class="java.sql.Date">
+		<property name="com.jaspersoft.studio.field.name" value="DataConsignacao"/>
+		<property name="com.jaspersoft.studio.field.label" value="DataConsignacao"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_consignacoes"/>
+	</field>
+	<field name="codCliente" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="CodCliente"/>
+		<property name="com.jaspersoft.studio.field.label" value="CodCliente"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_consignacoes"/>
+	</field>
+	<field name="nomeCliente" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NomeCliente"/>
+		<property name="com.jaspersoft.studio.field.label" value="NomeCliente"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_consignacoes"/>
+	</field>
+	<field name="valorTotal" class="java.lang.Double">
+		<property name="com.jaspersoft.studio.field.name" value="ValorTotal"/>
+		<property name="com.jaspersoft.studio.field.label" value="ValorTotal"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_consignacoes"/>
+	</field>
+	<field name="qtdProdutos" class="java.lang.Integer">
+		<property name="com.jaspersoft.studio.field.name" value="QTDEPecas"/>
+		<property name="com.jaspersoft.studio.field.label" value="QTDEPecas"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_consignacoes"/>
+	</field>
+	<field name="codProduto" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="CodProduto"/>
+		<property name="com.jaspersoft.studio.field.label" value="CodProduto"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_consignacoesprodutos"/>
+	</field>
+	<field name="nomeProduto" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NomeProduto"/>
+		<property name="com.jaspersoft.studio.field.label" value="NomeProduto"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_consignacoesprodutos"/>
+	</field>
+	<field name="valorProduto" class="java.lang.Double">
+		<property name="com.jaspersoft.studio.field.name" value="ValorProdutoU"/>
+		<property name="com.jaspersoft.studio.field.label" value="ValorProdutoU"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_consignacoesprodutos"/>
+	</field>
+	<field name="qtdProduto" class="java.lang.Integer">
+		<property name="com.jaspersoft.studio.field.name" value="QtdeProduto"/>
+		<property name="com.jaspersoft.studio.field.label" value="QtdeProduto"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_consignacoesprodutos"/>
+	</field>
+	<field name="tipoProduto" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="TipoProduto"/>
+		<property name="com.jaspersoft.studio.field.label" value="TipoProduto"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_consignacoesprodutos"/>
+	</field>
+	<field name="cep" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="CEP"/>
+		<property name="com.jaspersoft.studio.field.label" value="CEP"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_clientes"/>
+	</field>
+	<field name="logradouro" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="Endereco"/>
+		<property name="com.jaspersoft.studio.field.label" value="Endereco"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_clientes"/>
+	</field>
+	<field name="complemento" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="Complemento"/>
+		<property name="com.jaspersoft.studio.field.label" value="Complemento"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_clientes"/>
+	</field>
+	<field name="nuCasa" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NuCasa"/>
+		<property name="com.jaspersoft.studio.field.label" value="NuCasa"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_clientes"/>
+	</field>
+	<field name="municipio" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="Cidade"/>
+		<property name="com.jaspersoft.studio.field.label" value="Cidade"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_clientes"/>
+	</field>
+	<field name="bairro" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="Bairro"/>
+		<property name="com.jaspersoft.studio.field.label" value="Bairro"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_clientes"/>
+	</field>
+	<field name="uf" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="UF"/>
+		<property name="com.jaspersoft.studio.field.label" value="UF"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_clientes"/>
+	</field>
+	<field name="celular" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="Celular1"/>
+		<property name="com.jaspersoft.studio.field.label" value="Celular1"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_clientes"/>
+	</field>
+	<field name="telefone" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="Celular2"/>
+		<property name="com.jaspersoft.studio.field.label" value="Celular2"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_clientes"/>
+	</field>
+	<field name="kit" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NuConsig"/>
+		<property name="com.jaspersoft.studio.field.label" value="NuConsig"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="tb_consignacoes"/>
+	</field>
+	<field name="dataEntrega" class="java.lang.String"/>
+	<field name="dataPreAcerto" class="java.lang.String"/>
+	<field name="dataAcerto" class="java.lang.String"/>
+	<field name="descricao" class="java.lang.String"/>
+	<variable name="QtdeProduto1" class="java.lang.Integer" resetType="Group" resetGroup="TipoProduto" calculation="DistinctCount">
+		<variableExpression><![CDATA[$F{qtdProduto}]]></variableExpression>
+	</variable>
+	<variable name="QtdeProduto2" class="java.lang.Integer" resetType="Group" resetGroup="TipoProduto" calculation="Sum">
+		<variableExpression><![CDATA[$F{qtdProduto}]]></variableExpression>
+	</variable>
+	<variable name="QtdeProduto3" class="java.lang.Integer" resetType="None" incrementType="Report" calculation="Sum">
+		<variableExpression><![CDATA[$F{qtdProduto}]]></variableExpression>
+	</variable>
+	<variable name="ValorTotal1" class="java.lang.Double" resetType="Page" calculation="Sum">
+		<variableExpression><![CDATA[$F{valorTotal}]]></variableExpression>
+	</variable>
+	<group name="TipoProduto">
+		<groupExpression><![CDATA[$F{tipoProduto}]]></groupExpression>
+		<groupHeader>
+			<band height="12">
+				<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				<textField evaluationTime="Group" evaluationGroup="TipoProduto">
+					<reportElement mode="Opaque" x="0" y="0" width="142" height="12" backcolor="#C2C2C2" uuid="c203f5a9-1850-4d65-bd46-17c49c95bb26">
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					</reportElement>
+					<box>
+						<pen lineWidth="1.0"/>
+						<topPen lineWidth="1.0"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{tipoProduto} + " - " + $V{QtdeProduto2}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<pageHeader>
+		<band height="115" splitType="Stretch">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<image scaleImage="FillFrame">
+				<reportElement x="0" y="0" width="569" height="67" uuid="bc976160-b87c-4a0d-ae19-83a115debfea"/>
+				<imageExpression><![CDATA[$P{cabecalho}]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="62" y="69" width="507" height="15" uuid="6381e000-32d5-44cc-b61e-43545b4dcf22">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{nomeCliente}+"   Cód.: "+$F{codCliente}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="69" width="62" height="15" uuid="2db4a317-f74f-4fbf-bcf4-086c6fe05c3a">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[Cliente         :   ]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="84" width="62" height="15" uuid="8acb7a70-b2aa-44c4-ae08-eed82b68cac1">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[Endereço     :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="99" width="62" height="15" uuid="62dc4c28-4d6d-43f1-ab35-533f6d490a13">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[Celular         :]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="62" y="84" width="507" height="15" uuid="fa2d8fc2-80a2-4abb-8991-13db6218c569">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{logradouro}+" - "+$F{nuCasa}+" - "+$F{bairro}+" - "+$F{municipio}+" - "+$F{uf}+" - "+$F{cep}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="62" y="99" width="507" height="15" uuid="20dc8c5b-6178-4462-affb-655f666d633e">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{celular}+" / "+$F{telefone}+"  "+$F{complemento}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="114" width="569" height="1" uuid="a519e7e2-e8be-4fc6-bf5b-430cc2cc811e"/>
+			</line>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="12" splitType="Stretch">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<staticText>
+				<reportElement mode="Transparent" x="120" y="0" width="22" height="12" uuid="3f34aec7-9a26-441e-a98c-ad07657ae364"/>
+				<box>
+					<topPen lineWidth="0.3"/>
+					<leftPen lineWidth="0.3"/>
+					<bottomPen lineWidth="0.3"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<textField>
+				<reportElement mode="Transparent" x="57" y="0" width="23" height="12" uuid="f661b072-3ba5-4d01-b7f3-f4107ef2f3a2">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="79f822a3-76ad-44c1-9a92-65a359f9acec"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.3"/>
+					<leftPen lineWidth="0.3"/>
+					<bottomPen lineWidth="0.3"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{qtdProduto}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement mode="Transparent" x="80" y="0" width="40" height="12" uuid="84116410-7a0e-4b05-a11d-647fe4e65ca2">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="653a6ad1-4f47-43e6-a8df-c2197745408a"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.3"/>
+					<leftPen lineWidth="0.3"/>
+					<bottomPen lineWidth="0.3"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new BigDecimal($F{valorProduto}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement mode="Transparent" x="0" y="0" width="57" height="12" uuid="dde1c9fe-14ae-4db4-8f79-015c503384c0">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="02850c99-ae34-45cc-b57d-f5baa234f57b"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="0.3"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="0.3"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{codProduto}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="63" splitType="Stretch">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<line>
+				<reportElement x="0" y="-1" width="569" height="1" uuid="801d8214-ff79-44a7-a870-6292bccb5b69"/>
+			</line>
+			<textField>
+				<reportElement x="0" y="0" width="568" height="13" uuid="658f0e78-1cce-416c-af2a-fba9e7e69a78">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement markup="html">
+					<font isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA["<b>Nº: </b>"+$F{id}+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+"<b>KIT: </b>"+$F{kit}+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+$F{descricao}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="10" y="0" width="558" height="13" uuid="ca407e6f-7330-4895-97f3-29436f432556">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" markup="html">
+					<font isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA["<b>Total de Produtos: </b>"+$F{qtdProdutos}+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+"<b>Valor Total: R$ </b>"+new BigDecimal($F{valorTotal}).setScale(2, BigDecimal.ROUND_HALF_EVEN).toString().replace(".",",")]]></textFieldExpression>
+			</textField>
+			<image scaleImage="FillFrame">
+				<reportElement x="0" y="13" width="569" height="50" uuid="d9a42645-39ae-451a-ab01-447cacdf7615">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<imageExpression><![CDATA[$P{rodape}]]></imageExpression>
+			</image>
+		</band>
+	</pageFooter>
+</jasperReport>

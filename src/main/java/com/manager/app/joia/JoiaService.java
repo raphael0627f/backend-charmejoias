@@ -2,6 +2,7 @@ package com.manager.app.joia;
 
 import com.manager.app.joia.dto.JoiaRelacoesDTO;
 import com.manager.app.grupo.Grupo;
+import com.manager.app.grupo.TipoGrupo;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
 import com.manager.app.shared.specification.SpecificationUtils;
 import com.manager.app.grupo.GrupoValidation;
@@ -64,6 +65,16 @@ public class JoiaService {
         return repository.findByCodigoAndAtivoTrue(codigo).orElseThrow(() -> new ObjetoNaoEncontradoException("Joia não encontrada. codigo: " + codigo));
     }
 
+    // busca exata pra bipagem de código de barras: tenta por codigo primeiro, só cai pra referência
+    // se não achar nada - mesmo comportamento de ProdutoService.buscarExata
+    public List<Joia> buscarExata(String termo){
+        List<Joia> porCodigo = repository.buscarExataPorCodigo(termo);
+        if (!porCodigo.isEmpty()) {
+            return porCodigo;
+        }
+        return repository.buscarExataPorReferencia(termo);
+    }
+
     @Transactional
     public Joia create(Joia joia, JoiaRelacoesDTO relacoes){
         validation.codigoExistenteCreate(joia.getCodigo());
@@ -75,6 +86,7 @@ public class JoiaService {
             if (grupos.size() != relacoes.getGruposIds().size()) {
                 throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
             }
+            grupoValidation.validarTipo(grupos, TipoGrupo.PRODUTO);
             joia.setGrupos(grupos);
         }
         return repository.save(joia);
@@ -98,6 +110,7 @@ public class JoiaService {
             if (grupos.size() != relacoes.getGruposIds().size()) {
                 throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
             }
+            grupoValidation.validarTipo(grupos, TipoGrupo.PRODUTO);
             joiaUpdate.setGrupos(grupos);
         }
         return joiaUpdate;

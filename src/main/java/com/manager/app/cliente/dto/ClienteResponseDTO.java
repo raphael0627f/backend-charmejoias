@@ -30,7 +30,7 @@ import java.util.UUID;
         "observacao",
         "dataNascimento",
         "ativo",
-        "endereco",
+        "enderecos",
         "grupos",
         "createdAt",
         "updatedAt"
@@ -50,7 +50,7 @@ public class ClienteResponseDTO {
     private String observacao;
     private LocalDate dataNascimento;
     private boolean ativo;
-    private Endereco endereco;
+    private List<Endereco> enderecos;
     private List<Grupo> grupos;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

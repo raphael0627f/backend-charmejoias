@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -34,6 +35,7 @@ public class EmpresaController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('EMPRESA_GERENCIAR')")
     public ResponseEntity<EmpresaResponseDTO> create(@RequestBody @Valid EmpresaRequestDTO empresaRequestDTO){
         Empresa empresa = service.create(mapper.toEntity(empresaRequestDTO));
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(empresa.getId()).toUri();
@@ -41,12 +43,14 @@ public class EmpresaController {
     }
 
     @PutMapping
+    @PreAuthorize("hasAuthority('EMPRESA_GERENCIAR')")
     public ResponseEntity<EmpresaResponseDTO> update(@RequestBody @Valid EmpresaRequestDTO empresaRequestDTO){
         Empresa empresa = service.update(mapper.toEntity(empresaRequestDTO));
         return ResponseEntity.ok(mapper.toResponseDTO(empresa));
     }
 
     @PostMapping(value = "/{id}/certificado", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('EMPRESA_GERENCIAR')")
     public ResponseEntity<EmpresaResponseDTO> enviarCertificado(
             @PathVariable Long id,
             @RequestParam("certificado") MultipartFile certificado,

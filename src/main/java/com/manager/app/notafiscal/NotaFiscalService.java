@@ -48,6 +48,7 @@ public class NotaFiscalService {
     private final NotaFiscalValidation validation;
     private final ContoraClient contoraClient;
     private final CfopRepository cfopRepository;
+    private final NotaFiscalXmlStorageService xmlStorageService;
 
     public Page<NotaFiscal> findAll(String busca, StatusNotaFiscal status, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
         Specification<NotaFiscal> spec = comBusca(busca);
@@ -76,8 +77,10 @@ public class NotaFiscalService {
         if (busca == null || busca.isBlank()) return null;
         Long comoNumero = SpecificationUtils.comoLong(busca);
         return (root, query, cb) -> {
+            var cliente = root.join("cliente", JoinType.LEFT);
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
-            predicates.add(SpecificationUtils.likeIgnoreCase(cb, root.join("cliente", JoinType.LEFT).get("nome"), busca));
+            predicates.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca));
+            predicates.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca));
             if (comoNumero != null) {
                 predicates.add(cb.equal(root.get("id"), comoNumero));
                 predicates.add(cb.equal(root.get("numero"), comoNumero));
@@ -94,7 +97,7 @@ public class NotaFiscalService {
         Empresa empresa = empresaService.findById(empresaId);
         Cliente cliente = clienteService.findById(clienteId);
 
-        CfopReferencia.Escopo escopo = CfopReferencia.escopoPara(empresa.getEndereco().getUf(), cliente.getEndereco().getUf());
+        CfopReferencia.Escopo escopo = CfopReferencia.escopoPara(empresa.getEndereco().getUf(), cliente.getEnderecoPrincipal().getUf());
 
         return cfopRepository.findByCodigoStartingWithOrderByCodigo(escopo.getPrefixoCfop()).stream()
                 .map(cfop -> new CfopDisponivelDTO(cfop.getCodigo(), cfop.getDescricao()))
@@ -108,12 +111,12 @@ public class NotaFiscalService {
         Cliente cliente = clienteService.findById(request.getClienteId());
 
         String ufEmpresa = empresa.getEndereco().getUf();
-        String ufCliente = cliente.getEndereco().getUf();
+        String ufCliente = cliente.getEnderecoPrincipal().getUf();
 
         if (isBlank(empresa.getEndereco().getIbge())) {
             throw new ItemInvalidoException("Endereço da empresa está sem o código IBGE do município, obrigatório para a NFe. empresaId: " + empresa.getId());
         }
-        if (isBlank(cliente.getEndereco().getIbge())) {
+        if (isBlank(cliente.getEnderecoPrincipal().getIbge())) {
             throw new ItemInvalidoException("Endereço do cliente está sem o código IBGE do município, obrigatório para a NFe. clienteId: " + cliente.getId());
         }
 
@@ -174,20 +177,30 @@ public class NotaFiscalService {
     @Transactional
     public NotaFiscal update(Long id, NotaFiscalRequestDTO request){
         NotaFiscal notaFiscal = this.findById(id);
-        if (notaFiscal.getStatus() != StatusNotaFiscal.RASCUNHO) {
-            throw new ItemInvalidoException("Só é possível atualizar uma nota fiscal em rascunho. id: " + id + ", status atual: " + notaFiscal.getStatus());
+        if (notaFiscal.getStatus() != StatusNotaFiscal.RASCUNHO && notaFiscal.getStatus() != StatusNotaFiscal.REJEITADA) {
+            throw new ItemInvalidoException("Só é possível atualizar uma nota fiscal em rascunho ou rejeitada. id: " + id + ", status atual: " + notaFiscal.getStatus());
+        }
+
+        // nota rejeitada pela SEFAZ nunca chega a ser autorizada, então não "gasta" a numeração:
+        // corrige os dados e volta pra rascunho mantendo a mesma série/número, pronta pra reenviar
+        if (notaFiscal.getStatus() == StatusNotaFiscal.REJEITADA) {
+            notaFiscal.setStatus(StatusNotaFiscal.RASCUNHO);
+            notaFiscal.setMotivoRejeicao(null);
+            // limpa o documentId do rascunho rejeitado: se ficasse, um polling de status disparado
+            // antes do reenvio consultaria o rascunho antigo na Contora e devolveria pra REJEITADA de novo
+            notaFiscal.setContoraDocumentId(null);
         }
 
         Empresa empresa = empresaService.findById(request.getEmpresaId());
         Cliente cliente = clienteService.findById(request.getClienteId());
 
         String ufEmpresa = empresa.getEndereco().getUf();
-        String ufCliente = cliente.getEndereco().getUf();
+        String ufCliente = cliente.getEnderecoPrincipal().getUf();
 
         if (isBlank(empresa.getEndereco().getIbge())) {
             throw new ItemInvalidoException("Endereço da empresa está sem o código IBGE do município, obrigatório para a NFe. empresaId: " + empresa.getId());
         }
-        if (isBlank(cliente.getEndereco().getIbge())) {
+        if (isBlank(cliente.getEnderecoPrincipal().getIbge())) {
             throw new ItemInvalidoException("Endereço do cliente está sem o código IBGE do município, obrigatório para a NFe. clienteId: " + cliente.getId());
         }
 
@@ -252,13 +265,14 @@ public class NotaFiscalService {
             throw new ItemInvalidoException("Nota fiscal já foi enviada. id: " + id + ", status atual: " + notaFiscal.getStatus());
         }
         notaFiscal.setStatus(StatusNotaFiscal.ENVIADA);
+        notaFiscal.setNumeroTentativaEnvio(notaFiscal.getNumeroTentativaEnvio() + 1);
 
         String contoraCompanyId = notaFiscal.getEmpresa().getContoraCompanyId();
         String documentId = contoraClient.criarRascunhoNfe(notaFiscal);
         notaFiscal.setContoraDocumentId(documentId);
 
-        contoraClient.buildRascunho(contoraCompanyId, documentId, notaFiscal.getId());
-        contoraClient.autorizarRascunho(contoraCompanyId, documentId, notaFiscal.getId());
+        contoraClient.buildRascunho(contoraCompanyId, documentId, notaFiscal.getId(), notaFiscal.getNumeroTentativaEnvio());
+        contoraClient.autorizarRascunho(contoraCompanyId, documentId, notaFiscal.getId(), notaFiscal.getNumeroTentativaEnvio());
 
         return notaFiscal;
     }
@@ -331,6 +345,8 @@ public class NotaFiscalService {
 
         Map<String, Object> sefaz = dados.get("sefaz") instanceof Map<?, ?> sefazMap ? (Map<String, Object>) sefazMap : Map.of();
 
+        boolean jaEstavaAutorizada = notaFiscal.getStatus() == StatusNotaFiscal.AUTORIZADA;
+
         switch (status.toString()) {
             case "authorized" -> {
                 // lifecycle.status continua "authorized" mesmo depois de pedir cancelamento
@@ -341,6 +357,12 @@ public class NotaFiscalService {
                 }
                 notaFiscal.setChaveAcesso(stringOu(sefaz.get("access_key")));
                 notaFiscal.setProtocoloAutorizacao(stringOu(sefaz.get("protocol")));
+
+                // salva o XML só na primeira vez que a nota vira AUTORIZADA (o polling roda a cada
+                // 30s e continuaria batendo "authorized" indefinidamente enquanto a nota não muda de status)
+                if (!jaEstavaAutorizada && notaFiscal.getStatus() == StatusNotaFiscal.AUTORIZADA) {
+                    salvarXmlArtefato(notaFiscal, "xml_authorized");
+                }
             }
             case "error" -> {
                 notaFiscal.setStatus(StatusNotaFiscal.REJEITADA);
@@ -369,9 +391,11 @@ public class NotaFiscalService {
             return;
         }
 
-        if (cancellation.get("protocol") != null) {
+        if (cancellation.get("protocol") != null && notaFiscal.getStatus() != StatusNotaFiscal.CANCELADA) {
             notaFiscal.setStatus(StatusNotaFiscal.CANCELADA);
             notaFiscal.setMotivoRejeicaoCancelamento(null);
+            byte[] xml = contoraClient.baixarArtefato(notaFiscal.getEmpresa().getContoraCompanyId(), notaFiscal.getContoraDocumentId(), "xml_cancelled");
+            xmlStorageService.salvarCancelamento(notaFiscal, xml);
         }
     }
 
@@ -397,10 +421,21 @@ public class NotaFiscalService {
         if ("accepted".equals(status)) {
             correcao.setStatus(StatusCorrecao.ACEITA);
             correcao.setProtocolo(stringOu(correction.get("protocol")));
+            byte[] xml = contoraClient.baixarArtefato(notaFiscal.getEmpresa().getContoraCompanyId(), notaFiscal.getContoraDocumentId(), "xml_correction");
+            xmlStorageService.salvarCorrecao(notaFiscal, correcao.getSequencia(), xml);
         } else if ("rejected".equals(status)) {
             correcao.setStatus(StatusCorrecao.REJEITADA);
             correcao.setMotivoRejeicao(stringOu(correction.get("status_message")));
         }
+    }
+
+    // busca o artefato XML correspondente na Contora e arquiva localmente. Chamado dentro de
+    // aplicarAtualizacaoStatusPolling (@Transactional via atualizarStatus): se isso falhar, a
+    // transação inteira sobe exceção e reverte - a nota só assume o novo status no banco depois
+    // que o XML foi salvo com sucesso, evitando ficar AUTORIZADA/CANCELADA sem o XML arquivado
+    private void salvarXmlArtefato(NotaFiscal notaFiscal, String artefato){
+        byte[] xml = contoraClient.baixarArtefato(notaFiscal.getEmpresa().getContoraCompanyId(), notaFiscal.getContoraDocumentId(), artefato);
+        xmlStorageService.salvar(notaFiscal, xml);
     }
 
     private String stringOu(Object valor){

@@ -1,0 +1,27 @@
+package com.manager.app.usuario;
+
+// conjunto fixo de permissões do sistema - uma por ação de escrita/sensível de cada módulo.
+// Leitura (GET) não exige nenhuma permissão específica, só estar autenticado.
+public enum Permissao {
+    USUARIO_GERENCIAR,
+    CLIENTE_GERENCIAR,
+    PRODUTO_GERENCIAR,
+    JOIA_GERENCIAR,
+    CATEGORIA_GERENCIAR,
+    FORNECEDOR_GERENCIAR,
+    GRUPO_GERENCIAR,
+    NCM_GERENCIAR,
+    TRANSPORTADORA_GERENCIAR,
+    EMPRESA_GERENCIAR,
+    MOSTRUARIO_GERENCIAR,
+    COMISSAO_GERENCIAR,
+    CONSIGNACAO_GERENCIAR,
+    ACERTO_CONSIGNACAO_GERENCIAR,
+    ACERTO_JOIA_GERENCIAR,
+    NOTA_FISCAL_GERENCIAR,
+    NOTA_FISCAL_EMITIR,
+    NOTA_FISCAL_CANCELAR,
+    NOTA_FISCAL_CORRIGIR,
+    SPC_CONSULTAR,
+    SPC_REGISTRAR
+}

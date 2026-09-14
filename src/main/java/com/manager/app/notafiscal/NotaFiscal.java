@@ -52,6 +52,13 @@ public class NotaFiscal {
     private String motivoRejeicaoCancelamento;
     private String contoraDocumentId;
 
+    // conta quantas vezes essa nota foi enviada pra Contora (emitir()). Usado pra compor a
+    // Idempotency-Key de cada tentativa: sem isso, reenviar uma nota REJEITADA depois de corrigida
+    // reusaria a mesma chave da tentativa anterior e a Contora devolveria a resposta antiga
+    // (rejeitada) em vez de processar o payload corrigido.
+    @Column(nullable = false)
+    private Integer numeroTentativaEnvio = 0;
+
     private LocalDateTime dataSaidaEntrada;
 
     @ManyToOne(fetch = FetchType.LAZY)

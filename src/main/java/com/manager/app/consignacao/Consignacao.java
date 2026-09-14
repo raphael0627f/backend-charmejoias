@@ -1,5 +1,6 @@
 package com.manager.app.consignacao;
 
+import com.manager.app.mostruario.Mostruario;
 import com.manager.app.shared.TipoItem;
 import jakarta.persistence.*;
 import lombok.*;
@@ -33,6 +34,10 @@ public class Consignacao {
     @ManyToOne
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
+
+    @ManyToOne
+    @JoinColumn(name = "mostruario_id")
+    private Mostruario mostruario;
 
     @OneToMany(mappedBy = "consignacao", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ConsignacaoProduto> produtos = new ArrayList<>();

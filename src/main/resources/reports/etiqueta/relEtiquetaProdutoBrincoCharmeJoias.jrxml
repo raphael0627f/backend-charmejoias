@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Jaspersoft Studio version 6.21.3.final using JasperReports Library version 6.21.3-4a3078d20785ebe464f18037d738d12fc98c13cf  -->
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="etiqueta-brinco" columnCount="2" printOrder="Horizontal" pageWidth="288" pageHeight="42" columnWidth="144" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="9c2b0e13-d6ff-4cf2-8310-281f09f7597a">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="etiqueta-brinco" columnCount="2" printOrder="Horizontal" pageWidth="288" pageHeight="42" columnWidth="139" columnSpacing="9" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="9c2b0e13-d6ff-4cf2-8310-281f09f7597a">
 	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
 	<property name="com.jaspersoft.studio.report.description" value=""/>
+	<property name="net.sf.jasperreports.text.truncate.at.char" value="true"/>
+	<property name="net.sf.jasperreports.export.pdf.force.linebreak.policy" value="true"/>
+	<property name="com.jaspersoft.studio.unit." value="pixel"/>
 	<style name="fundo BRANCO" mode="Transparent" forecolor="#FFFFFF" backcolor="#DEDE16">
 		<conditionalStyle>
 			<conditionExpression><![CDATA[$F{Nome}.equals( "9230090003990" )]]></conditionExpression>
@@ -27,65 +30,91 @@ FROM sistemadb.tb_etiqueta]]>
 		<property name="com.jaspersoft.studio.field.label" value="CodProduto"/>
 		<property name="com.jaspersoft.studio.field.tree.path" value="tb_etiqueta"/>
 	</field>
+	<field name="precoVenda" class="java.math.BigDecimal"/>
+	<field name="sku" class="java.lang.String"/>
 	<detail>
 		<band height="42" splitType="Stretch">
 			<property name="com.jaspersoft.studio.layout"/>
 			<property name="com.jaspersoft.studio.unit.height" value="mm"/>
-			<componentElement>
-				<reportElement mode="Opaque" x="2" y="4" width="68" height="15" backcolor="rgba(255, 255, 255, 0.0)" uuid="6e1107c4-d73f-48c6-951e-9b651ab11e92">
-					<property name="com.jaspersoft.studio.unit.height" value="px"/>
-					<property name="com.jaspersoft.studio.unit.barHeight" value="mm"/>
-				</reportElement>
-				<jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" type="Code128" drawText="false" checksumRequired="false" barWidth="2" barHeight="42" rotation="None">
-					<jr:codeExpression><![CDATA[$F{codigoBarras}]]></jr:codeExpression>
-				</jr:barbecue>
-			</componentElement>
 			<textField>
-				<reportElement x="8" y="26" width="55" height="10" uuid="4305bb95-96ce-4765-bef3-22b10f46356a">
+				<reportElement x="4" y="29" width="61" height="13" uuid="4305bb95-96ce-4765-bef3-22b10f46356a">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
-				<textElement textAlignment="Center">
-					<font fontName="SansSerif" size="3" isBold="true"/>
+				<textElement textAlignment="Left" verticalAlignment="Top">
+					<font fontName="SansSerif" size="5" isBold="false"/>
 				</textElement>
 				<textFieldExpression><![CDATA[($F{descricao} == null) ? "" : $F{descricao}]]></textFieldExpression>
 			</textField>
-			<textField>
-				<reportElement mode="Opaque" x="8" y="19" width="55" height="7" backcolor="#FFFFFF" uuid="cd328a48-1107-4b14-978b-f8212a91b1dd">
-					<property name="com.jaspersoft.studio.unit.height" value="px"/>
-					<property name="com.jaspersoft.studio.unit.width" value="px"/>
-				</reportElement>
-				<textElement textAlignment="Center">
-					<font size="4"/>
-				</textElement>
-				<textFieldExpression><![CDATA[($F{codigoBarras} == null) ? "" : $F{codigoBarras}]]></textFieldExpression>
-			</textField>
 			<componentElement>
-				<reportElement mode="Opaque" x="73" y="4" width="68" height="15" backcolor="rgba(255, 255, 255, 0.0)" uuid="5d04f7fa-2aa7-406a-bb63-6f3624e88a7e">
-					<property name="com.jaspersoft.studio.unit.height" value="px"/>
-					<property name="com.jaspersoft.studio.unit.barHeight" value="mm"/>
+				<reportElement x="4" y="1" width="61" height="17" uuid="154a28d2-c1a0-46f8-aa12-69fef6beff4a">
+					<property name="com.jaspersoft.studio.unit.barWidth" value="px"/>
 				</reportElement>
-				<jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" type="Code128" drawText="false" checksumRequired="false" barWidth="2" barHeight="42" rotation="None">
-					<jr:codeExpression><![CDATA[$F{codigoBarras}]]></jr:codeExpression>
+				<jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" type="Code39 (Extended)" drawText="false" checksumRequired="false" barWidth="2" barHeight="50">
+					<jr:codeExpression><![CDATA["0013A"]]></jr:codeExpression>
 				</jr:barbecue>
 			</componentElement>
 			<textField>
-				<reportElement mode="Opaque" x="79" y="19" width="55" height="7" backcolor="#FFFFFF" uuid="41c4a320-7c21-4e6e-a8ab-61eadfc7011a">
-					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				<reportElement mode="Opaque" x="4" y="13" width="61" height="16" backcolor="#FFFFFF" uuid="cd328a48-1107-4b14-978b-f8212a91b1dd">
+					<property name="com.jaspersoft.studio.unit.height" value="mm"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 				</reportElement>
-				<textElement textAlignment="Center">
-					<font size="4"/>
+				<textElement textAlignment="Left" verticalAlignment="Top">
+					<font size="8" isBold="true"/>
 				</textElement>
-				<textFieldExpression><![CDATA[($F{codigoBarras} == null) ? "" : $F{codigoBarras}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[($F{sku} == null) ? "" : $F{sku}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="19" y="20" width="46" height="11" uuid="8f6a1d2e-2e3a-4b0b-9d3a-2a6f5a1c9b31">
+					<property name="com.jaspersoft.studio.unit.height" value="mm"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="6" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{precoVenda} == null) ? "" : $F{precoVenda}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="79" y="26" width="55" height="10" uuid="0daa5ec2-18e5-48ee-94b7-dd45f3b5deea">
+				<reportElement x="74" y="29" width="61" height="13" uuid="e43edafb-8541-46c4-954c-c899b9b56050">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 				</reportElement>
-				<textElement textAlignment="Center">
-					<font fontName="SansSerif" size="3" isBold="true"/>
+				<textElement textAlignment="Left" verticalAlignment="Top">
+					<font fontName="SansSerif" size="5" isBold="false"/>
 				</textElement>
 				<textFieldExpression><![CDATA[($F{descricao} == null) ? "" : $F{descricao}]]></textFieldExpression>
+			</textField>
+			<componentElement>
+				<reportElement x="74" y="1" width="61" height="17" uuid="76ffc06c-bc84-4afe-861a-8a13f0e93d84">
+					<property name="com.jaspersoft.studio.unit.barWidth" value="px"/>
+				</reportElement>
+				<jr:barbecue xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" type="Code39 (Extended)" drawText="false" checksumRequired="false" barWidth="2" barHeight="50">
+					<jr:codeExpression><![CDATA["0013A"]]></jr:codeExpression>
+				</jr:barbecue>
+			</componentElement>
+			<textField>
+				<reportElement mode="Opaque" x="74" y="13" width="61" height="16" backcolor="#FFFFFF" uuid="096bc7fe-a9dc-4f55-899a-72f18e238352">
+					<property name="com.jaspersoft.studio.unit.height" value="mm"/>
+					<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Top">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{sku} == null) ? "" : $F{sku}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="89" y="20" width="46" height="11" uuid="24ae807f-cd5d-49e6-9461-6b2db41a789d">
+					<property name="com.jaspersoft.studio.unit.height" value="mm"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.y" value="pixel"/>
+					<property name="com.jaspersoft.studio.unit.x" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="6" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{precoVenda} == null) ? "" : $F{precoVenda}]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>

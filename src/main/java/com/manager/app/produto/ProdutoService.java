@@ -7,6 +7,7 @@ import com.manager.app.produto.dto.ProdutoVariacaoPreviewDTO;
 import com.manager.app.produto.dto.ProdutoVariacaoRequestDTO;
 import com.manager.app.produto.dto.VariacaoSelecionadaDTO;
 import com.manager.app.grupo.Grupo;
+import com.manager.app.grupo.TipoGrupo;
 import com.manager.app.shared.NanoIdUtils;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoExistenteException;
@@ -55,9 +56,9 @@ public class ProdutoService {
     private final ProdutoImagemStorageService imagemStorageService;
 
     private static final Pattern CODIGO_NUMERICO = Pattern.compile("^\\d{4}$");
-    private static final int TAMANHO_CODIGO_BARRAS = 10;
+    private static final int TAMANHO_CODIGO_BARRAS = 5;
 
-    public Page<Produto> findAll(String busca, Boolean ativo, Long categoriaId, Long fornecedorId, Pageable pageable){
+    public Page<Produto> findAll(String busca, Boolean ativo, Long categoriaId, Long fornecedorId, Long grupoId, Pageable pageable){
         Specification<Produto> spec = comBusca(busca);
 
         if (ativo != null) {
@@ -73,6 +74,14 @@ public class ProdutoService {
         if (fornecedorId != null) {
             Specification<Produto> fornecedorSpec = (root, query, cb) -> cb.equal(root.get("fornecedor").get("id"), fornecedorId);
             spec = spec == null ? fornecedorSpec : spec.and(fornecedorSpec);
+        }
+
+        if (grupoId != null) {
+            Specification<Produto> grupoSpec = (root, query, cb) -> {
+                query.distinct(true);
+                return cb.equal(root.join("grupos").get("id"), grupoId);
+            };
+            spec = spec == null ? grupoSpec : spec.and(grupoSpec);
         }
 
         return repository.findAll(spec, pageable);
@@ -99,25 +108,63 @@ public class ProdutoService {
         return repository.findBySkuAndAtivoTrue(sku).orElseThrow(() -> new ObjetoNaoEncontradoException("Produto não encontrado. sku: " + sku));
     }
 
+    // busca exata pra bipagem de código de barras (Consignações, Pré-acertos, Nota Fiscal, Pedidos,
+    // Etiquetas): tenta por sku/codigoBarras primeiro (produto ou variação), só cai pra referência se
+    // não achar nada - mesmo comportamento que já existia replicado nos formulários do frontend
+    public List<Produto> buscarExata(String termo){
+        List<Produto> porSkuOuCodigoBarras = repository.buscarExataPorSkuOuCodigoBarras(termo);
+        if (!porSkuOuCodigoBarras.isEmpty()) {
+            return porSkuOuCodigoBarras;
+        }
+        return repository.buscarExataPorReferencia(termo);
+    }
+
     public ProdutoVariacao findVariacaoById(Long id){
         return produtoVariacaoRepository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Variação de produto não encontrada. id: " + id));
     }
 
     public String proximoSku(){
-        Set<Integer> usados = new HashSet<>();
-        for (String sku : repository.findAllSkus()) {
-            if (sku == null || sku.length() < 4) continue;
-            String prefixo = sku.substring(0, 4);
-            if (CODIGO_NUMERICO.matcher(prefixo).matches()) {
-                usados.add(Integer.parseInt(prefixo));
+        return proximoSku(null);
+    }
+
+    // quando uma letra é informada, o SKU sugerido passa a ser "<número><LETRA>"
+    // (ex.: "0001G") — o número é o próximo ainda não usado por nenhum SKU
+    // (de produto ou de variação) terminado nessa mesma letra, diferente do
+    // fluxo sem letra, que só olha o prefixo numérico de 4 dígitos.
+    public String proximoSku(String letra){
+        String letraNormalizada = letra == null ? "" : letra.trim().toUpperCase();
+        if (letraNormalizada.isEmpty()) {
+            Set<Integer> usados = new HashSet<>();
+            for (String sku : repository.findAllSkus()) {
+                if (sku == null || sku.length() < 4) continue;
+                String prefixo = sku.substring(0, 4);
+                if (CODIGO_NUMERICO.matcher(prefixo).matches()) {
+                    usados.add(Integer.parseInt(prefixo));
+                }
             }
+
+            int proximo = 1;
+            while (usados.contains(proximo)) {
+                proximo++;
+            }
+            return String.format("%04d", proximo);
+        }
+
+        Set<String> skusExistentes = new HashSet<>();
+        for (String sku : repository.findAllSkus()) {
+            if (sku != null) skusExistentes.add(sku.trim().toUpperCase());
+        }
+        for (String sku : produtoVariacaoRepository.findAllSkus()) {
+            if (sku != null) skusExistentes.add(sku.trim().toUpperCase());
         }
 
         int proximo = 1;
-        while (usados.contains(proximo)) {
+        String candidato;
+        do {
+            candidato = String.format("%04d", proximo) + letraNormalizada;
             proximo++;
-        }
-        return String.format("%04d", proximo);
+        } while (skusExistentes.contains(candidato));
+        return candidato;
     }
 
     public PreviewVariacoesResponseDTO previewCombinacoes(PreviewVariacoesRequestDTO dto){
@@ -207,10 +254,24 @@ public class ProdutoService {
     }
 
     private void validarSkuVariacaoUnico(String sku, Long idAtual){
+        validarSkuVariacaoUnico(sku, idAtual, null);
+    }
+
+    // `produtoIgnorado` exclui as variações do próprio produto sendo salvo: ao
+    // regenerar combinações após excluir alguma, a nova variação (id ainda nulo)
+    // pode reaproveitar o SKU de uma variação antiga do mesmo produto que só será
+    // removida depois, no fim do update — sem isso o SKU aparece como "já existente"
+    // mesmo pertencendo ao próprio produto que está sendo editado.
+    private void validarSkuVariacaoUnico(String sku, Long idAtual, java.util.UUID produtoIgnorado){
         boolean existeEmProduto = repository.existsBySku(sku);
-        boolean existeEmVariacao = idAtual == null
-                ? produtoVariacaoRepository.existsBySku(sku)
-                : produtoVariacaoRepository.existsBySkuAndIdNot(sku, idAtual);
+        boolean existeEmVariacao;
+        if (idAtual != null) {
+            existeEmVariacao = produtoVariacaoRepository.existsBySkuAndIdNot(sku, idAtual);
+        } else if (produtoIgnorado != null) {
+            existeEmVariacao = produtoVariacaoRepository.existsBySkuAndProdutoIdNot(sku, produtoIgnorado);
+        } else {
+            existeEmVariacao = produtoVariacaoRepository.existsBySku(sku);
+        }
         if (existeEmProduto || existeEmVariacao) {
             throw new ObjetoExistenteException("SKU já existente: " + sku);
         }
@@ -226,11 +287,13 @@ public class ProdutoService {
         return !existeEmProduto && !existeEmVariacao;
     }
 
+    // codigo de barras compartilha o mesmo "espaco" entre produto simples e variacao -
+    // um nao pode gerar um codigo que ja exista no outro
     private String gerarCodigoBarrasUnico(){
         String codigo;
         do {
             codigo = NanoIdUtils.generate(TAMANHO_CODIGO_BARRAS);
-        } while (produtoVariacaoRepository.existsByCodigoBarras(codigo));
+        } while (repository.existsByCodigoBarras(codigo) || produtoVariacaoRepository.existsByCodigoBarras(codigo));
         return codigo;
     }
 
@@ -245,8 +308,12 @@ public class ProdutoService {
     }
 
     private ProdutoVariacao montarNovaVariacao(ProdutoVariacaoRequestDTO reqVar){
+        return montarNovaVariacao(reqVar, null);
+    }
+
+    private ProdutoVariacao montarNovaVariacao(ProdutoVariacaoRequestDTO reqVar, java.util.UUID produtoIgnorado){
         List<ItemVariacao> itensOrdenados = resolverItensOrdenados(reqVar.getItensVariacaoIds());
-        validarSkuVariacaoUnico(reqVar.getSku(), null);
+        validarSkuVariacaoUnico(reqVar.getSku(), null, produtoIgnorado);
 
         ProdutoVariacao pv = new ProdutoVariacao();
         pv.setSku(reqVar.getSku());
@@ -280,6 +347,7 @@ public class ProdutoService {
             if (grupos.size() != relacoes.getGruposIds().size()) {
                 throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
             }
+            grupoValidation.validarTipo(grupos, TipoGrupo.PRODUTO);
             produto.setGrupos(grupos);
         }
 
@@ -294,6 +362,7 @@ public class ProdutoService {
             if (produto.getPrecoVenda() == null) {
                 throw new ItemInvalidoException("Preço de venda é obrigatório para produto simples");
             }
+            produto.setCodigoBarras(gerarCodigoBarrasUnico());
         } else {
             if (variacoesRequest == null || variacoesRequest.isEmpty()) {
                 throw new ItemInvalidoException("Produto variável precisa de ao menos uma combinação de variação");
@@ -339,6 +408,7 @@ public class ProdutoService {
             if (grupos.size() != relacoes.getGruposIds().size()) {
                 throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
             }
+            grupoValidation.validarTipo(grupos, TipoGrupo.PRODUTO);
             produtoUpdate.setGrupos(grupos);
         }
 
@@ -348,6 +418,9 @@ public class ProdutoService {
             }
             if (produtoUpdate.getPrecoVenda() == null) {
                 throw new ItemInvalidoException("Preço de venda é obrigatório para produto simples");
+            }
+            if (produtoUpdate.getCodigoBarras() == null) {
+                produtoUpdate.setCodigoBarras(gerarCodigoBarrasUnico());
             }
             List<ProdutoVariacao> antigas = List.copyOf(produtoUpdate.getVariacoes());
             antigas.forEach(produtoUpdate::removerVariacao);
@@ -362,10 +435,10 @@ public class ProdutoService {
                 existentesPorId.put(existente.getId(), existente);
             }
 
+            List<ProdutoVariacaoRequestDTO> novas = new ArrayList<>();
             for (ProdutoVariacaoRequestDTO reqVar : variacoesRequest) {
-                List<ItemVariacao> itensOrdenados = resolverItensOrdenados(reqVar.getItensVariacaoIds());
-
                 if (reqVar.getId() != null && existentesPorId.containsKey(reqVar.getId())) {
+                    List<ItemVariacao> itensOrdenados = resolverItensOrdenados(reqVar.getItensVariacaoIds());
                     ProdutoVariacao existente = existentesPorId.remove(reqVar.getId());
                     if (!existente.getSku().equals(reqVar.getSku())) {
                         validarSkuVariacaoUnico(reqVar.getSku(), existente.getId());
@@ -393,12 +466,22 @@ public class ProdutoService {
                         }
                     }
                 } else {
-                    produtoUpdate.adicionarVariacao(montarNovaVariacao(reqVar));
+                    novas.add(reqVar);
                 }
             }
 
+            // remove as variações órfãs e força o flush do DELETE antes de criar as
+            // novas — o Hibernate, por padrão, executa todos os INSERTs antes dos
+            // DELETEs na mesma transação, então sem esse flush o SKU reaproveitado
+            // de uma combinação recém-excluída colide com a constraint única
+            // (uq_produtos_variacoes_sku) mesmo a linha antiga estando marcada para remoção.
             List<ProdutoVariacao> removidas = List.copyOf(existentesPorId.values());
             removidas.forEach(produtoUpdate::removerVariacao);
+            repository.flush();
+
+            for (ProdutoVariacaoRequestDTO reqVar : novas) {
+                produtoUpdate.adicionarVariacao(montarNovaVariacao(reqVar, produtoUpdate.getId()));
+            }
         }
 
         return produtoUpdate;

@@ -116,28 +116,28 @@ public class ContoraClient {
         Map<String, Object> response = executar(() -> client().post()
                 .uri("/companies/{id}/nfe/drafts", contoraCompanyId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .header("Idempotency-Key", "nota-" + notaFiscal.getId() + "-create")
+                .header("Idempotency-Key", "nota-" + notaFiscal.getId() + "-" + notaFiscal.getNumeroTentativaEnvio() + "-create")
                 .body(payloadDraft(notaFiscal))
                 .retrieve()
                 .body(Map.class));
         return extrairId(response);
     }
 
-    public void buildRascunho(String contoraCompanyId, String documentId, Long notaFiscalId){
+    public void buildRascunho(String contoraCompanyId, String documentId, Long notaFiscalId, Integer tentativa){
         executar(() -> client().post()
                 .uri("/companies/{companyId}/nfe/drafts/{documentId}/build", contoraCompanyId, documentId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .header("Idempotency-Key", "nota-" + notaFiscalId + "-build")
+                .header("Idempotency-Key", "nota-" + notaFiscalId + "-" + tentativa + "-build")
                 .body(Map.of("sign", false))
                 .retrieve()
                 .body(Map.class));
     }
 
-    public void autorizarRascunho(String contoraCompanyId, String documentId, Long notaFiscalId){
+    public void autorizarRascunho(String contoraCompanyId, String documentId, Long notaFiscalId, Integer tentativa){
         executar(() -> client().post()
                 .uri("/companies/{companyId}/nfe/drafts/{documentId}/dispatch", contoraCompanyId, documentId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .header("Idempotency-Key", "nota-" + notaFiscalId + "-authorize")
+                .header("Idempotency-Key", "nota-" + notaFiscalId + "-" + tentativa + "-authorize")
                 .body(Map.of("action", "authorize"))
                 .retrieve()
                 .body(Map.class));
@@ -275,7 +275,7 @@ public class ContoraClient {
     }
 
     private Map<String, Object> payloadDestinatario(Cliente cliente){
-        Endereco endereco = cliente.getEndereco();
+        Endereco endereco = cliente.getEnderecoPrincipal();
 
         Map<String, Object> address = new HashMap<>();
         address.put("street", endereco.getLogradouro());
@@ -330,7 +330,7 @@ public class ContoraClient {
         if (regimeNormal && CST_ICMS_COM_DESTAQUE.contains(produto.getCodigoSituacaoTributariaIcms())) {
             boolean interestadual = item.getCfop() != null && item.getCfop().startsWith("6");
             BigDecimal aliquota = interestadual
-                    ? AliquotaIcmsTable.aliquotaInterestadual(empresa.getEndereco().getUf(), cliente.getEndereco().getUf())
+                    ? AliquotaIcmsTable.aliquotaInterestadual(empresa.getEndereco().getUf(), cliente.getEnderecoPrincipal().getUf())
                     : AliquotaIcmsTable.aliquotaInterna(empresa.getEndereco().getUf());
             icms.put("aliquot", aliquota);
         }

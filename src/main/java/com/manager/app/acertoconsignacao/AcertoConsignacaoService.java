@@ -2,8 +2,11 @@ package com.manager.app.acertoconsignacao;
 
 import com.manager.app.acertoconsignacao.dto.AcertoConsignacaoProdutoRequestDTO;
 import com.manager.app.acertoconsignacao.dto.AcertoConsignacaoRequestDTO;
+import com.manager.app.acertoconsignacao.dto.AcertoConsignacaoResumoDTO;
 import com.manager.app.acertoconsignacao.dto.ProdutoVendidoDTO;
 import com.manager.app.consignacao.Consignacao;
+import com.manager.app.consignacao.dto.ClienteResumoDTO;
+import com.manager.app.consignacao.dto.QuantidadePorCategoriaDTO;
 import com.manager.app.consignacao.ConsignacaoProduto;
 import com.manager.app.consignacao.ConsignacaoRepository;
 import com.manager.app.consignacao.ConsignacaoValidation;
@@ -29,7 +32,9 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -43,34 +48,107 @@ public class AcertoConsignacaoService {
     private final JoiaService joiaService;
     private final ConsignacaoValidation consignacaoValidation;
 
-    public Page<AcertoConsignacao> findAll(String busca, Long consignacaoId, Boolean confirmado, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
+    public Page<AcertoConsignacao> findAll(String busca, Long consignacaoId, Boolean confirmado,
+                                            LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
+                                            LocalDate dataPreAcertoInicio, LocalDate dataPreAcertoFim,
+                                            LocalDate dataAcertoInicio, LocalDate dataAcertoFim,
+                                            Pageable pageable){
         Specification<AcertoConsignacao> spec = comBusca(busca);
 
         if (consignacaoId != null) {
             Specification<AcertoConsignacao> consignacaoSpec = (root, query, cb) ->
                     cb.equal(root.get("consignacao").get("id"), consignacaoId);
-            spec = spec == null ? consignacaoSpec : spec.and(consignacaoSpec);
+            spec = SpecificationUtils.and(spec, consignacaoSpec);
         }
 
         if (confirmado != null) {
             Specification<AcertoConsignacao> confirmadoSpec = (root, query, cb) ->
                     cb.equal(root.get("confirmado"), confirmado);
-            spec = spec == null ? confirmadoSpec : spec.and(confirmadoSpec);
+            spec = SpecificationUtils.and(spec, confirmadoSpec);
         }
 
-        if (dataInicio != null) {
-            Specification<AcertoConsignacao> dataInicioSpec = (root, query, cb) ->
-                    SpecificationUtils.criadoAPartirDe(cb, root.get("createdAt"), dataInicio);
-            spec = spec == null ? dataInicioSpec : spec.and(dataInicioSpec);
+        // as datas vivem na Consignação referenciada, não no Acerto - precisa entrar pelo join
+        if (dataEntregaInicio != null) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) -> SpecificationUtils.apartirDe(cb, root.get("consignacao").get("dataEntrega"), dataEntregaInicio));
+        }
+        if (dataEntregaFim != null) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) -> SpecificationUtils.ate(cb, root.get("consignacao").get("dataEntrega"), dataEntregaFim));
         }
 
-        if (dataFim != null) {
-            Specification<AcertoConsignacao> dataFimSpec = (root, query, cb) ->
-                    SpecificationUtils.criadoAte(cb, root.get("createdAt"), dataFim);
-            spec = spec == null ? dataFimSpec : spec.and(dataFimSpec);
+        if (dataPreAcertoInicio != null) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) -> SpecificationUtils.apartirDe(cb, root.get("consignacao").get("dataPreAcertoConsignacao"), dataPreAcertoInicio));
+        }
+        if (dataPreAcertoFim != null) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) -> SpecificationUtils.ate(cb, root.get("consignacao").get("dataPreAcertoConsignacao"), dataPreAcertoFim));
+        }
+
+        if (dataAcertoInicio != null) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) -> SpecificationUtils.apartirDe(cb, root.get("consignacao").get("dataAcertoConsignacao"), dataAcertoInicio));
+        }
+        if (dataAcertoFim != null) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) -> SpecificationUtils.ate(cb, root.get("consignacao").get("dataAcertoConsignacao"), dataAcertoFim));
         }
 
         return repository.findAll(spec, pageable);
+    }
+
+    // versao enxuta pra listagem, no mesmo formato de ConsignacaoService.findAllResumo: sem os
+    // produtos completos, só os agregados (já computados na entidade) que a listagem realmente usa
+    public Page<AcertoConsignacaoResumoDTO> findAllResumo(String busca, Long consignacaoId, Boolean confirmado,
+                                                           LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
+                                                           LocalDate dataPreAcertoInicio, LocalDate dataPreAcertoFim,
+                                                           LocalDate dataAcertoInicio, LocalDate dataAcertoFim,
+                                                           Pageable pageable){
+        return findAll(busca, consignacaoId, confirmado,
+                dataEntregaInicio, dataEntregaFim, dataPreAcertoInicio, dataPreAcertoFim, dataAcertoInicio, dataAcertoFim, pageable)
+                .map(this::toResumoDTO);
+    }
+
+    private AcertoConsignacaoResumoDTO toResumoDTO(AcertoConsignacao acerto){
+        Consignacao consignacao = acerto.getConsignacao();
+        AcertoConsignacaoResumoDTO dto = new AcertoConsignacaoResumoDTO();
+        dto.setId(acerto.getId());
+        dto.setConsignacaoId(consignacao != null ? consignacao.getId() : null);
+        dto.setCliente(consignacao != null && consignacao.getCliente() != null
+                ? new ClienteResumoDTO(consignacao.getCliente().getCodigo(), consignacao.getCliente().getNome())
+                : null);
+        dto.setDesconto(acerto.getDesconto());
+        dto.setObservacoes(acerto.getObservacoes());
+        dto.setConfirmado(acerto.getConfirmado());
+        dto.setQuantidadeProdutosAcertados(acerto.getQuantidadeProdutosAcertados());
+        dto.setQuantidadeProdutosDevolvidos(acerto.getQuantidadeProdutosDevolvidos());
+        dto.setValorTotalProdutosAcertados(acerto.getValorTotalProdutosAcertados());
+        dto.setValorTotalComDesconto(acerto.getValorTotalComDesconto());
+        dto.setQuantidadePorCategoria(quantidadePorCategoria(acerto));
+        dto.setCreatedAt(acerto.getCreatedAt());
+        dto.setUpdatedAt(acerto.getUpdatedAt());
+        return dto;
+    }
+
+    // agrupa por categoria a quantidade efetivamente acertada (item da consignação menos o que foi
+    // devolvido) - não dá pra somar direto do banco porque a quantidade acertada é uma diferença
+    // entre duas tabelas (ConsignacaoProduto x AcertoConsignacaoProduto), então segue a mesma lógica
+    // já usada em getQuantidadeProdutosAcertados/getValorTotalProdutosAcertados
+    private List<QuantidadePorCategoriaDTO> quantidadePorCategoria(AcertoConsignacao acerto){
+        Map<String, Integer> porCategoria = new LinkedHashMap<>();
+        for (ConsignacaoProduto item : acerto.getConsignacao().getProdutos()) {
+            AcertoConsignacaoProduto devolvido = acerto.devolvidoDe(item);
+            int quantidadeDevolvida = devolvido != null ? devolvido.getQuantidade() : 0;
+            int quantidadeAcertada = item.getQuantidade() - quantidadeDevolvida;
+            if (quantidadeAcertada <= 0) continue;
+
+            porCategoria.merge(categoriaDe(item), quantidadeAcertada, Integer::sum);
+        }
+        return porCategoria.entrySet().stream()
+                .map(entry -> new QuantidadePorCategoriaDTO(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    private String categoriaDe(ConsignacaoProduto item){
+        if (item.getProduto() != null){
+            return item.getProduto().getCategoria() != null ? item.getProduto().getCategoria().getNome() : "Sem categoria";
+        }
+        return item.getJoia().getCategoria() != null ? item.getJoia().getCategoria().getNome() : "Sem categoria";
     }
 
     private Specification<AcertoConsignacao> comBusca(String busca){

@@ -9,10 +9,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -32,12 +34,18 @@ public class JoiaController {
         return ResponseEntity.ok(service.findAll(busca, ativo, categoriaId, pageable).map(mapper::toResponseDTO));
     }
 
+    @GetMapping(value = "/busca-exata")
+    public ResponseEntity<List<JoiaResponseDTO>> buscaExata(@RequestParam String termo){
+        return ResponseEntity.ok(service.buscarExata(termo).stream().map(mapper::toResponseDTO).toList());
+    }
+
     @GetMapping(value = "/{id}")
     public ResponseEntity<JoiaResponseDTO> findById(@PathVariable UUID id){
         return ResponseEntity.ok(mapper.toResponseDTO(service.findById(id)));
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('JOIA_GERENCIAR')")
     public ResponseEntity<JoiaResponseDTO> create(@RequestBody @Valid JoiaRequestDTO joiaRequestDTO){
         JoiaRelacoesDTO relacoes = new JoiaRelacoesDTO(joiaRequestDTO.getCategoriaId(), joiaRequestDTO.getGruposIds());
         Joia joia = service.create(mapper.toEntity(joiaRequestDTO), relacoes);
@@ -46,6 +54,7 @@ public class JoiaController {
     }
 
     @PutMapping
+    @PreAuthorize("hasAuthority('JOIA_GERENCIAR')")
     public ResponseEntity<JoiaResponseDTO> update(@RequestBody @Valid JoiaRequestDTO joiaRequestDTO){
         JoiaRelacoesDTO relacoes = new JoiaRelacoesDTO(joiaRequestDTO.getCategoriaId(), joiaRequestDTO.getGruposIds());
         Joia joia = service.update(mapper.toEntity(joiaRequestDTO), relacoes);
@@ -53,11 +62,13 @@ public class JoiaController {
     }
 
     @PutMapping(value = "activate/{id}")
+    @PreAuthorize("hasAuthority('JOIA_GERENCIAR')")
     public ResponseEntity<JoiaResponseDTO> activate(@PathVariable UUID id){
         return ResponseEntity.ok(mapper.toResponseDTO(service.activate(id)));
     }
 
     @DeleteMapping(value = "/{id}")
+    @PreAuthorize("hasAuthority('JOIA_GERENCIAR')")
     public ResponseEntity<Void> delete(@PathVariable UUID id){
         service.deactivate(id);
         return ResponseEntity.noContent().build();

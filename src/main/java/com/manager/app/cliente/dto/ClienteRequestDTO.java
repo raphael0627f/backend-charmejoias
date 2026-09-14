@@ -43,7 +43,7 @@ public class ClienteRequestDTO {
     @NotNull(message = "Ativo é obrigatório")
     private boolean ativo;
 
-    private EnderecoDTO endereco;
+    private List<EnderecoDTO> enderecos;
     private List<Long> gruposIds;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

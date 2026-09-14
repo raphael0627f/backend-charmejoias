@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -32,6 +33,7 @@ public class TransportadoraController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('TRANSPORTADORA_GERENCIAR')")
     public ResponseEntity<TransportadoraDTO> create(@RequestBody @Valid TransportadoraDTO transportadoraDTO){
         Transportadora transportadora = service.create(mapper.toEntity(transportadoraDTO));
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(transportadora.getId()).toUri();
@@ -39,17 +41,20 @@ public class TransportadoraController {
     }
 
     @PutMapping
+    @PreAuthorize("hasAuthority('TRANSPORTADORA_GERENCIAR')")
     public ResponseEntity<TransportadoraDTO> update(@RequestBody @Valid TransportadoraDTO transportadoraDTO){
         Transportadora transportadora = service.update(mapper.toEntity(transportadoraDTO));
         return ResponseEntity.ok(mapper.toDTO(transportadora));
     }
 
     @PutMapping(value = "/activate/{id}")
+    @PreAuthorize("hasAuthority('TRANSPORTADORA_GERENCIAR')")
     public ResponseEntity<TransportadoraDTO> activate(@PathVariable Long id){
         return ResponseEntity.ok(mapper.toDTO(service.activate(id)));
     }
 
     @DeleteMapping(value = "/{id}")
+    @PreAuthorize("hasAuthority('TRANSPORTADORA_GERENCIAR')")
     public ResponseEntity<Void> delete(@PathVariable Long id){
         service.deactivate(id);
         return ResponseEntity.noContent().build();

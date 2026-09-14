@@ -8,8 +8,11 @@ import com.manager.app.consignacao.ConsignacaoRepository;
 import com.manager.app.consignacao.ConsignacaoValidation;
 import com.manager.app.joia.Joia;
 import com.manager.app.joia.JoiaService;
+import com.manager.app.consignacao.dto.ClienteResumoDTO;
+import com.manager.app.consignacao.dto.QuantidadePorCategoriaDTO;
 import com.manager.app.preacerto.dto.PreAcertoConsignacaoProdutoRequestDTO;
 import com.manager.app.preacerto.dto.PreAcertoConsignacaoRequestDTO;
+import com.manager.app.preacerto.dto.PreAcertoConsignacaoResumoDTO;
 import com.manager.app.produto.Produto;
 import com.manager.app.produto.ProdutoService;
 import com.manager.app.produto.ProdutoVariacao;
@@ -29,7 +32,9 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -38,34 +43,104 @@ import java.util.UUID;
 public class PreAcertoConsignacaoService {
 
     private final PreAcertoConsignacaoRepository repository;
+    private final PreAcertoConsignacaoProdutoRepository preAcertoConsignacaoProdutoRepository;
     private final ConsignacaoRepository consignacaoRepository;
     private final ClienteService clienteService;
     private final ProdutoService produtoService;
     private final JoiaService joiaService;
     private final ConsignacaoValidation consignacaoValidation;
 
-    public Page<PreAcertoConsignacao> findAll(String busca, Long consignacaoId, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
+    public Page<PreAcertoConsignacao> findAll(String busca, Long consignacaoId,
+                                               LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
+                                               LocalDate dataPreAcertoInicio, LocalDate dataPreAcertoFim,
+                                               LocalDate dataAcertoInicio, LocalDate dataAcertoFim,
+                                               Pageable pageable){
         Specification<PreAcertoConsignacao> spec = comBusca(busca);
 
         if (consignacaoId != null) {
             Specification<PreAcertoConsignacao> consignacaoSpec = (root, query, cb) ->
                     cb.equal(root.get("consignacao").get("id"), consignacaoId);
-            spec = spec == null ? consignacaoSpec : spec.and(consignacaoSpec);
+            spec = SpecificationUtils.and(spec, consignacaoSpec);
         }
 
-        if (dataInicio != null) {
-            Specification<PreAcertoConsignacao> dataInicioSpec = (root, query, cb) ->
-                    SpecificationUtils.criadoAPartirDe(cb, root.get("createdAt"), dataInicio);
-            spec = spec == null ? dataInicioSpec : spec.and(dataInicioSpec);
+        // as datas vivem na Consignação referenciada, não no Pré-acerto - INNER JOIN explícito porque
+        // pré-acerto pode não ter Consignação de referência (criado direto pra um Cliente), e esses
+        // devem ficar de fora quando esses filtros são usados (não têm data nenhuma pra comparar)
+        if (dataEntregaInicio != null) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) ->
+                    SpecificationUtils.apartirDe(cb, root.join("consignacao", JoinType.INNER).get("dataEntrega"), dataEntregaInicio));
+        }
+        if (dataEntregaFim != null) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) ->
+                    SpecificationUtils.ate(cb, root.join("consignacao", JoinType.INNER).get("dataEntrega"), dataEntregaFim));
         }
 
-        if (dataFim != null) {
-            Specification<PreAcertoConsignacao> dataFimSpec = (root, query, cb) ->
-                    SpecificationUtils.criadoAte(cb, root.get("createdAt"), dataFim);
-            spec = spec == null ? dataFimSpec : spec.and(dataFimSpec);
+        if (dataPreAcertoInicio != null) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) ->
+                    SpecificationUtils.apartirDe(cb, root.join("consignacao", JoinType.INNER).get("dataPreAcertoConsignacao"), dataPreAcertoInicio));
+        }
+        if (dataPreAcertoFim != null) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) ->
+                    SpecificationUtils.ate(cb, root.join("consignacao", JoinType.INNER).get("dataPreAcertoConsignacao"), dataPreAcertoFim));
+        }
+
+        if (dataAcertoInicio != null) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) ->
+                    SpecificationUtils.apartirDe(cb, root.join("consignacao", JoinType.INNER).get("dataAcertoConsignacao"), dataAcertoInicio));
+        }
+        if (dataAcertoFim != null) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) ->
+                    SpecificationUtils.ate(cb, root.join("consignacao", JoinType.INNER).get("dataAcertoConsignacao"), dataAcertoFim));
         }
 
         return repository.findAll(spec, pageable);
+    }
+
+    // versao enxuta pra listagem, no mesmo formato de ConsignacaoService.findAllResumo: não toca em
+    // preAcerto.produtos, os agregados (itensCount, quantidadeTotal, valorTotal) vêm de uma query de
+    // GROUP BY à parte, batendo só nos ids da página atual
+    public Page<PreAcertoConsignacaoResumoDTO> findAllResumo(String busca, Long consignacaoId,
+                                                              LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
+                                                              LocalDate dataPreAcertoInicio, LocalDate dataPreAcertoFim,
+                                                              LocalDate dataAcertoInicio, LocalDate dataAcertoFim,
+                                                              Pageable pageable){
+        Page<PreAcertoConsignacao> pagina = findAll(busca, consignacaoId,
+                dataEntregaInicio, dataEntregaFim, dataPreAcertoInicio, dataPreAcertoFim, dataAcertoInicio, dataAcertoFim, pageable);
+
+        List<Long> ids = pagina.getContent().stream().map(PreAcertoConsignacao::getId).toList();
+
+        Map<Long, PreAcertoConsignacaoTotaisProjecao> totaisPorId = new HashMap<>();
+        Map<Long, List<QuantidadePorCategoriaDTO>> categoriasPorId = new HashMap<>();
+
+        if (!ids.isEmpty()) {
+            for (PreAcertoConsignacaoTotaisProjecao totais : preAcertoConsignacaoProdutoRepository.buscarTotais(ids)) {
+                totaisPorId.put(totais.getPreAcertoId(), totais);
+            }
+            for (PreAcertoCategoriaQuantidadeProjecao linha : preAcertoConsignacaoProdutoRepository.buscarQuantidadePorCategoria(ids)) {
+                categoriasPorId
+                        .computeIfAbsent(linha.getPreAcertoId(), id -> new ArrayList<>())
+                        .add(new QuantidadePorCategoriaDTO(linha.getCategoria(), linha.getQuantidade()));
+            }
+        }
+
+        return pagina.map(preAcerto -> toResumoDTO(preAcerto, totaisPorId.get(preAcerto.getId()), categoriasPorId.get(preAcerto.getId())));
+    }
+
+    private PreAcertoConsignacaoResumoDTO toResumoDTO(PreAcertoConsignacao preAcerto, PreAcertoConsignacaoTotaisProjecao totais, List<QuantidadePorCategoriaDTO> quantidadePorCategoria){
+        PreAcertoConsignacaoResumoDTO dto = new PreAcertoConsignacaoResumoDTO();
+        dto.setId(preAcerto.getId());
+        dto.setConsignacaoId(preAcerto.getConsignacao() != null ? preAcerto.getConsignacao().getId() : null);
+        dto.setCliente(preAcerto.getCliente() != null
+                ? new ClienteResumoDTO(preAcerto.getCliente().getCodigo(), preAcerto.getCliente().getNome())
+                : null);
+        dto.setObservacoes(preAcerto.getObservacoes());
+        dto.setItensCount(totais != null ? totais.getItensCount().intValue() : 0);
+        dto.setQuantidadeTotal(totais != null ? totais.getQuantidadeTotal() : 0);
+        dto.setValorTotal(totais != null ? totais.getValorTotal() : BigDecimal.ZERO);
+        dto.setQuantidadePorCategoria(quantidadePorCategoria != null ? quantidadePorCategoria : List.of());
+        dto.setCreatedAt(preAcerto.getCreatedAt());
+        dto.setUpdatedAt(preAcerto.getUpdatedAt());
+        return dto;
     }
 
     private Specification<PreAcertoConsignacao> comBusca(String busca){

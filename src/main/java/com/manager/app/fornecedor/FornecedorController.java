@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -32,6 +33,7 @@ public class FornecedorController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('FORNECEDOR_GERENCIAR')")
     public ResponseEntity<FornecedorDTO> create(@RequestBody @Valid FornecedorDTO fornecedorDTO){
         Fornecedor fornecedor = service.create(mapper.toEntity(fornecedorDTO));
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(fornecedor.getId()).toUri();
@@ -39,17 +41,20 @@ public class FornecedorController {
     }
 
     @PutMapping
+    @PreAuthorize("hasAuthority('FORNECEDOR_GERENCIAR')")
     public ResponseEntity<FornecedorDTO> update(@RequestBody @Valid FornecedorDTO fornecedorDTO){
         Fornecedor fornecedor = service.update(mapper.toEntity(fornecedorDTO));
         return ResponseEntity.ok(mapper.toDTO(fornecedor));
     }
 
     @PutMapping(value = "/activate/{id}")
+    @PreAuthorize("hasAuthority('FORNECEDOR_GERENCIAR')")
     public ResponseEntity<FornecedorDTO> activate(@PathVariable Long id){
         return ResponseEntity.ok(mapper.toDTO(service.activate(id)));
     }
 
     @DeleteMapping(value = "/{id}")
+    @PreAuthorize("hasAuthority('FORNECEDOR_GERENCIAR')")
     public ResponseEntity<Void> delete(@PathVariable Long id){
         service.deactivate(id);
         return ResponseEntity.noContent().build();

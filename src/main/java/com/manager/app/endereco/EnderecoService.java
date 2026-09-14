@@ -15,7 +15,7 @@ public class EnderecoService {
 
     @Transactional
     public Endereco create(Endereco endereco){
-        preencherIbgeSeNecessario(endereco);
+        enriquecerIbge(endereco);
         return repository.save(endereco);
     }
 
@@ -30,13 +30,15 @@ public class EnderecoService {
         enderecoUpdate.setUf(endereco.getUf());
         enderecoUpdate.setCep(endereco.getCep());
         enderecoUpdate.setIbge(endereco.getIbge());
-        preencherIbgeSeNecessario(enderecoUpdate);
+        enriquecerIbge(enderecoUpdate);
         return enderecoUpdate;
     }
 
     // preenchimento automático via BrasilAPI - se falhar ou o CEP for inválido, fica em branco
-    // e é responsabilidade de quem exige o IBGE (ex: emissão de NFe) validar antes de usar
-    private void preencherIbgeSeNecessario(Endereco endereco){
+    // e é responsabilidade de quem exige o IBGE (ex: emissão de NFe) validar antes de usar.
+    // público porque o Cliente sincroniza sua própria lista de endereços diretamente (cascade via
+    // Cliente.enderecos), sem passar pelo create/update acima - só precisa desse enriquecimento
+    public void enriquecerIbge(Endereco endereco){
         if ((endereco.getIbge() == null || endereco.getIbge().isBlank()) && endereco.getCep() != null) {
             endereco.setIbge(brasilApiClient.buscarCodigoIbgeMunicipio(endereco.getCep()));
         }

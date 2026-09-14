@@ -3,6 +3,7 @@ package com.manager.app.consignacao.dto;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.manager.app.cliente.Cliente;
 import com.manager.app.consignacao.ConsignacaoProduto;
+import com.manager.app.mostruario.Mostruario;
 import com.manager.app.shared.TipoItem;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.List;
         "descricao",
         "tipo",
         "cliente",
+        "mostruario",
         "produtos",
         "dataEntrega",
         "dataPreAcertoConsignacao",
@@ -34,6 +36,7 @@ public class ConsignacaoResponseDTO {
     private String descricao;
     private TipoItem tipo;
     private Cliente cliente;
+    private Mostruario mostruario;
     private List<ConsignacaoProduto> produtos;
     private LocalDate dataEntrega;
     private LocalDate dataPreAcertoConsignacao;

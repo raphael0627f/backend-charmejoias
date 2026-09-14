@@ -10,6 +10,7 @@ import com.manager.app.grupo.Grupo;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,9 +39,9 @@ public class Cliente {
     private LocalDate dataNascimento;
     private boolean ativo;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "endereco_id")
-    private Endereco endereco;
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "cliente_id")
+    private List<Endereco> enderecos = new ArrayList<>();
 
     @ManyToMany
     @JoinTable(name = "clientes_grupos", joinColumns = @JoinColumn(name = "cliente_id"), inverseJoinColumns = @JoinColumn(name = "grupo_id"))
@@ -51,4 +52,16 @@ public class Cliente {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    public Endereco getEnderecoPrincipal() {
+        return enderecos.stream().filter(Endereco::isPrincipal).findFirst().orElse(null);
+    }
+
+    public void adicionarEndereco(Endereco endereco) {
+        this.enderecos.add(endereco);
+    }
+
+    public void removerEndereco(Endereco endereco) {
+        this.enderecos.remove(endereco);
+    }
 }

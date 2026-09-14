@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -33,6 +34,7 @@ public class CategoriaController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('CATEGORIA_GERENCIAR')")
     public ResponseEntity<CategoriaDTO> create(@RequestBody @Valid CategoriaDTO categoriaDTO){
         Categoria categoria = service.create(mapper.toEntity(categoriaDTO));
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(categoria.getId()).toUri();
@@ -40,17 +42,20 @@ public class CategoriaController {
     }
 
     @PutMapping
+    @PreAuthorize("hasAuthority('CATEGORIA_GERENCIAR')")
     public ResponseEntity<CategoriaDTO> update(@RequestBody @Valid CategoriaDTO categoriaDTO){
         Categoria categoria = service.update(mapper.toEntity(categoriaDTO));
         return ResponseEntity.ok(mapper.toDTO(categoria));
     }
 
     @PutMapping(value = "activate/{id}")
+    @PreAuthorize("hasAuthority('CATEGORIA_GERENCIAR')")
     public ResponseEntity<CategoriaDTO> activate(@PathVariable Long id){
         return ResponseEntity.ok(mapper.toDTO(service.activate(id)));
     }
 
     @DeleteMapping(value = "/{id}")
+    @PreAuthorize("hasAuthority('CATEGORIA_GERENCIAR')")
     public ResponseEntity<Void> delete(@PathVariable Long id){
         service.deactivate(id);
         return ResponseEntity.noContent().build();

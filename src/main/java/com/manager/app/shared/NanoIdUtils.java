@@ -3,7 +3,7 @@ package com.manager.app.shared;
 import java.security.SecureRandom;
 
 public final class NanoIdUtils {
-    private static final char[] ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray();
+    private static final char[] ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz".toCharArray();
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private NanoIdUtils() {}

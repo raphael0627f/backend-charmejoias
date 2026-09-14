@@ -31,7 +31,7 @@ public class EtiquetaService {
 
     private List<EtiquetaDTO> dataEtiqueta(EtiquetaRequestDTO request){
         List<EtiquetaDTO> etiquetas = new ArrayList<>();
-        EtiquetaDTO etiquetaVazia = new EtiquetaDTO(null, null);
+        EtiquetaDTO etiquetaVazia = new EtiquetaDTO(null, null, null, null);
 
         if(request.getInicio() > 1){
             for (int i = 1; i < request.getInicio(); i++) {
@@ -48,14 +48,19 @@ public class EtiquetaService {
                 Joia joia = joiaService.findById(produtoEtiqueta.getProdutoId());
                 etiqueta.setDescricao(joia.getNome());
                 etiqueta.setCodigoBarras(joia.getCodigo());
+                etiqueta.setPrecoVenda(joia.getPrecoVenda());
             } else if (produtoEtiqueta.getProdutoVariacaoId() != null) {
                 ProdutoVariacao variacao = produtoService.findVariacaoById(produtoEtiqueta.getProdutoVariacaoId());
                 etiqueta.setDescricao(variacao.getProduto().getNome());
                 etiqueta.setCodigoBarras(variacao.getCodigoBarras());
+                etiqueta.setPrecoVenda(variacao.getPrecoVenda());
+                etiqueta.setSku(variacao.getSku());
             } else {
                 Produto produto = produtoService.findById(produtoEtiqueta.getProdutoId());
                 etiqueta.setDescricao(produto.getNome());
                 etiqueta.setCodigoBarras(produto.getSku());
+                etiqueta.setPrecoVenda(produto.getPrecoVenda());
+                etiqueta.setSku(produto.getSku());
             }
 
             for (int i = 0; i < produtoEtiqueta.getQuantidade(); i++) {

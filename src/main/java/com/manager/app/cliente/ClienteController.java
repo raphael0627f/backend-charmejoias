@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -37,6 +38,7 @@ public class ClienteController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('CLIENTE_GERENCIAR')")
     public ResponseEntity<ClienteResponseDTO> create(@RequestBody @Valid ClienteRequestDTO clienteRequestDTO){
         Cliente cliente = service.create(mapper.toEntity(clienteRequestDTO), clienteRequestDTO.getGruposIds());
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(cliente.getId()).toUri();
@@ -44,6 +46,7 @@ public class ClienteController {
     }
 
     @PutMapping
+    @PreAuthorize("hasAuthority('CLIENTE_GERENCIAR')")
     public ResponseEntity<ClienteResponseDTO> update(@RequestBody @Valid ClienteRequestDTO clienteRequestDTO){
         Cliente cliente = service.update(mapper.toEntity(clienteRequestDTO), clienteRequestDTO.getGruposIds());
         ClienteResponseDTO response = mapper.toResponseDTO(cliente);
@@ -51,11 +54,13 @@ public class ClienteController {
     }
 
     @PutMapping(value = "activate/{id}")
+    @PreAuthorize("hasAuthority('CLIENTE_GERENCIAR')")
     public ResponseEntity<ClienteResponseDTO> activate(@PathVariable UUID id){
         return ResponseEntity.ok(mapper.toResponseDTO(service.activate(id)));
     }
 
     @DeleteMapping(value = "/{id}")
+    @PreAuthorize("hasAuthority('CLIENTE_GERENCIAR')")
     public ResponseEntity<Void> delete(@PathVariable UUID id){
         service.deactivate(id);
         return ResponseEntity.noContent().build();

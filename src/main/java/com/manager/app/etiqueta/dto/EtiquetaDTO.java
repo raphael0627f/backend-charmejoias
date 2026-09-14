@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -12,4 +14,6 @@ import lombok.Setter;
 public class EtiquetaDTO {
     private String descricao;
     private String codigoBarras;
+    private BigDecimal precoVenda;
+    private String sku;
 }

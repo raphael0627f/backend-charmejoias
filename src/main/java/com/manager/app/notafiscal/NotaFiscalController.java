@@ -5,6 +5,8 @@ import com.manager.app.notafiscal.dto.NotaFiscalCancelamentoRequestDTO;
 import com.manager.app.notafiscal.dto.NotaFiscalCorrecaoRequestDTO;
 import com.manager.app.notafiscal.dto.NotaFiscalRequestDTO;
 import com.manager.app.notafiscal.dto.NotaFiscalResponseDTO;
+import com.manager.app.notafiscal.dto.XmlArquivoResponseDTO;
+import com.manager.app.shared.exception.ItemInvalidoException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -13,7 +15,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -28,6 +32,8 @@ public class NotaFiscalController {
 
     private final NotaFiscalService service;
     private final NotaFiscalMapper mapper;
+    private final NotaFiscalXmlStorageService xmlStorageService;
+    private final DanfeGeneratorService danfeGeneratorService;
 
     @GetMapping
     public ResponseEntity<Page<NotaFiscalResponseDTO>> findAll(
@@ -52,6 +58,7 @@ public class NotaFiscalController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('NOTA_FISCAL_GERENCIAR')")
     public ResponseEntity<NotaFiscalResponseDTO> create(@RequestBody @Valid NotaFiscalRequestDTO notaFiscalRequestDTO){
         NotaFiscal notaFiscal = service.create(notaFiscalRequestDTO);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(notaFiscal.getId()).toUri();
@@ -59,11 +66,13 @@ public class NotaFiscalController {
     }
 
     @PutMapping(value = "/{id}")
+    @PreAuthorize("hasAuthority('NOTA_FISCAL_GERENCIAR')")
     public ResponseEntity<NotaFiscalResponseDTO> update(@PathVariable Long id, @RequestBody @Valid NotaFiscalRequestDTO notaFiscalRequestDTO){
         return ResponseEntity.ok(mapper.toResponseDTO(service.update(id, notaFiscalRequestDTO)));
     }
 
     @PostMapping(value = "/{id}/emitir")
+    @PreAuthorize("hasAuthority('NOTA_FISCAL_EMITIR')")
     public ResponseEntity<NotaFiscalResponseDTO> emitir(@PathVariable Long id){
         return ResponseEntity.ok(mapper.toResponseDTO(service.emitir(id)));
     }
@@ -74,11 +83,13 @@ public class NotaFiscalController {
     }
 
     @PostMapping(value = "/{id}/cancelar")
+    @PreAuthorize("hasAuthority('NOTA_FISCAL_CANCELAR')")
     public ResponseEntity<NotaFiscalResponseDTO> cancelar(@PathVariable Long id, @RequestBody @Valid NotaFiscalCancelamentoRequestDTO request){
         return ResponseEntity.ok(mapper.toResponseDTO(service.cancelar(id, request.getMotivo())));
     }
 
     @PostMapping(value = "/{id}/corrigir")
+    @PreAuthorize("hasAuthority('NOTA_FISCAL_CORRIGIR')")
     public ResponseEntity<NotaFiscalResponseDTO> corrigir(@PathVariable Long id, @RequestBody @Valid NotaFiscalCorrecaoRequestDTO request){
         return ResponseEntity.ok(mapper.toResponseDTO(service.corrigir(id, request.getTexto())));
     }
@@ -99,5 +110,54 @@ public class NotaFiscalController {
     public ResponseEntity<byte[]> baixarDanfe(@PathVariable Long id){
         byte[] pdf = service.baixarArtefato(id, "pdf_danfe");
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(pdf);
+    }
+
+    // gera um DANFE a partir de um XML avulso (não precisa ser de uma nota emitida por este
+    // sistema) - operação stateless, sem relação com a tabela de notas fiscais
+    @PostMapping(value = "/danfe/gerar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<byte[]> gerarDanfeDeXml(@RequestParam("xml") MultipartFile xml){
+        if (xml == null || xml.isEmpty()) {
+            throw new ItemInvalidoException("Arquivo XML é obrigatório");
+        }
+        String nomeOriginal = xml.getOriginalFilename() != null ? xml.getOriginalFilename().toLowerCase() : "";
+        String contentType = xml.getContentType();
+        boolean pareceXml = nomeOriginal.endsWith(".xml")
+                || MediaType.APPLICATION_XML_VALUE.equals(contentType)
+                || MediaType.TEXT_XML_VALUE.equals(contentType)
+                || "application/xml".equals(contentType);
+        if (!pareceXml) {
+            throw new ItemInvalidoException("Arquivo deve ser um XML");
+        }
+
+        byte[] xmlBytes;
+        try {
+            xmlBytes = xml.getBytes();
+        } catch (java.io.IOException e) {
+            throw new ItemInvalidoException("Não foi possível ler o arquivo enviado");
+        }
+
+        byte[] pdf = danfeGeneratorService.gerarDanfePdf(xmlBytes);
+        String chaveAcesso = danfeGeneratorService.extrairChaveAcesso(xmlBytes);
+        String nomeArquivo = chaveAcesso != null ? "danfe-" + chaveAcesso + ".pdf" : "danfe.pdf";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header("Content-Disposition", "inline; filename=" + nomeArquivo)
+                .body(pdf);
+    }
+
+    @GetMapping(value = "/xmls")
+    public ResponseEntity<Page<XmlArquivoResponseDTO>> listarXmls(
+            @PageableDefault(size = 20, sort = "ultimaModificacao") Pageable pageable){
+        return ResponseEntity.ok(xmlStorageService.listar(pageable));
+    }
+
+    @GetMapping(value = "/xmls/{nomeArquivo}")
+    public ResponseEntity<byte[]> baixarXmlPorNome(@PathVariable String nomeArquivo){
+        byte[] xml = xmlStorageService.carregar(nomeArquivo);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_XML)
+                .header("Content-Disposition", "attachment; filename=" + nomeArquivo)
+                .body(xml);
     }
 }

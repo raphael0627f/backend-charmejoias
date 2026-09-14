@@ -33,6 +33,7 @@ public class Produto {
     private String sku;
     private String referencia;
     private String nome;
+    private String codigoBarras;
 
     @Enumerated(EnumType.STRING)
     private TipoProduto tipo;
