@@ -2,6 +2,7 @@ package com.manager.app.acertoconsignacao;
 
 import com.manager.app.consignacao.Consignacao;
 import com.manager.app.consignacao.ConsignacaoProduto;
+import com.manager.app.preacerto.PreAcertoConsignacao;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -28,6 +29,12 @@ public class AcertoConsignacao {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "consignacao_id", nullable = false)
     private Consignacao consignacao;
+
+    // referência opcional ao Pré-acerto que originou este Acerto - o usuário pode gerar um Acerto
+    // sem nunca ter passado por um Pré-acerto, então não é obrigatório
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pre_acerto_consignacao_id")
+    private PreAcertoConsignacao preAcerto;
 
     @Column(precision = 10, scale = 2)
     private BigDecimal desconto;

@@ -382,7 +382,7 @@ public class ConsignacaoService {
 
         Comparator<ConsignacaoProduto> porItem = joia
                 ? Comparator.comparingLong(item -> codigoNumerico(item.getJoia().getCodigo()))
-                : Comparator.comparing(item -> item.getProduto().getNome() == null ? "" : item.getProduto().getNome().toLowerCase());
+                : Comparator.comparingLong(item -> codigoNumerico(item.getProdutoVariacao() != null ? item.getProdutoVariacao().getSku() : item.getProduto().getSku()));
 
         produtos.sort(porCategoria.thenComparing(porItem));
         return produtos;

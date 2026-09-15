@@ -15,6 +15,7 @@ public class AcertoConsignacaoRequestDTO {
 
     private Long id;
     private Long consignacaoId;
+    private Long preAcertoId;
     private BigDecimal desconto;
     private String observacoes;
 

@@ -11,6 +11,7 @@ public interface AcertoConsignacaoMapper {
     AcertoConsignacaoRequestDTO toDTO(AcertoConsignacao entity);
 
     @Mapping(source = "consignacao.id", target = "consignacaoId")
+    @Mapping(source = "preAcerto.id", target = "preAcertoId")
     @Mapping(target = "quantidadeProdutosAcertados", expression = "java(entity.getQuantidadeProdutosAcertados())")
     @Mapping(target = "quantidadeProdutosDevolvidos", expression = "java(entity.getQuantidadeProdutosDevolvidos())")
     @Mapping(target = "valorTotalProdutosAcertados", expression = "java(entity.getValorTotalProdutosAcertados())")

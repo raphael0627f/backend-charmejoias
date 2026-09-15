@@ -12,6 +12,8 @@ import com.manager.app.consignacao.ConsignacaoRepository;
 import com.manager.app.consignacao.ConsignacaoValidation;
 import com.manager.app.joia.Joia;
 import com.manager.app.joia.JoiaService;
+import com.manager.app.preacerto.PreAcertoConsignacao;
+import com.manager.app.preacerto.PreAcertoConsignacaoRepository;
 import com.manager.app.produto.Produto;
 import com.manager.app.produto.ProdutoService;
 import com.manager.app.produto.ProdutoVariacao;
@@ -44,6 +46,7 @@ public class AcertoConsignacaoService {
 
     private final AcertoConsignacaoRepository repository;
     private final ConsignacaoRepository consignacaoRepository;
+    private final PreAcertoConsignacaoRepository preAcertoConsignacaoRepository;
     private final ProdutoService produtoService;
     private final JoiaService joiaService;
     private final ConsignacaoValidation consignacaoValidation;
@@ -109,6 +112,7 @@ public class AcertoConsignacaoService {
         AcertoConsignacaoResumoDTO dto = new AcertoConsignacaoResumoDTO();
         dto.setId(acerto.getId());
         dto.setConsignacaoId(consignacao != null ? consignacao.getId() : null);
+        dto.setPreAcertoId(acerto.getPreAcerto() != null ? acerto.getPreAcerto().getId() : null);
         dto.setCliente(consignacao != null && consignacao.getCliente() != null
                 ? new ClienteResumoDTO(consignacao.getCliente().getCodigo(), consignacao.getCliente().getNome())
                 : null);
@@ -202,6 +206,14 @@ public class AcertoConsignacaoService {
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. id: " + consignacaoId));
     }
 
+    // referência opcional: se o usuário não informar preAcertoId, o Acerto simplesmente não fica
+    // vinculado a nenhum Pré-acerto
+    private PreAcertoConsignacao resolverPreAcerto(Long preAcertoId){
+        if (preAcertoId == null) return null;
+        return preAcertoConsignacaoRepository.findById(preAcertoId)
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Pré-acerto de Consignação não encontrado. id: " + preAcertoId));
+    }
+
     private void validarConsignacaoDisponivel(Long consignacaoId){
         if (repository.existsByConsignacaoId(consignacaoId)) {
             throw new ObjetoExistenteException("Esta Consignação já possui um Acerto de Consignação. consignacaoId: " + consignacaoId);
@@ -273,6 +285,7 @@ public class AcertoConsignacaoService {
 
         AcertoConsignacao acerto = new AcertoConsignacao();
         acerto.setConsignacao(consignacao);
+        acerto.setPreAcerto(resolverPreAcerto(request.getPreAcertoId()));
         acerto.setDesconto(request.getDesconto());
         acerto.setObservacoes(request.getObservacoes());
 
@@ -295,6 +308,7 @@ public class AcertoConsignacaoService {
 
         Consignacao consignacao = acertoUpdate.getConsignacao();
 
+        acertoUpdate.setPreAcerto(resolverPreAcerto(request.getPreAcertoId()));
         acertoUpdate.setDesconto(request.getDesconto());
         acertoUpdate.setObservacoes(request.getObservacoes());
 

@@ -16,6 +16,7 @@ import java.util.List;
 @JsonPropertyOrder({
         "id",
         "consignacaoId",
+        "preAcertoId",
         "desconto",
         "observacoes",
         "confirmado",
@@ -31,6 +32,7 @@ public class AcertoConsignacaoResponseDTO {
 
     private Long id;
     private Long consignacaoId;
+    private Long preAcertoId;
     private BigDecimal desconto;
     private String observacoes;
     private Boolean confirmado;
