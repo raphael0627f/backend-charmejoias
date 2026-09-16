@@ -2,6 +2,7 @@ package com.manager.app.usuario;
 
 import com.manager.app.shared.exception.ObjetoEmUsoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
+import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.specification.SpecificationUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -18,13 +19,13 @@ public class PerfilService {
     private final UsuarioRepository usuarioRepository;
     private final PerfilValidation validation;
 
-    public Page<Perfil> findAll(String busca, Pageable pageable){
-        return repository.findAll(comBusca(busca), pageable);
+    public Page<Perfil> findAll(String busca, ModoBusca modoBusca, Pageable pageable){
+        return repository.findAll(comBusca(busca, modoBusca), pageable);
     }
 
-    private Specification<Perfil> comBusca(String busca){
+    private Specification<Perfil> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
-        return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca);
+        return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca, modoBusca);
     }
 
     public Perfil findById(Long id){

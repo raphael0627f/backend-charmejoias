@@ -1,6 +1,7 @@
 package com.manager.app.ncm;
 
 import com.manager.app.ncm.dto.NcmDTO;
+import com.manager.app.shared.ModoBusca;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,8 +25,9 @@ public class NcmController {
     @GetMapping
     public ResponseEntity<Page<NcmDTO>> findAll(
             @RequestParam(required = false) String busca,
+            @RequestParam(required = false) ModoBusca modoBusca,
             @PageableDefault(size = 20, sort = "codigo") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, pageable).map(mapper::toDTO));
+        return ResponseEntity.ok(service.findAll(busca, modoBusca, pageable).map(mapper::toDTO));
     }
 
     @GetMapping(value = "/{codigo}")

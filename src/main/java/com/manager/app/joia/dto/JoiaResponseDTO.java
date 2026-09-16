@@ -3,6 +3,7 @@ package com.manager.app.joia.dto;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.manager.app.categoria.Categoria;
 import com.manager.app.grupo.Grupo;
+import com.manager.app.usuario.dto.UsuarioResumoDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,7 +27,9 @@ import java.util.UUID;
         "categoria",
         "grupos",
         "createdAt",
-        "updatedAt"
+        "updatedAt",
+        "createdBy",
+        "updatedBy"
 })
 public class JoiaResponseDTO {
 
@@ -41,4 +44,6 @@ public class JoiaResponseDTO {
     private List<Grupo> grupos;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private UsuarioResumoDTO createdBy;
+    private UsuarioResumoDTO updatedBy;
 }

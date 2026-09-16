@@ -3,6 +3,7 @@ package com.manager.app.empresa.dto;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.manager.app.endereco.Endereco;
 import com.manager.app.empresa.RegimeTributario;
+import com.manager.app.usuario.dto.UsuarioResumoDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -28,7 +29,9 @@ import java.time.LocalDateTime;
         "proximoNumeroNfe",
         "serieNfe",
         "createdAt",
-        "updatedAt"
+        "updatedAt",
+        "createdBy",
+        "updatedBy"
 })
 public class EmpresaResponseDTO {
 
@@ -48,4 +51,6 @@ public class EmpresaResponseDTO {
     private Integer serieNfe;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private UsuarioResumoDTO createdBy;
+    private UsuarioResumoDTO updatedBy;
 }

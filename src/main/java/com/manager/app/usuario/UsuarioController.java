@@ -2,6 +2,7 @@ package com.manager.app.usuario;
 
 import com.manager.app.usuario.dto.UsuarioRequestDTO;
 import com.manager.app.usuario.dto.UsuarioResponseDTO;
+import com.manager.app.shared.ModoBusca;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,9 +27,10 @@ public class UsuarioController {
     @GetMapping
     public ResponseEntity<Page<UsuarioResponseDTO>> findAll(
             @RequestParam(required = false) String busca,
+            @RequestParam(required = false) ModoBusca modoBusca,
             @RequestParam(required = false) Boolean ativo,
             @PageableDefault(size = 20, sort = "usuario") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, ativo, pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.ok(service.findAll(busca, modoBusca, ativo, pageable).map(mapper::toResponseDTO));
     }
 
     @GetMapping(value = "/{id}")

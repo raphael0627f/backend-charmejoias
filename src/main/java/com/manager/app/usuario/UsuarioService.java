@@ -4,6 +4,7 @@ import com.manager.app.endereco.Endereco;
 import com.manager.app.endereco.EnderecoService;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
+import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.specification.SpecificationUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +26,8 @@ public class UsuarioService {
     private final UsuarioValidation validation;
     private final PasswordEncoder passwordEncoder;
 
-    public Page<Usuario> findAll(String busca, Boolean ativo, Pageable pageable){
-        Specification<Usuario> spec = comBusca(busca);
+    public Page<Usuario> findAll(String busca, ModoBusca modoBusca, Boolean ativo, Pageable pageable){
+        Specification<Usuario> spec = comBusca(busca, modoBusca);
 
         if (ativo != null) {
             Specification<Usuario> ativoSpec = (root, query, cb) -> cb.equal(root.get("ativo"), ativo);
@@ -36,13 +37,13 @@ public class UsuarioService {
         return repository.findAll(spec, pageable);
     }
 
-    private Specification<Usuario> comBusca(String busca){
+    private Specification<Usuario> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
         return (root, query, cb) -> cb.or(
-                SpecificationUtils.likeIgnoreCase(cb, root.get("usuario"), busca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("primeiroNome"), busca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("sobrenome"), busca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("email"), busca)
+                SpecificationUtils.likeIgnoreCase(cb, root.get("usuario"), busca, modoBusca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("primeiroNome"), busca, modoBusca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("sobrenome"), busca, modoBusca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("email"), busca, modoBusca)
         );
     }
 

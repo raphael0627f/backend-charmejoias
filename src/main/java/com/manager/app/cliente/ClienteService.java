@@ -8,6 +8,7 @@ import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
 import com.manager.app.grupo.GrupoValidation;
 import com.manager.app.shared.specification.SpecificationUtils;
 import com.manager.app.grupo.GrupoRepository;
+import com.manager.app.shared.ModoBusca;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -16,6 +17,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import com.manager.app.endereco.EnderecoService;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,8 +33,8 @@ public class ClienteService {
     private final ClienteValidation validation;
     private final GrupoValidation grupoValidation;
 
-    public Page<Cliente> findAll(String busca, Boolean ativo, Long grupoId, Pageable pageable){
-        Specification<Cliente> spec = Specification.where(comBusca(busca));
+    public Page<Cliente> findAll(String busca, ModoBusca modoBusca, Boolean ativo, Long grupoId, Pageable pageable){
+        Specification<Cliente> spec = Specification.where(comBusca(busca, modoBusca));
 
         if (ativo != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("ativo"), ativo));
@@ -48,16 +50,16 @@ public class ClienteService {
         return repository.findAll(spec, pageable);
     }
 
-    private Specification<Cliente> comBusca(String busca){
+    private Specification<Cliente> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return (root, query, cb) -> cb.conjunction();
         return (root, query, cb) -> cb.or(
-                SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("codigo"), busca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("cpf"), busca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("documento"), busca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("telefone"), busca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("celular"), busca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("email"), busca)
+                SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca, modoBusca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("codigo"), busca, modoBusca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("cpf"), busca, modoBusca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("documento"), busca, modoBusca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("telefone"), busca, modoBusca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("celular"), busca, modoBusca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("email"), busca, modoBusca)
         );
     }
 
@@ -79,14 +81,7 @@ public class ClienteService {
         validarEnderecos(cliente.getEnderecos());
         cliente.getEnderecos().forEach(enderecoService::enriquecerIbge);
 
-        if(!grupoValidation.gruposEmpty(gruposIds)){
-            List<Grupo> grupos = grupoRepository.findAllById(gruposIds);
-            if (grupos.size() != gruposIds.size()) {
-                throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
-            }
-            grupoValidation.validarTipo(grupos, TipoGrupo.CLIENTE);
-            cliente.setGrupos(grupos);
-        }
+        cliente.setGrupos(resolverGrupos(gruposIds, TipoGrupo.CLIENTE));
         return repository.save(cliente);
     }
 
@@ -111,16 +106,24 @@ public class ClienteService {
         clienteUpdate.setDataNascimento(cliente.getDataNascimento());
         clienteUpdate.setAtivo(cliente.isAtivo());
 
-        if(!grupoValidation.gruposEmpty(gruposIds)){
-            List<Grupo> grupos = grupoRepository.findAllById(gruposIds);
-            if (grupos.size() != gruposIds.size()) {
-                throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
-            }
-            grupoValidation.validarTipo(grupos, TipoGrupo.CLIENTE);
-            clienteUpdate.setGrupos(grupos);
-        }
+        clienteUpdate.setGrupos(resolverGrupos(gruposIds, TipoGrupo.CLIENTE));
 
         return clienteUpdate;
+    }
+
+    // Sempre resolve a lista de grupos (mesmo vazia/nula -> lista vazia), pra
+    // remover o último grupo de um cliente de fato limpar a relação - antes,
+    // gruposIds vazio pulava a atribuição inteira e o grupo antigo nunca saía.
+    private List<Grupo> resolverGrupos(List<Long> gruposIds, TipoGrupo tipoEsperado){
+        if (grupoValidation.gruposEmpty(gruposIds)) {
+            return new ArrayList<>();
+        }
+        List<Grupo> grupos = grupoRepository.findAllById(gruposIds);
+        if (grupos.size() != gruposIds.size()) {
+            throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
+        }
+        grupoValidation.validarTipo(grupos, tipoEsperado);
+        return grupos;
     }
 
     // cliente precisa ter ao menos um endereço, e exatamente um marcado como principal - é esse

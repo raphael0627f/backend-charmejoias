@@ -3,6 +3,7 @@ package com.manager.app.spc.dto;
 import com.manager.app.spc.TipoDevedorSpc;
 import com.manager.app.spc.TipoOperacaoSpc;
 import com.manager.app.spc.TipoPessoaSpc;
+import com.manager.app.usuario.dto.UsuarioResumoDTO;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -30,4 +31,5 @@ public class SpcRegistroResponseDTO {
     private String motivoExclusaoDescricao;
     private String mensagemRetorno;
     private LocalDateTime createdAt;
+    private UsuarioResumoDTO createdBy;
 }

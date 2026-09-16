@@ -22,6 +22,8 @@ import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoEmUsoException;
 import com.manager.app.shared.exception.ObjetoExistenteException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
+import com.manager.app.security.UsuarioAuditorAware;
+import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.specification.SpecificationUtils;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.transaction.Transactional;
@@ -33,6 +35,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,13 +53,15 @@ public class AcertoConsignacaoService {
     private final ProdutoService produtoService;
     private final JoiaService joiaService;
     private final ConsignacaoValidation consignacaoValidation;
+    private final com.manager.app.usuario.UsuarioResumoMapper usuarioResumoMapper;
+    private final UsuarioAuditorAware usuarioAuditorAware;
 
-    public Page<AcertoConsignacao> findAll(String busca, Long consignacaoId, Boolean confirmado,
+    public Page<AcertoConsignacao> findAll(String busca, ModoBusca modoBusca, Long consignacaoId, Boolean confirmado,
                                             LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
                                             LocalDate dataPreAcertoInicio, LocalDate dataPreAcertoFim,
                                             LocalDate dataAcertoInicio, LocalDate dataAcertoFim,
                                             Pageable pageable){
-        Specification<AcertoConsignacao> spec = comBusca(busca);
+        Specification<AcertoConsignacao> spec = comBusca(busca, modoBusca);
 
         if (consignacaoId != null) {
             Specification<AcertoConsignacao> consignacaoSpec = (root, query, cb) ->
@@ -97,12 +102,12 @@ public class AcertoConsignacaoService {
 
     // versao enxuta pra listagem, no mesmo formato de ConsignacaoService.findAllResumo: sem os
     // produtos completos, só os agregados (já computados na entidade) que a listagem realmente usa
-    public Page<AcertoConsignacaoResumoDTO> findAllResumo(String busca, Long consignacaoId, Boolean confirmado,
+    public Page<AcertoConsignacaoResumoDTO> findAllResumo(String busca, ModoBusca modoBusca, Long consignacaoId, Boolean confirmado,
                                                            LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
                                                            LocalDate dataPreAcertoInicio, LocalDate dataPreAcertoFim,
                                                            LocalDate dataAcertoInicio, LocalDate dataAcertoFim,
                                                            Pageable pageable){
-        return findAll(busca, consignacaoId, confirmado,
+        return findAll(busca, modoBusca, consignacaoId, confirmado,
                 dataEntregaInicio, dataEntregaFim, dataPreAcertoInicio, dataPreAcertoFim, dataAcertoInicio, dataAcertoFim, pageable)
                 .map(this::toResumoDTO);
     }
@@ -126,6 +131,8 @@ public class AcertoConsignacaoService {
         dto.setQuantidadePorCategoria(quantidadePorCategoria(acerto));
         dto.setCreatedAt(acerto.getCreatedAt());
         dto.setUpdatedAt(acerto.getUpdatedAt());
+        dto.setCreatedBy(usuarioResumoMapper.toResumoDTO(acerto.getCreatedBy()));
+        dto.setUpdatedBy(usuarioResumoMapper.toResumoDTO(acerto.getUpdatedBy()));
         return dto;
     }
 
@@ -155,16 +162,16 @@ public class AcertoConsignacaoService {
         return item.getJoia().getCategoria() != null ? item.getJoia().getCategoria().getNome() : "Sem categoria";
     }
 
-    private Specification<AcertoConsignacao> comBusca(String busca){
+    private Specification<AcertoConsignacao> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
         Long comoNumero = SpecificationUtils.comoLong(busca);
         return (root, query, cb) -> {
             var consignacao = root.join("consignacao", JoinType.LEFT);
             var cliente = consignacao.join("cliente", JoinType.LEFT);
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>(List.of(
-                    SpecificationUtils.likeIgnoreCase(cb, root.get("observacoes"), busca),
-                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca),
-                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca)
+                    SpecificationUtils.likeIgnoreCase(cb, root.get("observacoes"), busca, modoBusca),
+                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca, modoBusca),
+                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca, modoBusca)
             ));
             if (comoNumero != null) {
                 predicates.add(cb.equal(root.get("id"), comoNumero));
@@ -341,6 +348,15 @@ public class AcertoConsignacaoService {
         for (AcertoConsignacaoProduto removerProduto : produtosAtuais) {
             acertoUpdate.removerProduto(removerProduto);
         }
+
+        // Sem isso, uma edição que só mexe nos produtos (ex.: devolver um item) não
+        // deixa o acerto marcado como "sujo" pro Hibernate, e updatedAt/updatedBy
+        // nunca mudam - ver o comentário em AcertoConsignacaoRepository.tocarAtualizacao.
+        LocalDateTime agora = LocalDateTime.now();
+        var usuarioAtual = usuarioAuditorAware.getCurrentAuditor().orElse(null);
+        repository.tocarAtualizacao(acertoUpdate.getId(), agora, usuarioAtual);
+        acertoUpdate.setUpdatedAt(agora);
+        acertoUpdate.setUpdatedBy(usuarioAtual);
 
         return acertoUpdate;
     }

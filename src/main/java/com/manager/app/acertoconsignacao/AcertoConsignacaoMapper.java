@@ -2,10 +2,11 @@ package com.manager.app.acertoconsignacao;
 
 import com.manager.app.acertoconsignacao.dto.AcertoConsignacaoRequestDTO;
 import com.manager.app.acertoconsignacao.dto.AcertoConsignacaoResponseDTO;
+import com.manager.app.usuario.UsuarioResumoMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = UsuarioResumoMapper.class)
 public interface AcertoConsignacaoMapper {
 
     AcertoConsignacaoRequestDTO toDTO(AcertoConsignacao entity);

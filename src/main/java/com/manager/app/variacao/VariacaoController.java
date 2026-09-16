@@ -1,6 +1,7 @@
 package com.manager.app.variacao;
 
 import com.manager.app.variacao.dto.VariacaoDTO;
+import com.manager.app.shared.ModoBusca;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,8 +24,9 @@ public class VariacaoController {
     @GetMapping
     public ResponseEntity<Page<VariacaoDTO>> findAll(
             @RequestParam(required = false) String busca,
+            @RequestParam(required = false) ModoBusca modoBusca,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, pageable).map(mapper::toDTO));
+        return ResponseEntity.ok(service.findAll(busca, modoBusca, pageable).map(mapper::toDTO));
     }
 
     @GetMapping(value = "/{id}")

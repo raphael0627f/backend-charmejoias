@@ -2,6 +2,7 @@ package com.manager.app.fornecedor;
 
 import com.manager.app.shared.exception.ObjetoEmUsoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
+import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.specification.SpecificationUtils;
 import com.manager.app.produto.ProdutoRepository;
 import jakarta.transaction.Transactional;
@@ -18,13 +19,13 @@ public class FornecedorService {
     private final FornecedorRepository repository;
     private final ProdutoRepository produtoRepository;
 
-    public Page<Fornecedor> findAll(String busca, Pageable pageable){
-        return repository.findAll(comBusca(busca), pageable);
+    public Page<Fornecedor> findAll(String busca, ModoBusca modoBusca, Pageable pageable){
+        return repository.findAll(comBusca(busca, modoBusca), pageable);
     }
 
-    private Specification<Fornecedor> comBusca(String busca){
+    private Specification<Fornecedor> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
-        return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca);
+        return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca, modoBusca);
     }
 
     public Fornecedor findById(Long id){

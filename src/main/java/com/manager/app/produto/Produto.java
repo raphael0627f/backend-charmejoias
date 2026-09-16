@@ -5,10 +5,14 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import com.manager.app.categoria.Categoria;
 import com.manager.app.fornecedor.Fornecedor;
 import com.manager.app.grupo.Grupo;
 import com.manager.app.ncm.Ncm;
+import com.manager.app.usuario.Usuario;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,6 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "produtos")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @EqualsAndHashCode(of = "id")
@@ -81,6 +86,16 @@ public class Produto {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @CreatedBy
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    private Usuario createdBy;
+
+    @LastModifiedBy
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by_id")
+    private Usuario updatedBy;
 
     public void adicionarVariacao(ProdutoVariacao variacao) {
         variacao.setProduto(this);

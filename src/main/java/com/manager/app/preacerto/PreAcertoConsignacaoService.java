@@ -20,7 +20,10 @@ import com.manager.app.shared.TipoItem;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoExistenteException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
+import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.specification.SpecificationUtils;
+import com.manager.app.security.UsuarioAuditorAware;
+import com.manager.app.usuario.UsuarioResumoMapper;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,13 +53,15 @@ public class PreAcertoConsignacaoService {
     private final ProdutoService produtoService;
     private final JoiaService joiaService;
     private final ConsignacaoValidation consignacaoValidation;
+    private final UsuarioResumoMapper usuarioResumoMapper;
+    private final UsuarioAuditorAware usuarioAuditorAware;
 
-    public Page<PreAcertoConsignacao> findAll(String busca, Long consignacaoId,
+    public Page<PreAcertoConsignacao> findAll(String busca, ModoBusca modoBusca, Long consignacaoId,
                                                LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
                                                LocalDate dataPreAcertoInicio, LocalDate dataPreAcertoFim,
                                                LocalDate dataAcertoInicio, LocalDate dataAcertoFim,
                                                Pageable pageable){
-        Specification<PreAcertoConsignacao> spec = comBusca(busca);
+        Specification<PreAcertoConsignacao> spec = comBusca(busca, modoBusca);
 
         if (consignacaoId != null) {
             Specification<PreAcertoConsignacao> consignacaoSpec = (root, query, cb) ->
@@ -99,12 +105,12 @@ public class PreAcertoConsignacaoService {
     // versao enxuta pra listagem, no mesmo formato de ConsignacaoService.findAllResumo: não toca em
     // preAcerto.produtos, os agregados (itensCount, quantidadeTotal, valorTotal) vêm de uma query de
     // GROUP BY à parte, batendo só nos ids da página atual
-    public Page<PreAcertoConsignacaoResumoDTO> findAllResumo(String busca, Long consignacaoId,
+    public Page<PreAcertoConsignacaoResumoDTO> findAllResumo(String busca, ModoBusca modoBusca, Long consignacaoId,
                                                               LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
                                                               LocalDate dataPreAcertoInicio, LocalDate dataPreAcertoFim,
                                                               LocalDate dataAcertoInicio, LocalDate dataAcertoFim,
                                                               Pageable pageable){
-        Page<PreAcertoConsignacao> pagina = findAll(busca, consignacaoId,
+        Page<PreAcertoConsignacao> pagina = findAll(busca, modoBusca, consignacaoId,
                 dataEntregaInicio, dataEntregaFim, dataPreAcertoInicio, dataPreAcertoFim, dataAcertoInicio, dataAcertoFim, pageable);
 
         List<Long> ids = pagina.getContent().stream().map(PreAcertoConsignacao::getId).toList();
@@ -140,19 +146,21 @@ public class PreAcertoConsignacaoService {
         dto.setQuantidadePorCategoria(quantidadePorCategoria != null ? quantidadePorCategoria : List.of());
         dto.setCreatedAt(preAcerto.getCreatedAt());
         dto.setUpdatedAt(preAcerto.getUpdatedAt());
+        dto.setCreatedBy(usuarioResumoMapper.toResumoDTO(preAcerto.getCreatedBy()));
+        dto.setUpdatedBy(usuarioResumoMapper.toResumoDTO(preAcerto.getUpdatedBy()));
         return dto;
     }
 
-    private Specification<PreAcertoConsignacao> comBusca(String busca){
+    private Specification<PreAcertoConsignacao> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
         Long comoNumero = SpecificationUtils.comoLong(busca);
         return (root, query, cb) -> {
             var cliente = root.join("cliente", JoinType.LEFT);
             var consignacao = root.join("consignacao", JoinType.LEFT);
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>(List.of(
-                    SpecificationUtils.likeIgnoreCase(cb, root.get("observacoes"), busca),
-                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca),
-                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca)
+                    SpecificationUtils.likeIgnoreCase(cb, root.get("observacoes"), busca, modoBusca),
+                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca, modoBusca),
+                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca, modoBusca)
             ));
             if (comoNumero != null) {
                 predicates.add(cb.equal(root.get("id"), comoNumero));
@@ -320,6 +328,15 @@ public class PreAcertoConsignacaoService {
         for (PreAcertoConsignacaoProduto removerProduto : produtosAtuais) {
             preAcertoUpdate.removerProduto(removerProduto);
         }
+
+        // Sem isso, uma edição que só mexe nos produtos não deixa o pré-acerto
+        // marcado como "sujo" pro Hibernate, e updatedAt/updatedBy nunca mudam - ver
+        // o comentário em PreAcertoConsignacaoRepository.tocarAtualizacao.
+        LocalDateTime agora = LocalDateTime.now();
+        var usuarioAtual = usuarioAuditorAware.getCurrentAuditor().orElse(null);
+        repository.tocarAtualizacao(preAcertoUpdate.getId(), agora, usuarioAtual);
+        preAcertoUpdate.setUpdatedAt(agora);
+        preAcertoUpdate.setUpdatedBy(usuarioAtual);
 
         return preAcertoUpdate;
     }

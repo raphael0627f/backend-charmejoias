@@ -15,6 +15,8 @@ import com.manager.app.produto.ProdutoVariacao;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoEmUsoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
+import com.manager.app.security.UsuarioAuditorAware;
+import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.TipoItem;
 import com.manager.app.shared.specification.SpecificationUtils;
 import jakarta.persistence.criteria.JoinType;
@@ -33,6 +35,7 @@ import org.springframework.stereotype.Service;
 import com.manager.app.cliente.ClienteService;
 import com.manager.app.joia.JoiaService;
 import com.manager.app.produto.ProdutoService;
+import com.manager.app.usuario.UsuarioResumoMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,6 +43,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Date;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -69,6 +73,8 @@ public class ConsignacaoService {
     private final JoiaService joiaService;
     private final MostruarioService mostruarioService;
     private final ConsignacaoValidation validation;
+    private final UsuarioResumoMapper usuarioResumoMapper;
+    private final UsuarioAuditorAware usuarioAuditorAware;
 
     // logo dos relatórios de consignação, buscada numa pasta fora do projeto (mesmo nível da
     // pasta de XMLs de NFe) - se o arquivo não existir lá, o relatório sai sem logo em vez de
@@ -76,12 +82,12 @@ public class ConsignacaoService {
     @Value("${app.storage.relatorio-path}")
     private String relatorioPath;
 
-    public Page<Consignacao> findAll(String busca, UUID clienteId, Boolean temCliente, Boolean temAcerto, Boolean confirmada,
+    public Page<Consignacao> findAll(String busca, ModoBusca modoBusca, UUID clienteId, Boolean temCliente, Boolean temAcerto, Boolean confirmada,
                                       LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
                                       LocalDate dataPreAcertoInicio, LocalDate dataPreAcertoFim,
                                       LocalDate dataAcertoInicio, LocalDate dataAcertoFim,
                                       Pageable pageable){
-        Specification<Consignacao> spec = comBusca(busca);
+        Specification<Consignacao> spec = comBusca(busca, modoBusca);
 
         if (clienteId != null) {
             Specification<Consignacao> clienteIdSpec = (root, query, cb) -> cb.equal(root.get("cliente").get("id"), clienteId);
@@ -139,12 +145,12 @@ public class ConsignacaoService {
     // produto/joia/variacao/categoria/fornecedor/ncm inteiros por linha, que é o que deixava a
     // listagem lenta) - os agregados (itensCount, quantidadeTotal, valorTotal, quantidadePorCategoria)
     // vêm de duas queries de GROUP BY à parte, batendo só nos ids da página atual
-    public Page<ConsignacaoResumoDTO> findAllResumo(String busca, UUID clienteId, Boolean temCliente, Boolean temAcerto, Boolean confirmada,
+    public Page<ConsignacaoResumoDTO> findAllResumo(String busca, ModoBusca modoBusca, UUID clienteId, Boolean temCliente, Boolean temAcerto, Boolean confirmada,
                                                      LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
                                                      LocalDate dataPreAcertoInicio, LocalDate dataPreAcertoFim,
                                                      LocalDate dataAcertoInicio, LocalDate dataAcertoFim,
                                                      Pageable pageable){
-        Page<Consignacao> pagina = findAll(busca, clienteId, temCliente, temAcerto, confirmada,
+        Page<Consignacao> pagina = findAll(busca, modoBusca, clienteId, temCliente, temAcerto, confirmada,
                 dataEntregaInicio, dataEntregaFim, dataPreAcertoInicio, dataPreAcertoFim, dataAcertoInicio, dataAcertoFim, pageable);
 
         List<Long> ids = pagina.getContent().stream().map(Consignacao::getId).toList();
@@ -188,18 +194,20 @@ public class ConsignacaoService {
         dto.setQuantidadePorCategoria(quantidadePorCategoria != null ? quantidadePorCategoria : List.of());
         dto.setCreatedAt(consignacao.getCreatedAt());
         dto.setUpdatedAt(consignacao.getUpdatedAt());
+        dto.setCreatedBy(usuarioResumoMapper.toResumoDTO(consignacao.getCreatedBy()));
+        dto.setUpdatedBy(usuarioResumoMapper.toResumoDTO(consignacao.getUpdatedBy()));
         return dto;
     }
 
-    private Specification<Consignacao> comBusca(String busca){
+    private Specification<Consignacao> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
         Long comoNumero = SpecificationUtils.comoLong(busca);
         return (root, query, cb) -> {
             var cliente = root.join("cliente", JoinType.LEFT);
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>(List.of(
-                    SpecificationUtils.likeIgnoreCase(cb, root.get("descricao"), busca),
-                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca),
-                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca)
+                    SpecificationUtils.likeIgnoreCase(cb, root.get("descricao"), busca, modoBusca),
+                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca, modoBusca),
+                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca, modoBusca)
             ));
             if (comoNumero != null) {
                 predicates.add(cb.equal(root.get("id"), comoNumero));
@@ -327,6 +335,16 @@ public class ConsignacaoService {
         for (ConsignacaoProduto removerProduto : produtosAtuais) {
             consignacaoUpdate.removerProduto(removerProduto);
         }
+
+        // Sem isso, uma edição que só mexe nos produtos não deixa a consignação
+        // marcada como "suja" pro Hibernate, e updatedAt/updatedBy nunca mudam - ver
+        // o comentário em ConsignacaoRepository.tocarAtualizacao.
+        LocalDateTime agora = LocalDateTime.now();
+        var usuarioAtual = usuarioAuditorAware.getCurrentAuditor().orElse(null);
+        repository.tocarAtualizacao(consignacaoUpdate.getId(), agora, usuarioAtual);
+        consignacaoUpdate.setUpdatedAt(agora);
+        consignacaoUpdate.setUpdatedBy(usuarioAtual);
+
         return consignacaoUpdate;
     }
 

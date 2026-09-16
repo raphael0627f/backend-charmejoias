@@ -5,6 +5,7 @@ import com.manager.app.cliente.Cliente;
 import com.manager.app.consignacao.ConsignacaoProduto;
 import com.manager.app.mostruario.Mostruario;
 import com.manager.app.shared.TipoItem;
+import com.manager.app.usuario.dto.UsuarioResumoDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -28,7 +29,9 @@ import java.util.List;
         "dataAcertoConsignacao",
         "confirmada",
         "createdAt",
-        "updatedAt"
+        "updatedAt",
+        "createdBy",
+        "updatedBy"
 })
 public class ConsignacaoResponseDTO {
 
@@ -44,4 +47,6 @@ public class ConsignacaoResponseDTO {
     private Boolean confirmada;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private UsuarioResumoDTO createdBy;
+    private UsuarioResumoDTO updatedBy;
 }

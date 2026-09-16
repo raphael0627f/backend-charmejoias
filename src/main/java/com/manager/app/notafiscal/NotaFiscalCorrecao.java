@@ -4,10 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import com.manager.app.usuario.Usuario;
 
 import java.time.LocalDateTime;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "notas_fiscais_correcoes")
 @EqualsAndHashCode(of = "id")
 @Getter
@@ -37,4 +41,9 @@ public class NotaFiscalCorrecao {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @CreatedBy
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    private Usuario createdBy;
 }

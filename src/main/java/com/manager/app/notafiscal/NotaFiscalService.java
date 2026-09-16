@@ -8,6 +8,7 @@ import com.manager.app.notafiscal.dto.NotaFiscalRequestDTO;
 import com.manager.app.notafiscal.client.ContoraClient;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
+import com.manager.app.shared.ModoBusca;
 import com.manager.app.notafiscal.tabela.CfopReferencia;
 import com.manager.app.empresa.EmpresaRepository;
 import com.manager.app.shared.specification.SpecificationUtils;
@@ -50,8 +51,8 @@ public class NotaFiscalService {
     private final CfopRepository cfopRepository;
     private final NotaFiscalXmlStorageService xmlStorageService;
 
-    public Page<NotaFiscal> findAll(String busca, StatusNotaFiscal status, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
-        Specification<NotaFiscal> spec = comBusca(busca);
+    public Page<NotaFiscal> findAll(String busca, ModoBusca modoBusca, StatusNotaFiscal status, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
+        Specification<NotaFiscal> spec = comBusca(busca, modoBusca);
 
         if (status != null) {
             Specification<NotaFiscal> statusSpec = (root, query, cb) -> cb.equal(root.get("status"), status);
@@ -73,14 +74,14 @@ public class NotaFiscalService {
         return repository.findAll(spec, pageable);
     }
 
-    private Specification<NotaFiscal> comBusca(String busca){
+    private Specification<NotaFiscal> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
         Long comoNumero = SpecificationUtils.comoLong(busca);
         return (root, query, cb) -> {
             var cliente = root.join("cliente", JoinType.LEFT);
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
-            predicates.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca));
-            predicates.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca));
+            predicates.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca, modoBusca));
+            predicates.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca, modoBusca));
             if (comoNumero != null) {
                 predicates.add(cb.equal(root.get("id"), comoNumero));
                 predicates.add(cb.equal(root.get("numero"), comoNumero));

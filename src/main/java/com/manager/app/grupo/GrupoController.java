@@ -1,5 +1,6 @@
 package com.manager.app.grupo;
 
+import com.manager.app.shared.ModoBusca;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,9 +24,10 @@ public class GrupoController {
     @GetMapping
     public ResponseEntity<Page<GrupoDTO>> findAll(
             @RequestParam(required = false) String busca,
+            @RequestParam(required = false) ModoBusca modoBusca,
             @RequestParam(required = false) TipoGrupo tipo,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, tipo, pageable).map(mapper::toDTO));
+        return ResponseEntity.ok(service.findAll(busca, modoBusca, tipo, pageable).map(mapper::toDTO));
     }
 
     @GetMapping(value = "/{id}")

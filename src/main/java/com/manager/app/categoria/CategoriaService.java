@@ -2,6 +2,7 @@ package com.manager.app.categoria;
 
 import com.manager.app.shared.exception.ObjetoEmUsoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
+import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.specification.SpecificationUtils;
 import com.manager.app.produto.ProdutoRepository;
 import jakarta.transaction.Transactional;
@@ -18,13 +19,13 @@ public class CategoriaService {
     private final CategoriaRepository repository;
     private final ProdutoRepository produtoRepository;
 
-    public Page<Categoria> findAll(String busca, Pageable pageable){
-        return repository.findAll(comBusca(busca), pageable);
+    public Page<Categoria> findAll(String busca, ModoBusca modoBusca, Pageable pageable){
+        return repository.findAll(comBusca(busca, modoBusca), pageable);
     }
 
-    private Specification<Categoria> comBusca(String busca){
+    private Specification<Categoria> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
-        return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca);
+        return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca, modoBusca);
     }
 
     public Categoria findById(Long id){

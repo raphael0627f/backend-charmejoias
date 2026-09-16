@@ -45,6 +45,7 @@ public class SpcConsultaService {
     private final SpcXmlStorageService xmlStorageService;
     private final SpcConsultaResponseParser responseParser;
     private final SpcInsumoGenericoMapper mapper;
+    private final com.manager.app.usuario.UsuarioResumoMapper usuarioResumoMapper;
 
     public SpcConsultaResponseDTO consultar(SpcConsultaRequestDTO request){
         Cliente cliente = clienteService.findByIdAndAtivo(request.getClienteId());
@@ -81,6 +82,7 @@ public class SpcConsultaService {
 
         dto.setId(consulta.getId());
         dto.setCreatedAt(consulta.getCreatedAt());
+        dto.setCreatedBy(usuarioResumoMapper.toResumoDTO(consulta.getCreatedBy()));
         return dto;
     }
 
@@ -91,6 +93,7 @@ public class SpcConsultaService {
         SpcConsultaResponseDTO dto = mapper.mapear(responseParser.parse(xmlResponse));
         dto.setId(consulta.getId());
         dto.setCreatedAt(consulta.getCreatedAt());
+        dto.setCreatedBy(usuarioResumoMapper.toResumoDTO(consulta.getCreatedBy()));
         return dto;
     }
 
@@ -198,6 +201,7 @@ public class SpcConsultaService {
         dto.setProtocoloNumero(consulta.getProtocoloNumero());
         dto.setPossuiRestricao(consulta.isPossuiRestricao());
         dto.setCreatedAt(consulta.getCreatedAt());
+        dto.setCreatedBy(usuarioResumoMapper.toResumoDTO(consulta.getCreatedBy()));
         return dto;
     }
 }

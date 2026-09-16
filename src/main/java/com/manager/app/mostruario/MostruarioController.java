@@ -2,6 +2,7 @@ package com.manager.app.mostruario;
 
 import com.manager.app.mostruario.dto.MostruarioRequestDTO;
 import com.manager.app.mostruario.dto.MostruarioResponseDTO;
+import com.manager.app.shared.ModoBusca;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,8 +26,9 @@ public class MostruarioController {
     @GetMapping
     public ResponseEntity<Page<MostruarioResponseDTO>> findAll(
             @RequestParam(required = false) String busca,
+            @RequestParam(required = false) ModoBusca modoBusca,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.ok(service.findAll(busca, modoBusca, pageable).map(mapper::toResponseDTO));
     }
 
     @GetMapping(value = "/{id}")

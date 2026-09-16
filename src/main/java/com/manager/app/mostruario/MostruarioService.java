@@ -3,6 +3,7 @@ package com.manager.app.mostruario;
 import com.manager.app.consignacao.ConsignacaoRepository;
 import com.manager.app.shared.exception.ObjetoEmUsoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
+import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.specification.SpecificationUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -18,13 +19,13 @@ public class MostruarioService {
     private final MostruarioRepository repository;
     private final ConsignacaoRepository consignacaoRepository;
 
-    public Page<Mostruario> findAll(String busca, Pageable pageable){
-        return repository.findAll(comBusca(busca), pageable);
+    public Page<Mostruario> findAll(String busca, ModoBusca modoBusca, Pageable pageable){
+        return repository.findAll(comBusca(busca, modoBusca), pageable);
     }
 
-    private Specification<Mostruario> comBusca(String busca){
+    private Specification<Mostruario> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
-        return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("descricao"), busca);
+        return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("descricao"), busca, modoBusca);
     }
 
     public Mostruario findById(Long id){

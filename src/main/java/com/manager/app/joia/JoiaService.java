@@ -7,6 +7,7 @@ import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
 import com.manager.app.shared.specification.SpecificationUtils;
 import com.manager.app.grupo.GrupoValidation;
 import com.manager.app.grupo.GrupoRepository;
+import com.manager.app.shared.ModoBusca;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import com.manager.app.categoria.CategoriaService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,8 +30,8 @@ public class JoiaService {
     private final JoiaValidation validation;
     private final GrupoValidation grupoValidation;
 
-    public Page<Joia> findAll(String busca, Boolean ativo, Long categoriaId, Pageable pageable){
-        Specification<Joia> spec = comBusca(busca);
+    public Page<Joia> findAll(String busca, ModoBusca modoBusca, Boolean ativo, Long categoriaId, Pageable pageable){
+        Specification<Joia> spec = comBusca(busca, modoBusca);
 
         if (ativo != null) {
             Specification<Joia> ativoSpec = (root, query, cb) -> cb.equal(root.get("ativo"), ativo);
@@ -44,12 +46,12 @@ public class JoiaService {
         return repository.findAll(spec, pageable);
     }
 
-    private Specification<Joia> comBusca(String busca){
+    private Specification<Joia> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
         return (root, query, cb) -> cb.or(
-                SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("codigo"), busca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("referencia"), busca)
+                SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca, modoBusca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("codigo"), busca, modoBusca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("referencia"), busca, modoBusca)
         );
     }
 
@@ -80,15 +82,7 @@ public class JoiaService {
         validation.codigoExistenteCreate(joia.getCodigo());
 
         joia.setCategoria(categoriaService.findById(relacoes.getCategoriaId()));
-
-        if(!grupoValidation.gruposEmpty(relacoes.getGruposIds())){
-            List<Grupo> grupos = grupoRepository.findAllById(relacoes.getGruposIds());
-            if (grupos.size() != relacoes.getGruposIds().size()) {
-                throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
-            }
-            grupoValidation.validarTipo(grupos, TipoGrupo.PRODUTO);
-            joia.setGrupos(grupos);
-        }
+        joia.setGrupos(resolverGrupos(relacoes.getGruposIds()));
         return repository.save(joia);
     }
 
@@ -104,16 +98,23 @@ public class JoiaService {
         joiaUpdate.setAtivo(joia.isAtivo());
         joiaUpdate.setObservacoes(joia.getObservacoes());
         joiaUpdate.setCategoria(categoriaService.findById(relacoes.getCategoriaId()));
-
-        if(!grupoValidation.gruposEmpty(relacoes.getGruposIds())){
-            List<Grupo> grupos = grupoRepository.findAllById(relacoes.getGruposIds());
-            if (grupos.size() != relacoes.getGruposIds().size()) {
-                throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
-            }
-            grupoValidation.validarTipo(grupos, TipoGrupo.PRODUTO);
-            joiaUpdate.setGrupos(grupos);
-        }
+        joiaUpdate.setGrupos(resolverGrupos(relacoes.getGruposIds()));
         return joiaUpdate;
+    }
+
+    // Sempre resolve a lista de grupos (mesmo vazia/nula -> lista vazia), pra
+    // remover o último grupo de uma joia de fato limpar a relação - antes,
+    // gruposIds vazio pulava a atribuição inteira e o grupo antigo nunca saía.
+    private List<Grupo> resolverGrupos(List<Long> gruposIds){
+        if (grupoValidation.gruposEmpty(gruposIds)) {
+            return new ArrayList<>();
+        }
+        List<Grupo> grupos = grupoRepository.findAllById(gruposIds);
+        if (grupos.size() != gruposIds.size()) {
+            throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
+        }
+        grupoValidation.validarTipo(grupos, TipoGrupo.PRODUTO);
+        return grupos;
     }
 
     @Transactional

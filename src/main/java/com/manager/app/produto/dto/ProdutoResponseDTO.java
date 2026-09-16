@@ -6,6 +6,7 @@ import com.manager.app.fornecedor.Fornecedor;
 import com.manager.app.grupo.Grupo;
 import com.manager.app.ncm.Ncm;
 import com.manager.app.produto.TipoProduto;
+import com.manager.app.usuario.dto.UsuarioResumoDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -42,7 +43,9 @@ import java.util.UUID;
         "grupos",
         "variacoes",
         "createdAt",
-        "updatedAt"
+        "updatedAt",
+        "createdBy",
+        "updatedBy"
 })
 public class ProdutoResponseDTO {
 
@@ -70,4 +73,6 @@ public class ProdutoResponseDTO {
     private List<ProdutoVariacaoResponseDTO> variacoes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private UsuarioResumoDTO createdBy;
+    private UsuarioResumoDTO updatedBy;
 }

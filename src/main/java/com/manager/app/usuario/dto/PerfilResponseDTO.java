@@ -12,11 +12,13 @@ import java.util.Set;
 @Getter
 @Setter
 @NoArgsConstructor
-@JsonPropertyOrder({ "id", "nome", "permissoes", "createdAt", "updatedAt" })
+@JsonPropertyOrder({ "id", "nome", "permissoes", "createdAt", "updatedAt", "createdBy", "updatedBy" })
 public class PerfilResponseDTO {
     private Long id;
     private String nome;
     private Set<Permissao> permissoes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private UsuarioResumoDTO createdBy;
+    private UsuarioResumoDTO updatedBy;
 }

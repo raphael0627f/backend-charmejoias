@@ -1,10 +1,11 @@
 package com.manager.app.acertojoia;
 
 import com.manager.app.acertojoia.dto.AcertoJoiaResponseDTO;
+import com.manager.app.usuario.UsuarioResumoMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring", uses = {AcertoJoiaConsignacaoMapper.class})
+@Mapper(componentModel = "spring", uses = {AcertoJoiaConsignacaoMapper.class, UsuarioResumoMapper.class})
 public interface AcertoJoiaMapper {
 
     @Mapping(

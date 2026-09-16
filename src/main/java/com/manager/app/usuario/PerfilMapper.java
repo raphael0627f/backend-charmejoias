@@ -4,7 +4,7 @@ import com.manager.app.usuario.dto.PerfilRequestDTO;
 import com.manager.app.usuario.dto.PerfilResponseDTO;
 import org.mapstruct.Mapper;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = UsuarioResumoMapper.class)
 public interface PerfilMapper {
 
     Perfil toEntity(PerfilRequestDTO dto);

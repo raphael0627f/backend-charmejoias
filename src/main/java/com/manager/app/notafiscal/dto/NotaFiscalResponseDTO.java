@@ -6,6 +6,7 @@ import com.manager.app.empresa.Empresa;
 import com.manager.app.notafiscal.AmbienteNfe;
 import com.manager.app.notafiscal.StatusNotaFiscal;
 import com.manager.app.transportadora.Transportadora;
+import com.manager.app.usuario.dto.UsuarioResumoDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -42,7 +43,9 @@ import java.util.List;
         "pagamentos",
         "correcoes",
         "createdAt",
-        "updatedAt"
+        "updatedAt",
+        "createdBy",
+        "updatedBy"
 })
 public class NotaFiscalResponseDTO {
     private Long id;
@@ -70,4 +73,6 @@ public class NotaFiscalResponseDTO {
     private List<NotaFiscalCorrecaoResponseDTO> correcoes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private UsuarioResumoDTO createdBy;
+    private UsuarioResumoDTO updatedBy;
 }

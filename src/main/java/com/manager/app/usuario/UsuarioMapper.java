@@ -6,7 +6,7 @@ import com.manager.app.endereco.EnderecoMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring", uses = EnderecoMapper.class)
+@Mapper(componentModel = "spring", uses = { EnderecoMapper.class, UsuarioResumoMapper.class })
 public interface UsuarioMapper {
 
     // a senha nunca é copiada automaticamente pro entity: o service é quem faz o hash

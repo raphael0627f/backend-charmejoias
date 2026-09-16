@@ -5,8 +5,9 @@ import com.manager.app.cliente.dto.ClienteResponseDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import com.manager.app.endereco.EnderecoMapper;
+import com.manager.app.usuario.UsuarioResumoMapper;
 
-@Mapper(componentModel = "spring", uses = EnderecoMapper.class)
+@Mapper(componentModel = "spring", uses = { EnderecoMapper.class, UsuarioResumoMapper.class })
 public interface ClienteMapper {
     Cliente toEntity(ClienteRequestDTO dto);
 

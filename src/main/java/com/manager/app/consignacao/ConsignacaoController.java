@@ -29,6 +29,7 @@ public class ConsignacaoController {
     @GetMapping
     public ResponseEntity<Page<ConsignacaoResumoDTO>> findAll(
             @RequestParam(required = false) String busca,
+            @RequestParam(required = false) com.manager.app.shared.ModoBusca modoBusca,
             @RequestParam(required = false) java.util.UUID clienteId,
             @RequestParam(required = false) Boolean temCliente,
             @RequestParam(required = false) Boolean temAcerto,
@@ -40,7 +41,7 @@ public class ConsignacaoController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataAcertoInicio,
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataAcertoFim,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAllResumo(busca, clienteId, temCliente, temAcerto, confirmada,
+        return ResponseEntity.ok(service.findAllResumo(busca, modoBusca, clienteId, temCliente, temAcerto, confirmada,
                 dataEntregaInicio, dataEntregaFim, dataPreAcertoInicio, dataPreAcertoFim, dataAcertoInicio, dataAcertoFim, pageable));
     }
 

@@ -3,6 +3,7 @@ package com.manager.app.variacao;
 import com.manager.app.produto.ProdutoVariacaoItemRepository;
 import com.manager.app.shared.exception.ObjetoEmUsoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
+import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.specification.SpecificationUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -23,13 +24,13 @@ public class VariacaoService {
     private final ProdutoVariacaoItemRepository produtoVariacaoItemRepository;
     private final VariacaoValidation validation;
 
-    public Page<Variacao> findAll(String busca, Pageable pageable){
-        return repository.findAll(comBusca(busca), pageable);
+    public Page<Variacao> findAll(String busca, ModoBusca modoBusca, Pageable pageable){
+        return repository.findAll(comBusca(busca, modoBusca), pageable);
     }
 
-    private Specification<Variacao> comBusca(String busca){
+    private Specification<Variacao> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
-        return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca);
+        return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca, modoBusca);
     }
 
     public Variacao findById(Long id){

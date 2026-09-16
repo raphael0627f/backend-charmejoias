@@ -1,5 +1,6 @@
 package com.manager.app.categoria;
 
+import com.manager.app.shared.ModoBusca;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,8 +25,9 @@ public class CategoriaController {
     @GetMapping
     public ResponseEntity<Page<CategoriaDTO>> findAll(
             @RequestParam(required = false) String busca,
+            @RequestParam(required = false) ModoBusca modoBusca,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, pageable).map(mapper::toDTO));
+        return ResponseEntity.ok(service.findAll(busca, modoBusca, pageable).map(mapper::toDTO));
     }
 
     @GetMapping(value = "/{id}")

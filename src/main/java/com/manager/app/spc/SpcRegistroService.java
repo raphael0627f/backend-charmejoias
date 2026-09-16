@@ -29,6 +29,7 @@ public class SpcRegistroService {
     private final SpcXmlBuilder xmlBuilder;
     private final SpcClient client;
     private final SpcXmlStorageService xmlStorageService;
+    private final com.manager.app.usuario.UsuarioResumoMapper usuarioResumoMapper;
 
     private static final Pattern SUCESSO = Pattern.compile("<sucesso>(.*?)</sucesso>", Pattern.DOTALL);
 
@@ -151,6 +152,7 @@ public class SpcRegistroService {
         }
         dto.setMensagemRetorno(registro.getMensagemRetorno());
         dto.setCreatedAt(registro.getCreatedAt());
+        dto.setCreatedBy(usuarioResumoMapper.toResumoDTO(registro.getCreatedBy()));
         return dto;
     }
 }

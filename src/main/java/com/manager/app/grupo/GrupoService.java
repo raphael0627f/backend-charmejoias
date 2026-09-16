@@ -2,6 +2,7 @@ package com.manager.app.grupo;
 
 import com.manager.app.shared.exception.ObjetoEmUsoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
+import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.specification.SpecificationUtils;
 import com.manager.app.cliente.ClienteRepository;
 import com.manager.app.joia.JoiaRepository;
@@ -22,8 +23,8 @@ public class GrupoService {
     private final ProdutoRepository produtoRepository;
     private final JoiaRepository joiaRepository;
 
-    public Page<Grupo> findAll(String busca, TipoGrupo tipo, Pageable pageable){
-        Specification<Grupo> spec = comBusca(busca);
+    public Page<Grupo> findAll(String busca, ModoBusca modoBusca, TipoGrupo tipo, Pageable pageable){
+        Specification<Grupo> spec = comBusca(busca, modoBusca);
 
         if (tipo != null) {
             Specification<Grupo> tipoSpec = (root, query, cb) -> cb.equal(root.get("tipo"), tipo);
@@ -33,9 +34,9 @@ public class GrupoService {
         return repository.findAll(spec, pageable);
     }
 
-    private Specification<Grupo> comBusca(String busca){
+    private Specification<Grupo> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
-        return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca);
+        return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca, modoBusca);
     }
 
     public Grupo findById(Long id){

@@ -15,6 +15,7 @@ import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
 import com.manager.app.grupo.GrupoValidation;
 import com.manager.app.shared.specification.SpecificationUtils;
 import com.manager.app.grupo.GrupoRepository;
+import com.manager.app.shared.ModoBusca;
 import com.manager.app.variacao.ItemVariacao;
 import com.manager.app.variacao.ItemVariacaoRepository;
 import com.manager.app.variacao.dto.ItemVariacaoDTO;
@@ -58,8 +59,8 @@ public class ProdutoService {
     private static final Pattern CODIGO_NUMERICO = Pattern.compile("^\\d{4}$");
     private static final int TAMANHO_CODIGO_BARRAS = 5;
 
-    public Page<Produto> findAll(String busca, Boolean ativo, Long categoriaId, Long fornecedorId, Long grupoId, Pageable pageable){
-        Specification<Produto> spec = comBusca(busca);
+    public Page<Produto> findAll(String busca, ModoBusca modoBusca, Boolean ativo, Long categoriaId, Long fornecedorId, Long grupoId, Pageable pageable){
+        Specification<Produto> spec = comBusca(busca, modoBusca);
 
         if (ativo != null) {
             Specification<Produto> ativoSpec = (root, query, cb) -> cb.equal(root.get("ativo"), ativo);
@@ -87,12 +88,12 @@ public class ProdutoService {
         return repository.findAll(spec, pageable);
     }
 
-    private Specification<Produto> comBusca(String busca){
+    private Specification<Produto> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
         return (root, query, cb) -> cb.or(
-                SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("sku"), busca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("referencia"), busca)
+                SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca, modoBusca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("sku"), busca, modoBusca),
+                SpecificationUtils.likeIgnoreCase(cb, root.get("referencia"), busca, modoBusca)
         );
     }
 
@@ -342,14 +343,7 @@ public class ProdutoService {
                 ? ncmService.findById(relacoes.getNcmCodigo())
                 : null);
 
-        if(!grupoValidation.gruposEmpty(relacoes.getGruposIds())){
-            List<Grupo> grupos = grupoRepository.findAllById(relacoes.getGruposIds());
-            if (grupos.size() != relacoes.getGruposIds().size()) {
-                throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
-            }
-            grupoValidation.validarTipo(grupos, TipoGrupo.PRODUTO);
-            produto.setGrupos(grupos);
-        }
+        produto.setGrupos(resolverGrupos(relacoes.getGruposIds()));
 
         if (produto.getQuantidadeEstoque() == null) {
             produto.setQuantidadeEstoque(0);
@@ -403,14 +397,7 @@ public class ProdutoService {
                 ? ncmService.findById(relacoes.getNcmCodigo())
                 : null);
 
-        if(!grupoValidation.gruposEmpty(relacoes.getGruposIds())){
-            List<Grupo> grupos = grupoRepository.findAllById(relacoes.getGruposIds());
-            if (grupos.size() != relacoes.getGruposIds().size()) {
-                throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
-            }
-            grupoValidation.validarTipo(grupos, TipoGrupo.PRODUTO);
-            produtoUpdate.setGrupos(grupos);
-        }
+        produtoUpdate.setGrupos(resolverGrupos(relacoes.getGruposIds()));
 
         if (produtoUpdate.getTipo() == TipoProduto.SIMPLES) {
             if (variacoesRequest != null && !variacoesRequest.isEmpty()) {
@@ -485,6 +472,21 @@ public class ProdutoService {
         }
 
         return produtoUpdate;
+    }
+
+    // Sempre resolve a lista de grupos (mesmo vazia/nula -> lista vazia), pra
+    // remover o último grupo de um produto de fato limpar a relação - antes,
+    // gruposIds vazio pulava a atribuição inteira e o grupo antigo nunca saía.
+    private List<Grupo> resolverGrupos(List<Long> gruposIds){
+        if (grupoValidation.gruposEmpty(gruposIds)) {
+            return new ArrayList<>();
+        }
+        List<Grupo> grupos = grupoRepository.findAllById(gruposIds);
+        if (grupos.size() != gruposIds.size()) {
+            throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
+        }
+        grupoValidation.validarTipo(grupos, TipoGrupo.PRODUTO);
+        return grupos;
     }
 
     @Transactional

@@ -2,6 +2,7 @@ package com.manager.app.acertoconsignacao.dto;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.manager.app.acertoconsignacao.AcertoConsignacaoProduto;
+import com.manager.app.usuario.dto.UsuarioResumoDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,7 +27,9 @@ import java.util.List;
         "valorTotalProdutosAcertados",
         "valorTotalComDesconto",
         "createdAt",
-        "updatedAt"
+        "updatedAt",
+        "createdBy",
+        "updatedBy"
 })
 public class AcertoConsignacaoResponseDTO {
 
@@ -43,4 +46,6 @@ public class AcertoConsignacaoResponseDTO {
     private BigDecimal valorTotalComDesconto;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private UsuarioResumoDTO createdBy;
+    private UsuarioResumoDTO updatedBy;
 }

@@ -27,7 +27,9 @@ import java.util.UUID;
         "perfil",
         "ativo",
         "createdAt",
-        "updatedAt"
+        "updatedAt",
+        "createdBy",
+        "updatedBy"
 })
 public class UsuarioResponseDTO {
     // nunca inclui "senha" - de propósito, não é um esquecimento
@@ -45,4 +47,6 @@ public class UsuarioResponseDTO {
     private boolean ativo;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private UsuarioResumoDTO createdBy;
+    private UsuarioResumoDTO updatedBy;
 }

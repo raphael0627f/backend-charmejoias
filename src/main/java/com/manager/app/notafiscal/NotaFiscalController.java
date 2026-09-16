@@ -38,11 +38,12 @@ public class NotaFiscalController {
     @GetMapping
     public ResponseEntity<Page<NotaFiscalResponseDTO>> findAll(
             @RequestParam(required = false) String busca,
+            @RequestParam(required = false) com.manager.app.shared.ModoBusca modoBusca,
             @RequestParam(required = false) StatusNotaFiscal status,
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataInicio,
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataFim,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, status, dataInicio, dataFim, pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.ok(service.findAll(busca, modoBusca, status, dataInicio, dataFim, pageable).map(mapper::toResponseDTO));
     }
 
     @GetMapping(value = "/{id}")

@@ -7,6 +7,7 @@ import com.manager.app.produto.dto.ProdutoRelacoesDTO;
 import com.manager.app.produto.dto.ProdutoResponseDTO;
 import com.manager.app.produto.dto.ProximoSkuProdutoResponseDTO;
 import com.manager.app.produto.dto.SkuDisponivelResponseDTO;
+import com.manager.app.shared.ModoBusca;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -34,12 +35,13 @@ public class ProdutoController {
     @GetMapping
     public ResponseEntity<Page<ProdutoResponseDTO>> findAll(
             @RequestParam(required = false) String busca,
+            @RequestParam(required = false) ModoBusca modoBusca,
             @RequestParam(required = false) Boolean ativo,
             @RequestParam(required = false) Long categoriaId,
             @RequestParam(required = false) Long fornecedorId,
             @RequestParam(required = false) Long grupoId,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, ativo, categoriaId, fornecedorId, grupoId, pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.ok(service.findAll(busca, modoBusca, ativo, categoriaId, fornecedorId, grupoId, pageable).map(mapper::toResponseDTO));
     }
 
     @GetMapping(value = "/proximo-sku")

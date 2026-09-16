@@ -1,5 +1,6 @@
 package com.manager.app.acertojoia.dto;
 
+import com.manager.app.usuario.dto.UsuarioResumoDTO;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -19,6 +20,8 @@ public class AcertoJoiaResponseDTO {
     private List<AcertoJoiaConsignacaoResponseDTO> consignacoes = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private UsuarioResumoDTO createdBy;
+    private UsuarioResumoDTO updatedBy;
     private BigDecimal ValorPagarConsignacaoMaleta;
     private BigDecimal ValorPagarAcessorios;
 

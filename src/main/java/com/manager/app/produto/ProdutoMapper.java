@@ -5,10 +5,11 @@ import com.manager.app.produto.dto.ProdutoResponseDTO;
 import com.manager.app.produto.dto.ProdutoVariacaoResponseDTO;
 import com.manager.app.variacao.ItemVariacao;
 import com.manager.app.variacao.dto.ItemVariacaoDTO;
+import com.manager.app.usuario.UsuarioResumoMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = UsuarioResumoMapper.class)
 public interface ProdutoMapper {
 
     @Mapping(target = "variacoes", ignore = true)

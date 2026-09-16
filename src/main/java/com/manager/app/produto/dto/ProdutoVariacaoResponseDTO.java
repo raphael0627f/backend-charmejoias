@@ -1,6 +1,7 @@
 package com.manager.app.produto.dto;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.manager.app.usuario.dto.UsuarioResumoDTO;
 import com.manager.app.variacao.dto.ItemVariacaoDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,7 +14,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-@JsonPropertyOrder({ "id", "sku", "precoCusto", "precoVenda", "quantidadeEstoque", "ativo", "codigoBarras", "itensVariacao", "createdAt", "updatedAt" })
+@JsonPropertyOrder({ "id", "sku", "precoCusto", "precoVenda", "quantidadeEstoque", "ativo", "codigoBarras", "itensVariacao", "createdAt", "updatedAt", "createdBy", "updatedBy" })
 public class ProdutoVariacaoResponseDTO {
     private Long id;
     private String sku;
@@ -25,4 +26,6 @@ public class ProdutoVariacaoResponseDTO {
     private List<ItemVariacaoDTO> itensVariacao;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private UsuarioResumoDTO createdBy;
+    private UsuarioResumoDTO updatedBy;
 }

@@ -3,6 +3,7 @@ package com.manager.app.joia;
 import com.manager.app.joia.dto.JoiaRelacoesDTO;
 import com.manager.app.joia.dto.JoiaRequestDTO;
 import com.manager.app.joia.dto.JoiaResponseDTO;
+import com.manager.app.shared.ModoBusca;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,10 +29,11 @@ public class JoiaController {
     @GetMapping
     public ResponseEntity<Page<JoiaResponseDTO>> findAll(
             @RequestParam(required = false) String busca,
+            @RequestParam(required = false) ModoBusca modoBusca,
             @RequestParam(required = false) Boolean ativo,
             @RequestParam(required = false) Long categoriaId,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, ativo, categoriaId, pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.ok(service.findAll(busca, modoBusca, ativo, categoriaId, pageable).map(mapper::toResponseDTO));
     }
 
     @GetMapping(value = "/busca-exata")

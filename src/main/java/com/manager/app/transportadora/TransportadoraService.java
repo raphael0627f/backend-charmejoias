@@ -3,6 +3,7 @@ package com.manager.app.transportadora;
 import com.manager.app.notafiscal.NotaFiscalRepository;
 import com.manager.app.shared.exception.ObjetoEmUsoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
+import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.specification.SpecificationUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -18,13 +19,13 @@ public class TransportadoraService {
     private final TransportadoraRepository repository;
     private final NotaFiscalRepository notaFiscalRepository;
 
-    public Page<Transportadora> findAll(String busca, Pageable pageable){
-        return repository.findAll(comBusca(busca), pageable);
+    public Page<Transportadora> findAll(String busca, ModoBusca modoBusca, Pageable pageable){
+        return repository.findAll(comBusca(busca, modoBusca), pageable);
     }
 
-    private Specification<Transportadora> comBusca(String busca){
+    private Specification<Transportadora> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
-        return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("razaoSocial"), busca);
+        return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("razaoSocial"), busca, modoBusca);
     }
 
     public Transportadora findById(Long id){

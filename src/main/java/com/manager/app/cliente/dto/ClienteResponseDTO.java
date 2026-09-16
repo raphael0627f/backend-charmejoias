@@ -3,6 +3,7 @@ package com.manager.app.cliente.dto;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.manager.app.endereco.Endereco;
 import com.manager.app.grupo.Grupo;
+import com.manager.app.usuario.dto.UsuarioResumoDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -33,7 +34,9 @@ import java.util.UUID;
         "enderecos",
         "grupos",
         "createdAt",
-        "updatedAt"
+        "updatedAt",
+        "createdBy",
+        "updatedBy"
 })
 public class ClienteResponseDTO {
     private UUID id;
@@ -54,4 +57,6 @@ public class ClienteResponseDTO {
     private List<Grupo> grupos;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private UsuarioResumoDTO createdBy;
+    private UsuarioResumoDTO updatedBy;
 }

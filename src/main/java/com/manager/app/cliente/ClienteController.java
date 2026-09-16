@@ -2,6 +2,7 @@ package com.manager.app.cliente;
 
 import com.manager.app.cliente.dto.ClienteRequestDTO;
 import com.manager.app.cliente.dto.ClienteResponseDTO;
+import com.manager.app.shared.ModoBusca;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,10 +27,11 @@ public class ClienteController {
     @GetMapping
     public ResponseEntity<Page<ClienteResponseDTO>> findAll(
             @RequestParam(required = false) String busca,
+            @RequestParam(required = false) ModoBusca modoBusca,
             @RequestParam(required = false) Boolean ativo,
             @RequestParam(required = false) Long grupoId,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, ativo, grupoId, pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.ok(service.findAll(busca, modoBusca, ativo, grupoId, pageable).map(mapper::toResponseDTO));
     }
 
     @GetMapping(value = "/{id}")

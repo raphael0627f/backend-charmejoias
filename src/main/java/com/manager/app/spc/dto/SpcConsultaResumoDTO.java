@@ -1,5 +1,6 @@
 package com.manager.app.spc.dto;
 
+import com.manager.app.usuario.dto.UsuarioResumoDTO;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,4 +18,5 @@ public class SpcConsultaResumoDTO {
     private Long protocoloNumero;
     private boolean possuiRestricao;
     private LocalDateTime createdAt;
+    private UsuarioResumoDTO createdBy;
 }

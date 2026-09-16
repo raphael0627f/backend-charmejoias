@@ -1,5 +1,6 @@
 package com.manager.app.shared.specification;
 
+import com.manager.app.shared.ModoBusca;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
@@ -12,8 +13,21 @@ public final class SpecificationUtils {
 
     private SpecificationUtils(){}
 
+    // mantém o comportamento antigo (sempre "contém") pros poucos lugares que ainda
+    // não escolhem o modo - todo filtro de listagem já usa a versão com ModoBusca
     public static Predicate likeIgnoreCase(CriteriaBuilder cb, Expression<String> path, String termo){
-        return cb.like(cb.lower(path), "%" + termo.toLowerCase() + "%");
+        return likeIgnoreCase(cb, path, termo, ModoBusca.MEIO);
+    }
+
+    public static Predicate likeIgnoreCase(CriteriaBuilder cb, Expression<String> path, String termo, ModoBusca modo){
+        String termoLower = termo.toLowerCase();
+        String padrao = switch (modo == null ? ModoBusca.MEIO : modo) {
+            case INICIO -> termoLower + "%";
+            case FIM -> "%" + termoLower;
+            case EXATA -> termoLower;
+            case MEIO -> "%" + termoLower + "%";
+        };
+        return cb.like(cb.lower(path), padrao);
     }
 
     public static Predicate criadoAPartirDe(CriteriaBuilder cb, Expression<LocalDateTime> path, LocalDate data){
