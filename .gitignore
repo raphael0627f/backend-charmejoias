@@ -34,3 +34,9 @@ build/
 
 ### Storage local (imagens de produtos) ###
 /storage/
+
+### Config com segredos reais (deploy) - nunca versionar ###
+# copiar esse arquivo pra pasta do jar em producao/homologacao, nunca commitar
+/application.properties
+/config/application.properties
+/application-*.properties
