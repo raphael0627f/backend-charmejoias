@@ -33,17 +33,17 @@ public class ClienteService {
     private final ClienteValidation validation;
     private final GrupoValidation grupoValidation;
 
-    public Page<Cliente> findAll(String busca, ModoBusca modoBusca, Boolean ativo, Long grupoId, Pageable pageable){
+    public Page<Cliente> findAll(String busca, ModoBusca modoBusca, Boolean ativo, List<Long> gruposIds, Pageable pageable){
         Specification<Cliente> spec = Specification.where(comBusca(busca, modoBusca));
 
         if (ativo != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("ativo"), ativo));
         }
 
-        if (grupoId != null) {
+        if (gruposIds != null && !gruposIds.isEmpty()) {
             spec = spec.and((root, query, cb) -> {
                 query.distinct(true);
-                return cb.equal(root.join("grupos").get("id"), grupoId);
+                return root.join("grupos").get("id").in(gruposIds);
             });
         }
 

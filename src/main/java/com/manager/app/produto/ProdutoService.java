@@ -59,7 +59,7 @@ public class ProdutoService {
     private static final Pattern CODIGO_NUMERICO = Pattern.compile("^\\d{4}$");
     private static final int TAMANHO_CODIGO_BARRAS = 5;
 
-    public Page<Produto> findAll(String busca, ModoBusca modoBusca, Boolean ativo, Long categoriaId, Long fornecedorId, Long grupoId, Pageable pageable){
+    public Page<Produto> findAll(String busca, ModoBusca modoBusca, Boolean ativo, Long categoriaId, Long fornecedorId, List<Long> gruposIds, Pageable pageable){
         Specification<Produto> spec = comBusca(busca, modoBusca);
 
         if (ativo != null) {
@@ -77,10 +77,10 @@ public class ProdutoService {
             spec = spec == null ? fornecedorSpec : spec.and(fornecedorSpec);
         }
 
-        if (grupoId != null) {
+        if (gruposIds != null && !gruposIds.isEmpty()) {
             Specification<Produto> grupoSpec = (root, query, cb) -> {
                 query.distinct(true);
-                return cb.equal(root.join("grupos").get("id"), grupoId);
+                return root.join("grupos").get("id").in(gruposIds);
             };
             spec = spec == null ? grupoSpec : spec.and(grupoSpec);
         }

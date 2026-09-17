@@ -15,6 +15,7 @@ import com.manager.app.shared.specification.SpecificationUtils;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -38,6 +39,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotaFiscalService {
 
     private final NotaFiscalRepository repository;
@@ -367,7 +369,14 @@ public class NotaFiscalService {
             }
             case "error" -> {
                 notaFiscal.setStatus(StatusNotaFiscal.REJEITADA);
-                notaFiscal.setMotivoRejeicao(stringOu(sefaz.get("status_message")));
+                String motivo = extrairMensagem(sefaz);
+                if (motivo == null) {
+                    // a Contora pode mudar o nome do campo da mensagem sem avisar - loga o payload
+                    // inteiro pra dar pra descobrir o campo certo em vez de ficar sem motivo nenhum
+                    log.warn("Nota fiscal {} rejeitada pela SEFAZ mas nenhum campo de mensagem conhecido " +
+                            "foi encontrado no payload da Contora. sefaz={}", notaFiscal.getId(), sefaz);
+                }
+                notaFiscal.setMotivoRejeicao(motivo);
             }
             case "draft", "built_unsigned", "built_signed", "authorize_pending" -> notaFiscal.setStatus(StatusNotaFiscal.ENVIADA);
             default -> { }
@@ -388,7 +397,7 @@ public class NotaFiscalService {
 
         if ("rejected".equals(stringOu(cancellation.get("status")))) {
             notaFiscal.setStatus(StatusNotaFiscal.AUTORIZADA);
-            notaFiscal.setMotivoRejeicaoCancelamento(stringOu(cancellation.get("status_message")));
+            notaFiscal.setMotivoRejeicaoCancelamento(extrairMensagem(cancellation));
             return;
         }
 
@@ -426,7 +435,7 @@ public class NotaFiscalService {
             xmlStorageService.salvarCorrecao(notaFiscal, correcao.getSequencia(), xml);
         } else if ("rejected".equals(status)) {
             correcao.setStatus(StatusCorrecao.REJEITADA);
-            correcao.setMotivoRejeicao(stringOu(correction.get("status_message")));
+            correcao.setMotivoRejeicao(extrairMensagem(correction));
         }
     }
 
@@ -441,6 +450,22 @@ public class NotaFiscalService {
 
     private String stringOu(Object valor){
         return valor != null ? valor.toString() : null;
+    }
+
+    // nomes de campo candidatos pra mensagem de erro/rejeição da SEFAZ - a documentação da Contora
+    // não é totalmente estável quanto a esse nome, então tenta várias chaves plausíveis antes de desistir
+    private static final List<String> CHAVES_MENSAGEM_ERRO = List.of(
+            "status_message", "message", "reason", "description", "error_message", "rejection_reason"
+    );
+
+    private String extrairMensagem(Map<String, Object> dados){
+        for (String chave : CHAVES_MENSAGEM_ERRO) {
+            String valor = stringOu(dados.get(chave));
+            if (!isBlank(valor)) {
+                return valor;
+            }
+        }
+        return null;
     }
 
     private boolean isBlank(String valor){

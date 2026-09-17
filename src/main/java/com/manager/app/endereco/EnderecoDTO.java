@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -31,4 +33,9 @@ public class EnderecoDTO {
 
     private String ibge;
     private boolean principal;
+
+    private String pontoReferencia;
+    private String descricao;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
 }

@@ -1,6 +1,7 @@
 package com.manager.app.notafiscal;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,7 @@ import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class NotaFiscalStatusScheduler {
 
     private static final List<StatusNotaFiscal> STATUS_PENDENTES = List.of(
@@ -44,7 +46,11 @@ public class NotaFiscalStatusScheduler {
         try {
             service.atualizarStatus(id);
         } catch (Exception e) {
-            // erro pontual numa nota não pode travar a checagem das outras
+            // erro pontual numa nota não pode travar a checagem das outras, mas precisa ficar
+            // registrado - antes esse catch engolia a exceção em silêncio, então uma falha na
+            // consulta (ex.: erro da API da Contora) deixava a nota presa em ENVIADA pra sempre
+            // sem nenhum rastro do motivo
+            log.error("Falha ao consultar status da nota fiscal {} na Contora", id, e);
         }
     }
 }

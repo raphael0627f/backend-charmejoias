@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -29,9 +30,9 @@ public class ClienteController {
             @RequestParam(required = false) String busca,
             @RequestParam(required = false) ModoBusca modoBusca,
             @RequestParam(required = false) Boolean ativo,
-            @RequestParam(required = false) Long grupoId,
+            @RequestParam(required = false) List<Long> gruposIds,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, modoBusca, ativo, grupoId, pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.ok(service.findAll(busca, modoBusca, ativo, gruposIds, pageable).map(mapper::toResponseDTO));
     }
 
     @GetMapping(value = "/{id}")

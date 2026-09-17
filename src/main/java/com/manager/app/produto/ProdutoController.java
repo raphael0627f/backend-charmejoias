@@ -39,9 +39,9 @@ public class ProdutoController {
             @RequestParam(required = false) Boolean ativo,
             @RequestParam(required = false) Long categoriaId,
             @RequestParam(required = false) Long fornecedorId,
-            @RequestParam(required = false) Long grupoId,
+            @RequestParam(required = false) List<Long> gruposIds,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, modoBusca, ativo, categoriaId, fornecedorId, grupoId, pageable).map(mapper::toResponseDTO));
+        return ResponseEntity.ok(service.findAll(busca, modoBusca, ativo, categoriaId, fornecedorId, gruposIds, pageable).map(mapper::toResponseDTO));
     }
 
     @GetMapping(value = "/proximo-sku")

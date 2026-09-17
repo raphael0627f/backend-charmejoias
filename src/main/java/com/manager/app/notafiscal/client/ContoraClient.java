@@ -288,7 +288,7 @@ public class ContoraClient {
 
         Map<String, Object> recipient = new HashMap<>();
         recipient.put("name", cliente.getNome());
-        recipient.put("document", cliente.getDocumento() != null ? cliente.getDocumento() : cliente.getCpf());
+        recipient.put("document", cliente.getCpf() != null ? cliente.getCpf() : cliente.getDocumento());
         recipient.put("state_registration_indicator", 9);
         if (cliente.getEmail() != null && !cliente.getEmail().isBlank()) {
             recipient.put("email", cliente.getEmail());
