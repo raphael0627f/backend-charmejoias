@@ -15,5 +15,6 @@ public interface AcertoJoiaConsignacaoMapper {
     @Mapping(target = "valorTotal", expression = "java(consignacao.getValorTotal())")
     @Mapping(target = "consignacao", expression = "java(consignacao)")
     @Mapping(target = "tipo", ignore = true)
+    @Mapping(target = "acertoJoia", ignore = true)
     AcertoJoiaConsignacao toAcertoJoiaConsignacao(Consignacao consignacao);
 }

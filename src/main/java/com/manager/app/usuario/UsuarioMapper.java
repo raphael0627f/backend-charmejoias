@@ -14,6 +14,10 @@ public interface UsuarioMapper {
     // em texto puro pra dentro da entidade
     @Mapping(target = "senha", ignore = true)
     @Mapping(target = "perfil", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
     Usuario toEntity(UsuarioRequestDTO dto);
 
     UsuarioResponseDTO toResponseDTO(Usuario entity);

@@ -14,10 +14,20 @@ public interface ProdutoMapper {
 
     @Mapping(target = "variacoes", ignore = true)
     @Mapping(target = "ncm", ignore = true)
+    @Mapping(target = "codigoBarras", ignore = true)
+    @Mapping(target = "imagemUrl", ignore = true)
+    @Mapping(target = "categoria", ignore = true)
+    @Mapping(target = "fornecedor", ignore = true)
+    @Mapping(target = "grupos", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
     Produto toEntity(ProdutoRequestDTO dto);
 
     @Mapping(target = "variacoes", ignore = true)
     @Mapping(target = "ncmCodigo", ignore = true)
+    @Mapping(target = "categoriaId", ignore = true)
+    @Mapping(target = "fornecedorId", ignore = true)
+    @Mapping(target = "gruposIds", ignore = true)
     ProdutoRequestDTO toDTO(Produto entity);
 
     @Mapping(target = "variacoes", ignore = true)
