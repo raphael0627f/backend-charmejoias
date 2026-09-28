@@ -36,6 +36,7 @@ public interface ProdutoMapper {
 
     @Named("produtoToResponseDTO")
     default ProdutoResponseDTO toResponseDTO(Produto entity) {
+        if (entity == null) return null;
         ProdutoResponseDTO dto = toResponseDTOBase(entity);
         dto.setVariacoes(entity.getVariacoes().stream().map(this::toVariacaoResponseDTO).toList());
         return dto;
@@ -46,6 +47,7 @@ public interface ProdutoMapper {
 
     @Named("produtoVariacaoToResponseDTO")
     default ProdutoVariacaoResponseDTO toVariacaoResponseDTO(ProdutoVariacao entity) {
+        if (entity == null) return null;
         ProdutoVariacaoResponseDTO dto = toVariacaoResponseDTOBase(entity);
         dto.setItensVariacao(entity.getItens().stream()
                 .map(ProdutoVariacaoItem::getItemVariacao)
