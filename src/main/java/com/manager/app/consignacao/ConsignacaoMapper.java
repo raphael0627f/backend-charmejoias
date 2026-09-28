@@ -1,13 +1,16 @@
 package com.manager.app.consignacao;
 
 import com.manager.app.consignacao.dto.ConsignacaoProdutoRequestDTO;
+import com.manager.app.consignacao.dto.ConsignacaoProdutoResponseDTO;
 import com.manager.app.consignacao.dto.ConsignacaoRequestDTO;
 import com.manager.app.consignacao.dto.ConsignacaoResponseDTO;
+import com.manager.app.joia.JoiaMapper;
+import com.manager.app.produto.ProdutoMapper;
 import com.manager.app.usuario.UsuarioResumoMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring", uses = UsuarioResumoMapper.class)
+@Mapper(componentModel = "spring", uses = {UsuarioResumoMapper.class, ProdutoMapper.class, JoiaMapper.class})
 public interface ConsignacaoMapper {
 
     // cliente/mostruario sao resolvidos por id no service; confirmada/createdAt/updatedAt/
@@ -39,4 +42,8 @@ public interface ConsignacaoMapper {
     @Mapping(target = "produtoVariacaoId", ignore = true)
     @Mapping(target = "joiaId", ignore = true)
     ConsignacaoProdutoRequestDTO toDTO(ConsignacaoProduto entity);
+
+    @Mapping(target = "produto", qualifiedByName = "produtoToResponseDTO")
+    @Mapping(target = "produtoVariacao", qualifiedByName = "produtoVariacaoToResponseDTO")
+    ConsignacaoProdutoResponseDTO toResponseDTO(ConsignacaoProduto entity);
 }

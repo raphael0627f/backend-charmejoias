@@ -8,6 +8,7 @@ import com.manager.app.variacao.dto.ItemVariacaoDTO;
 import com.manager.app.usuario.UsuarioResumoMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 
 @Mapper(componentModel = "spring", uses = UsuarioResumoMapper.class)
 public interface ProdutoMapper {
@@ -33,6 +34,7 @@ public interface ProdutoMapper {
     @Mapping(target = "variacoes", ignore = true)
     ProdutoResponseDTO toResponseDTOBase(Produto entity);
 
+    @Named("produtoToResponseDTO")
     default ProdutoResponseDTO toResponseDTO(Produto entity) {
         ProdutoResponseDTO dto = toResponseDTOBase(entity);
         dto.setVariacoes(entity.getVariacoes().stream().map(this::toVariacaoResponseDTO).toList());
@@ -42,6 +44,7 @@ public interface ProdutoMapper {
     @Mapping(target = "itensVariacao", ignore = true)
     ProdutoVariacaoResponseDTO toVariacaoResponseDTOBase(ProdutoVariacao entity);
 
+    @Named("produtoVariacaoToResponseDTO")
     default ProdutoVariacaoResponseDTO toVariacaoResponseDTO(ProdutoVariacao entity) {
         ProdutoVariacaoResponseDTO dto = toVariacaoResponseDTOBase(entity);
         dto.setItensVariacao(entity.getItens().stream()

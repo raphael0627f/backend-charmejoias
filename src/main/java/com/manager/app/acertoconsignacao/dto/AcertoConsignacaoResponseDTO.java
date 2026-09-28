@@ -1,7 +1,6 @@
 package com.manager.app.acertoconsignacao.dto;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.manager.app.acertoconsignacao.AcertoConsignacaoProduto;
 import com.manager.app.usuario.dto.UsuarioResumoDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -39,7 +38,7 @@ public class AcertoConsignacaoResponseDTO {
     private BigDecimal desconto;
     private String observacoes;
     private Boolean confirmado;
-    private List<AcertoConsignacaoProduto> produtos;
+    private List<AcertoConsignacaoProdutoResponseDTO> produtos;
     private Integer quantidadeProdutosAcertados;
     private Integer quantidadeProdutosDevolvidos;
     private BigDecimal valorTotalProdutosAcertados;

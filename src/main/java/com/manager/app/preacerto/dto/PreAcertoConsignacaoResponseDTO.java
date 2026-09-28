@@ -2,12 +2,12 @@ package com.manager.app.preacerto.dto;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.manager.app.cliente.Cliente;
-import com.manager.app.preacerto.PreAcertoConsignacaoProduto;
 import com.manager.app.usuario.dto.UsuarioResumoDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -19,6 +19,7 @@ import java.util.List;
         "consignacaoId",
         "cliente",
         "observacoes",
+        "desconto",
         "produtos",
         "createdAt",
         "updatedAt",
@@ -31,7 +32,8 @@ public class PreAcertoConsignacaoResponseDTO {
     private Long consignacaoId;
     private Cliente cliente;
     private String observacoes;
-    private List<PreAcertoConsignacaoProduto> produtos;
+    private BigDecimal desconto;
+    private List<PreAcertoConsignacaoProdutoResponseDTO> produtos;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private UsuarioResumoDTO createdBy;

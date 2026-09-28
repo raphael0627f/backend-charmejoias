@@ -2,7 +2,6 @@ package com.manager.app.consignacao.dto;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.manager.app.cliente.Cliente;
-import com.manager.app.consignacao.ConsignacaoProduto;
 import com.manager.app.mostruario.Mostruario;
 import com.manager.app.shared.TipoItem;
 import com.manager.app.usuario.dto.UsuarioResumoDTO;
@@ -40,7 +39,7 @@ public class ConsignacaoResponseDTO {
     private TipoItem tipo;
     private Cliente cliente;
     private Mostruario mostruario;
-    private List<ConsignacaoProduto> produtos;
+    private List<ConsignacaoProdutoResponseDTO> produtos;
     private LocalDate dataEntrega;
     private LocalDate dataPreAcertoConsignacao;
     private LocalDate dataAcertoConsignacao;

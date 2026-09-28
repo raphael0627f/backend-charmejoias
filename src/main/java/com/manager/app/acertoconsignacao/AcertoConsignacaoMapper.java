@@ -1,13 +1,16 @@
 package com.manager.app.acertoconsignacao;
 
 import com.manager.app.acertoconsignacao.dto.AcertoConsignacaoProdutoRequestDTO;
+import com.manager.app.acertoconsignacao.dto.AcertoConsignacaoProdutoResponseDTO;
 import com.manager.app.acertoconsignacao.dto.AcertoConsignacaoRequestDTO;
 import com.manager.app.acertoconsignacao.dto.AcertoConsignacaoResponseDTO;
+import com.manager.app.joia.JoiaMapper;
+import com.manager.app.produto.ProdutoMapper;
 import com.manager.app.usuario.UsuarioResumoMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring", uses = UsuarioResumoMapper.class)
+@Mapper(componentModel = "spring", uses = {UsuarioResumoMapper.class, ProdutoMapper.class, JoiaMapper.class})
 public interface AcertoConsignacaoMapper {
 
     @Mapping(source = "consignacao.id", target = "consignacaoId")
@@ -18,6 +21,10 @@ public interface AcertoConsignacaoMapper {
     @Mapping(target = "produtoVariacaoId", ignore = true)
     @Mapping(target = "joiaId", ignore = true)
     AcertoConsignacaoProdutoRequestDTO toDTO(AcertoConsignacaoProduto entity);
+
+    @Mapping(target = "produto", qualifiedByName = "produtoToResponseDTO")
+    @Mapping(target = "produtoVariacao", qualifiedByName = "produtoVariacaoToResponseDTO")
+    AcertoConsignacaoProdutoResponseDTO toResponseDTO(AcertoConsignacaoProduto entity);
 
     @Mapping(source = "consignacao.id", target = "consignacaoId")
     @Mapping(source = "preAcerto.id", target = "preAcertoId")
