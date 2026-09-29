@@ -208,11 +208,13 @@ public class ConsignacaoService {
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>(List.of(
                     SpecificationUtils.likeIgnoreCase(cb, root.get("descricao"), busca, modoBusca),
                     SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca, modoBusca),
-                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca, modoBusca)
+                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca, modoBusca),
+                    // "número do mostruário" que o usuário vê na tela é a descrição
+                    // (ex.: "5245"), não o id sequencial interno do banco
+                    SpecificationUtils.likeIgnoreCase(cb, mostruario.get("descricao"), busca, modoBusca)
             ));
             if (comoNumero != null) {
                 predicates.add(cb.equal(root.get("id"), comoNumero));
-                predicates.add(cb.equal(mostruario.get("id"), comoNumero));
             }
             return cb.or(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
