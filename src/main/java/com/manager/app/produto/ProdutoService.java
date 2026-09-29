@@ -19,6 +19,7 @@ import com.manager.app.shared.ModoBusca;
 import com.manager.app.variacao.ItemVariacao;
 import com.manager.app.variacao.ItemVariacaoRepository;
 import com.manager.app.variacao.dto.ItemVariacaoDTO;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -88,13 +89,24 @@ public class ProdutoService {
         return repository.findAll(spec, pageable);
     }
 
+    // também busca pelo sku/código de barras das variações (não só do produto
+    // pai) - sem isso, digitar o sku completo de uma variação (ex.: o "-AU23"
+    // no final) não achava o produto, já que esses campos só existem na
+    // variação. `distinct` evita repetir o mesmo produto quando mais de uma
+    // variação bate com o termo.
     private Specification<Produto> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
-        return (root, query, cb) -> cb.or(
-                SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca, modoBusca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("sku"), busca, modoBusca),
-                SpecificationUtils.likeIgnoreCase(cb, root.get("referencia"), busca, modoBusca)
-        );
+        return (root, query, cb) -> {
+            query.distinct(true);
+            var variacao = root.join("variacoes", JoinType.LEFT);
+            return cb.or(
+                    SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca, modoBusca),
+                    SpecificationUtils.likeIgnoreCase(cb, root.get("sku"), busca, modoBusca),
+                    SpecificationUtils.likeIgnoreCase(cb, root.get("referencia"), busca, modoBusca),
+                    SpecificationUtils.likeIgnoreCase(cb, variacao.get("sku"), busca, modoBusca),
+                    SpecificationUtils.likeIgnoreCase(cb, variacao.get("codigoBarras"), busca, modoBusca)
+            );
+        };
     }
 
     public Produto findById(UUID id){
@@ -493,6 +505,7 @@ public class ProdutoService {
     public Produto activate(UUID id){
         Produto produto = this.findById(id);
         produto.setAtivo(true);
+        produto.getVariacoes().forEach(v -> v.setAtivo(true));
         return produto;
     }
 

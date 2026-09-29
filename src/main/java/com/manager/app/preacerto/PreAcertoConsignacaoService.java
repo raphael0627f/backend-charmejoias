@@ -141,8 +141,12 @@ public class PreAcertoConsignacaoService {
                 : null);
         dto.setObservacoes(preAcerto.getObservacoes());
         dto.setItensCount(totais != null ? totais.getItensCount().intValue() : 0);
+        BigDecimal valorTotal = totais != null ? totais.getValorTotal() : BigDecimal.ZERO;
         dto.setQuantidadeTotal(totais != null ? totais.getQuantidadeTotal() : 0);
-        dto.setValorTotal(totais != null ? totais.getValorTotal() : BigDecimal.ZERO);
+        dto.setValorTotal(valorTotal);
+        dto.setDesconto(preAcerto.getDesconto());
+        BigDecimal descontoAplicado = preAcerto.getDesconto() != null ? preAcerto.getDesconto() : BigDecimal.ZERO;
+        dto.setValorTotalComDesconto(valorTotal.subtract(descontoAplicado));
         dto.setQuantidadePorCategoria(quantidadePorCategoria != null ? quantidadePorCategoria : List.of());
         dto.setCreatedAt(preAcerto.getCreatedAt());
         dto.setUpdatedAt(preAcerto.getUpdatedAt());
@@ -157,6 +161,7 @@ public class PreAcertoConsignacaoService {
         return (root, query, cb) -> {
             var cliente = root.join("cliente", JoinType.LEFT);
             var consignacao = root.join("consignacao", JoinType.LEFT);
+            var mostruario = consignacao.join("mostruario", JoinType.LEFT);
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>(List.of(
                     SpecificationUtils.likeIgnoreCase(cb, root.get("observacoes"), busca, modoBusca),
                     SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca, modoBusca),
@@ -165,6 +170,7 @@ public class PreAcertoConsignacaoService {
             if (comoNumero != null) {
                 predicates.add(cb.equal(root.get("id"), comoNumero));
                 predicates.add(cb.equal(consignacao.get("id"), comoNumero));
+                predicates.add(cb.equal(mostruario.get("id"), comoNumero));
             }
             return cb.or(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
@@ -264,6 +270,7 @@ public class PreAcertoConsignacaoService {
         preAcerto.setConsignacao(consignacao);
         preAcerto.setCliente(cliente);
         preAcerto.setObservacoes(request.getObservacoes());
+        preAcerto.setDesconto(request.getDesconto());
 
         TipoItem tipo = tipoDe(consignacao);
 
@@ -296,6 +303,7 @@ public class PreAcertoConsignacaoService {
         preAcertoUpdate.setConsignacao(consignacao);
         preAcertoUpdate.setCliente(cliente);
         preAcertoUpdate.setObservacoes(request.getObservacoes());
+        preAcertoUpdate.setDesconto(request.getDesconto());
 
         TipoItem tipo = tipoDe(consignacao);
 

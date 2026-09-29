@@ -204,6 +204,7 @@ public class ConsignacaoService {
         Long comoNumero = SpecificationUtils.comoLong(busca);
         return (root, query, cb) -> {
             var cliente = root.join("cliente", JoinType.LEFT);
+            var mostruario = root.join("mostruario", JoinType.LEFT);
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>(List.of(
                     SpecificationUtils.likeIgnoreCase(cb, root.get("descricao"), busca, modoBusca),
                     SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca, modoBusca),
@@ -211,6 +212,7 @@ public class ConsignacaoService {
             ));
             if (comoNumero != null) {
                 predicates.add(cb.equal(root.get("id"), comoNumero));
+                predicates.add(cb.equal(mostruario.get("id"), comoNumero));
             }
             return cb.or(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };

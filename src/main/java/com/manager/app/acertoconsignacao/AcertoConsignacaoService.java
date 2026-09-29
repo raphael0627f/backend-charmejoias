@@ -168,6 +168,8 @@ public class AcertoConsignacaoService {
         return (root, query, cb) -> {
             var consignacao = root.join("consignacao", JoinType.LEFT);
             var cliente = consignacao.join("cliente", JoinType.LEFT);
+            var mostruario = consignacao.join("mostruario", JoinType.LEFT);
+            var preAcerto = root.join("preAcerto", JoinType.LEFT);
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>(List.of(
                     SpecificationUtils.likeIgnoreCase(cb, root.get("observacoes"), busca, modoBusca),
                     SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca, modoBusca),
@@ -176,6 +178,8 @@ public class AcertoConsignacaoService {
             if (comoNumero != null) {
                 predicates.add(cb.equal(root.get("id"), comoNumero));
                 predicates.add(cb.equal(consignacao.get("id"), comoNumero));
+                predicates.add(cb.equal(mostruario.get("id"), comoNumero));
+                predicates.add(cb.equal(preAcerto.get("id"), comoNumero));
             }
             return cb.or(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
