@@ -13,6 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 public class MeResponseDTO {
     private String usuario;
+    private String nome;
     private String perfil;
     private List<String> permissoes;
 }

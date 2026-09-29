@@ -85,7 +85,7 @@ public class AuthService {
                 ? usuarioEntidade.getPerfil().getPermissoes().stream().map(Enum::name).toList()
                 : List.of();
 
-        return new MeResponseDTO(usuarioEntidade.getUsuario(), perfil, permissoes);
+        return new MeResponseDTO(usuarioEntidade.getUsuario(), nomeDeExibicao(usuarioEntidade), perfil, permissoes);
     }
 
     private LoginResponseDTO gerarResposta(Usuario usuario){
@@ -105,6 +105,14 @@ public class AuthService {
 
         long expiresInSeconds = Instant.now().until(accessToken.expiresAt(), java.time.temporal.ChronoUnit.SECONDS);
 
-        return new LoginResponseDTO(accessToken.token(), refreshToken.getToken(), expiresInSeconds, usuario.getUsuario(), perfil, permissoes);
+        return new LoginResponseDTO(accessToken.token(), refreshToken.getToken(), expiresInSeconds, usuario.getUsuario(), nomeDeExibicao(usuario), perfil, permissoes);
+    }
+
+    /** Primeiro nome do usuário pra exibição (ex.: saudação), com fallback pro
+     * login quando não há nome cadastrado. */
+    private String nomeDeExibicao(Usuario usuario){
+        return usuario.getPrimeiroNome() != null && !usuario.getPrimeiroNome().isBlank()
+                ? usuario.getPrimeiroNome()
+                : usuario.getUsuario();
     }
 }

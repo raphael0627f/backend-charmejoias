@@ -16,6 +16,7 @@ public class LoginResponseDTO {
     private String refreshToken;
     private long expiresInSeconds;
     private String usuario;
+    private String nome;
     private String perfil;
     private List<String> permissoes;
 }
