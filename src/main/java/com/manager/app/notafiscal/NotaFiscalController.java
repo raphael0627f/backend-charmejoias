@@ -46,6 +46,16 @@ public class NotaFiscalController {
         return ResponseEntity.ok(service.findAll(busca, modoBusca, status, dataInicio, dataFim, pageable).map(mapper::toResponseDTO));
     }
 
+    @GetMapping(value = "/valor-total")
+    public ResponseEntity<java.math.BigDecimal> valorTotal(
+            @RequestParam(required = false) String busca,
+            @RequestParam(required = false) com.manager.app.shared.ModoBusca modoBusca,
+            @RequestParam(required = false) StatusNotaFiscal status,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataInicio,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataFim){
+        return ResponseEntity.ok(service.valorTotalFiltrado(busca, modoBusca, status, dataInicio, dataFim));
+    }
+
     @GetMapping(value = "/{id}")
     public ResponseEntity<NotaFiscalResponseDTO> findById(@PathVariable Long id){
         return ResponseEntity.ok(mapper.toResponseDTO(service.findById(id)));
@@ -107,9 +117,12 @@ public class NotaFiscalController {
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(xml);
     }
 
+    // gera o DANFE a partir do XML já salvo localmente (não bate na Contora) - se o arquivo não
+    // existir em disco, propaga o 404 do storage; o frontend usa isso pra oferecer o fluxo de
+    // XML avulso em vez de travar numa mensagem genérica de erro
     @GetMapping(value = "/{id}/danfe")
     public ResponseEntity<byte[]> baixarDanfe(@PathVariable Long id){
-        byte[] pdf = service.baixarArtefato(id, "pdf_danfe");
+        byte[] pdf = service.gerarDanfeDoArquivoLocal(id);
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(pdf);
     }
 

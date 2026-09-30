@@ -51,9 +51,28 @@ public class NotaFiscalService {
     private final NotaFiscalValidation validation;
     private final ContoraClient contoraClient;
     private final CfopRepository cfopRepository;
+    private final DanfeGeneratorService danfeGeneratorService;
     private final NotaFiscalXmlStorageService xmlStorageService;
 
     public Page<NotaFiscal> findAll(String busca, ModoBusca modoBusca, StatusNotaFiscal status, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
+        Specification<NotaFiscal> spec = comFiltros(busca, modoBusca, status, dataInicio, dataFim);
+        return repository.findAll(spec, pageable);
+    }
+
+    // soma o valor total (dos itens) de todas as notas que batem com os mesmos filtros da
+    // listagem, sem paginar - usado só pro card de total da listagem (visível apenas pro
+    // perfil ADMIN no frontend)
+    public java.math.BigDecimal valorTotalFiltrado(String busca, ModoBusca modoBusca, StatusNotaFiscal status, LocalDate dataInicio, LocalDate dataFim){
+        Specification<NotaFiscal> spec = comFiltros(busca, modoBusca, status, dataInicio, dataFim);
+        List<NotaFiscal> notas = spec == null ? repository.findAll() : repository.findAll(spec);
+        return notas.stream()
+                .flatMap(nota -> nota.getItens().stream())
+                .map(NotaFiscalItem::getValorTotal)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private Specification<NotaFiscal> comFiltros(String busca, ModoBusca modoBusca, StatusNotaFiscal status, LocalDate dataInicio, LocalDate dataFim){
         Specification<NotaFiscal> spec = comBusca(busca, modoBusca);
 
         if (status != null) {
@@ -73,7 +92,7 @@ public class NotaFiscalService {
             spec = spec == null ? dataFimSpec : spec.and(dataFimSpec);
         }
 
-        return repository.findAll(spec, pageable);
+        return spec;
     }
 
     private Specification<NotaFiscal> comBusca(String busca, ModoBusca modoBusca){
@@ -327,6 +346,17 @@ public class NotaFiscalService {
         contoraClient.corrigir(notaFiscal.getEmpresa().getContoraCompanyId(), notaFiscal.getContoraDocumentId(), texto);
 
         return notaFiscal;
+    }
+
+    // gera o DANFE localmente a partir do XML já salvo em disco (quando a nota foi autorizada
+    // por este sistema) - evita bater na Contora de novo só pra reimprimir um DANFE. Deixa a
+    // ObjetoNaoEncontradoException do storage subir sem tratar: o controller decide o que
+    // responder, e o frontend usa o 404 pra saber que precisa pedir o XML avulso ao usuário.
+    public byte[] gerarDanfeDoArquivoLocal(Long id){
+        NotaFiscal notaFiscal = this.findById(id);
+        String nomeArquivo = notaFiscal.getNumero() + "-" + notaFiscal.getChaveAcesso() + "-NFe.xml";
+        byte[] xml = xmlStorageService.carregar(nomeArquivo);
+        return danfeGeneratorService.gerarDanfePdf(xml);
     }
 
     public byte[] baixarArtefato(Long id, String artefato){

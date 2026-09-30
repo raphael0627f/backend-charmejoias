@@ -36,17 +36,17 @@ public class NotaFiscalXmlStorageService {
     }
 
     public void salvar(NotaFiscal notaFiscal, byte[] xml){
-        String nomeArquivo = notaFiscal.getId() + "-" + notaFiscal.getChaveAcesso() + "-NFe.xml";
+        String nomeArquivo = notaFiscal.getNumero() + "-" + notaFiscal.getChaveAcesso() + "-NFe.xml";
         gravar(nomeArquivo, xml, notaFiscal.getId());
     }
 
     public void salvarCorrecao(NotaFiscal notaFiscal, Integer sequencia, byte[] xml){
-        String nomeArquivo = "CCe " + sequencia + " - Nfe " + notaFiscal.getId() + ".xml";
+        String nomeArquivo = "CCe " + sequencia + " - Nfe " + notaFiscal.getNumero() + ".xml";
         gravar(nomeArquivo, xml, notaFiscal.getId());
     }
 
     public void salvarCancelamento(NotaFiscal notaFiscal, byte[] xml){
-        String nomeArquivo = "Cancelamento NFe-" + notaFiscal.getId() + ".xml";
+        String nomeArquivo = "Cancelamento NFe-" + notaFiscal.getNumero() + ".xml";
         gravar(nomeArquivo, xml, notaFiscal.getId());
     }
 
