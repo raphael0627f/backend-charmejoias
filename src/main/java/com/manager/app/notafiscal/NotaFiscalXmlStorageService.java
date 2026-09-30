@@ -36,7 +36,7 @@ public class NotaFiscalXmlStorageService {
     }
 
     public void salvar(NotaFiscal notaFiscal, byte[] xml){
-        String nomeArquivo = notaFiscal.getNumero() + "-" + notaFiscal.getChaveAcesso() + "-NFe.xml";
+        String nomeArquivo = notaFiscal.getNumero() + " - " + notaFiscal.getChaveAcesso() + "-NFe.xml";
         gravar(nomeArquivo, xml, notaFiscal.getId());
     }
 
@@ -83,6 +83,21 @@ public class NotaFiscalXmlStorageService {
         }
         int fim = Math.min(inicio + pageable.getPageSize(), arquivos.size());
         return new PageImpl<>(arquivos.subList(inicio, fim), pageable, arquivos.size());
+    }
+
+    // busca o XML da NFe pelo prefixo "{numero}-" no nome do arquivo, sem exigir bater a chave
+    // de acesso exata - usado no "Baixar DANFE" pra achar o XML mesmo que a chave salva no banco
+    // divirja por algum motivo do nome real do arquivo em disco
+    public byte[] carregarPorNumero(Long numero){
+        String prefixo = numero + " - ";
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(diretorioBase, prefixo + "*-NFe.xml")) {
+            for (Path arquivo : stream) {
+                return Files.readAllBytes(arquivo);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("Não foi possível buscar o XML da nota fiscal. número: " + numero, e);
+        }
+        throw new ObjetoNaoEncontradoException("Arquivo XML não encontrado para a nota número " + numero);
     }
 
     // proteção contra path traversal: nunca confiar num nome de arquivo vindo do cliente sem

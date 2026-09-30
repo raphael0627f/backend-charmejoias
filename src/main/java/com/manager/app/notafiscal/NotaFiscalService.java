@@ -354,8 +354,7 @@ public class NotaFiscalService {
     // responder, e o frontend usa o 404 pra saber que precisa pedir o XML avulso ao usuário.
     public byte[] gerarDanfeDoArquivoLocal(Long id){
         NotaFiscal notaFiscal = this.findById(id);
-        String nomeArquivo = notaFiscal.getNumero() + "-" + notaFiscal.getChaveAcesso() + "-NFe.xml";
-        byte[] xml = xmlStorageService.carregar(nomeArquivo);
+        byte[] xml = xmlStorageService.carregarPorNumero(notaFiscal.getNumero());
         return danfeGeneratorService.gerarDanfePdf(xml);
     }
 
