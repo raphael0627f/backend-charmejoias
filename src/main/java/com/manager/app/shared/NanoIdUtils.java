@@ -3,7 +3,9 @@ package com.manager.app.shared;
 import java.security.SecureRandom;
 
 public final class NanoIdUtils {
-    private static final char[] ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz".toCharArray();
+    // so letras maiusculas (sem I/L/O/U pra evitar confusao visual com 1/0/V) - sem digito e sem
+    // minuscula, pra sair sempre compativel com leitor de codigo de barras em modo Code39 padrao
+    private static final char[] ALPHABET = "ABCDEFGHJKMNPQRSTVWXYZ".toCharArray();
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private NanoIdUtils() {}

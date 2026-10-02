@@ -41,13 +41,27 @@ public class NotaFiscalXmlStorageService {
     }
 
     public void salvarCorrecao(NotaFiscal notaFiscal, Integer sequencia, byte[] xml){
-        String nomeArquivo = "CCe " + sequencia + " - Nfe " + notaFiscal.getNumero() + ".xml";
-        gravar(nomeArquivo, xml, notaFiscal.getId());
+        gravar(nomeArquivoCorrecao(notaFiscal.getNumero(), sequencia), xml, notaFiscal.getId());
     }
 
     public void salvarCancelamento(NotaFiscal notaFiscal, byte[] xml){
-        String nomeArquivo = "Cancelamento NFe-" + notaFiscal.getNumero() + ".xml";
-        gravar(nomeArquivo, xml, notaFiscal.getId());
+        gravar(nomeArquivoCancelamento(notaFiscal.getNumero()), xml, notaFiscal.getId());
+    }
+
+    public byte[] carregarCorrecao(Long numero, Integer sequencia){
+        return carregar(nomeArquivoCorrecao(numero, sequencia));
+    }
+
+    public byte[] carregarCancelamento(Long numero){
+        return carregar(nomeArquivoCancelamento(numero));
+    }
+
+    private String nomeArquivoCorrecao(Long numero, Integer sequencia){
+        return "CCe " + sequencia + " - Nfe " + numero + ".xml";
+    }
+
+    private String nomeArquivoCancelamento(Long numero){
+        return "Cancelamento NFe-" + numero + ".xml";
     }
 
     private void gravar(String nomeArquivo, byte[] xml, Long notaFiscalId){
@@ -85,14 +99,19 @@ public class NotaFiscalXmlStorageService {
         return new PageImpl<>(arquivos.subList(inicio, fim), pageable, arquivos.size());
     }
 
-    // busca o XML da NFe pelo prefixo "{numero}-" no nome do arquivo, sem exigir bater a chave
-    // de acesso exata - usado no "Baixar DANFE" pra achar o XML mesmo que a chave salva no banco
-    // divirja por algum motivo do nome real do arquivo em disco
+    // busca o XML da NFe pelo número no início do nome do arquivo, sem exigir bater a chave de
+    // acesso exata - usado no "Baixar DANFE" pra achar o XML mesmo que a chave salva no banco
+    // divirja por algum motivo do nome real do arquivo em disco. Aceita qualquer espaçamento em
+    // volta do hífen (ex.: "5328 -...", "5328 - ...", "5328-...") já que arquivos salvos em
+    // versões diferentes do sistema não seguem sempre o mesmo padrão exato
     public byte[] carregarPorNumero(Long numero){
-        String prefixo = numero + " - ";
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(diretorioBase, prefixo + "*-NFe.xml")) {
+        java.util.regex.Pattern padrao = java.util.regex.Pattern.compile(
+                "^" + numero + "\\s*-\\s*.*-NFe\\.xml$");
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(diretorioBase, "*-NFe.xml")) {
             for (Path arquivo : stream) {
-                return Files.readAllBytes(arquivo);
+                if (padrao.matcher(arquivo.getFileName().toString()).matches()) {
+                    return Files.readAllBytes(arquivo);
+                }
             }
         } catch (IOException e) {
             throw new UncheckedIOException("Não foi possível buscar o XML da nota fiscal. número: " + numero, e);

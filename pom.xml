@@ -81,18 +81,12 @@
 			<version>1.5-beta1</version>
 		</dependency>
 		<dependency>
-			<groupId>br.com.swconsultoria</groupId>
-			<artifactId>java-danfe</artifactId>
-			<version>1.8</version>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
 			<version>5.4.1</version>
 		</dependency>
-		<!-- java-danfe traz commons-io 2.8.0, que fica mais "perto" na resolução de dependências
-		     do Maven do que a versão que o poi-ooxml realmente precisa (2.18.0), e a versão antiga
-		     nao tem o metodo UnsynchronizedByteArrayOutputStream.builder() usado pelo POI -->
+		<!-- o poi-ooxml precisa do commons-io 2.18.0 (UnsynchronizedByteArrayOutputStream.builder());
+		     fixado aqui pra uma dependência transitiva mais antiga não ganhar na resolução do Maven -->
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>

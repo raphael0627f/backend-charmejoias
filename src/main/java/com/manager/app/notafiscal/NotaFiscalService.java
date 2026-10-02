@@ -53,6 +53,7 @@ public class NotaFiscalService {
     private final CfopRepository cfopRepository;
     private final DanfeGeneratorService danfeGeneratorService;
     private final NotaFiscalXmlStorageService xmlStorageService;
+    private final NotaFiscalTentativaEnvioService tentativaEnvioService;
 
     public Page<NotaFiscal> findAll(String busca, ModoBusca modoBusca, StatusNotaFiscal status, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
         Specification<NotaFiscal> spec = comFiltros(busca, modoBusca, status, dataInicio, dataFim);
@@ -279,24 +280,32 @@ public class NotaFiscalService {
 
     @Transactional
     public NotaFiscal emitir(Long id){
-        // lock pessimista: evita que dois cliques/retries simultâneos no mesmo id
-        // criem dois rascunhos na Contora pro mesmo número, gerando rejeição de duplicidade na SEFAZ
-        NotaFiscal notaFiscal = repository.findByIdForUpdate(id)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Nota fiscal não encontrada. id: " + id));
-        if (notaFiscal.getStatus() != StatusNotaFiscal.RASCUNHO) {
-            throw new ItemInvalidoException("Nota fiscal já foi enviada. id: " + id + ", status atual: " + notaFiscal.getStatus());
+        // status ENVIADA + incremento da tentativa são commitados numa transação própria
+        // (REQUIRES_NEW), antes de chamar a Contora - isso evita que um rollback desta transação
+        // (se a chamada à Contora falhar no meio do caminho) desfaça o incremento e faça uma
+        // próxima tentativa reusar a mesma Idempotency-Key com um payload diferente (409 na Contora).
+        // também serve de lock: iniciarNovaTentativa só avança se o status ainda for RASCUNHO,
+        // evitando que dois cliques/retries simultâneos criem dois rascunhos na Contora
+        int tentativa = tentativaEnvioService.iniciarNovaTentativa(id);
+
+        try {
+            NotaFiscal notaFiscal = repository.findByIdForUpdate(id)
+                    .orElseThrow(() -> new ObjetoNaoEncontradoException("Nota fiscal não encontrada. id: " + id));
+
+            String contoraCompanyId = notaFiscal.getEmpresa().getContoraCompanyId();
+            String documentId = contoraClient.criarRascunhoNfe(notaFiscal);
+            notaFiscal.setContoraDocumentId(documentId);
+
+            contoraClient.buildRascunho(contoraCompanyId, documentId, id, tentativa);
+            contoraClient.autorizarRascunho(contoraCompanyId, documentId, id, tentativa);
+
+            return notaFiscal;
+        } catch (RuntimeException e) {
+            // devolve a nota pra RASCUNHO (em transação própria, já que esta vai dar rollback)
+            // pra permitir reenvio - o numeroTentativaEnvio já commitado garante chave nova
+            tentativaEnvioService.reverterParaRascunho(id);
+            throw e;
         }
-        notaFiscal.setStatus(StatusNotaFiscal.ENVIADA);
-        notaFiscal.setNumeroTentativaEnvio(notaFiscal.getNumeroTentativaEnvio() + 1);
-
-        String contoraCompanyId = notaFiscal.getEmpresa().getContoraCompanyId();
-        String documentId = contoraClient.criarRascunhoNfe(notaFiscal);
-        notaFiscal.setContoraDocumentId(documentId);
-
-        contoraClient.buildRascunho(contoraCompanyId, documentId, notaFiscal.getId(), notaFiscal.getNumeroTentativaEnvio());
-        contoraClient.autorizarRascunho(contoraCompanyId, documentId, notaFiscal.getId(), notaFiscal.getNumeroTentativaEnvio());
-
-        return notaFiscal;
     }
 
     @Transactional
@@ -356,6 +365,20 @@ public class NotaFiscalService {
         NotaFiscal notaFiscal = this.findById(id);
         byte[] xml = xmlStorageService.carregarPorNumero(notaFiscal.getNumero());
         return danfeGeneratorService.gerarDanfePdf(xml);
+    }
+
+    // mesmas regras do DANFE: usa o XML do evento já arquivado em disco; sem arquivo, o 404 do
+    // storage sobe e o frontend oferece o envio do XML avulso
+    public byte[] gerarPdfCancelamentoDoArquivoLocal(Long id){
+        NotaFiscal notaFiscal = this.findById(id);
+        byte[] xml = xmlStorageService.carregarCancelamento(notaFiscal.getNumero());
+        return danfeGeneratorService.gerarPdf(xml, DanfeGeneratorService.TipoDocumento.CANCELAMENTO);
+    }
+
+    public byte[] gerarPdfCorrecaoDoArquivoLocal(Long id, Integer sequencia){
+        NotaFiscal notaFiscal = this.findById(id);
+        byte[] xml = xmlStorageService.carregarCorrecao(notaFiscal.getNumero(), sequencia);
+        return danfeGeneratorService.gerarPdf(xml, DanfeGeneratorService.TipoDocumento.CORRECAO);
     }
 
     public byte[] baixarArtefato(Long id, String artefato){

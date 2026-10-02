@@ -1,5 +1,6 @@
 package com.manager.app.shared.exception.handler;
 
+import com.manager.app.notafiscal.DanfeApiException;
 import com.manager.app.notafiscal.client.ContoraApiException;
 import com.manager.app.spc.client.SpcApiException;
 import com.manager.app.shared.exception.ItemInvalidoException;
@@ -58,6 +59,13 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ContoraApiException.class)
     private ResponseEntity<RestErrorMenssage> contoraApiError(ContoraApiException exception, WebRequest request){
+        HttpStatus status = HttpStatus.BAD_GATEWAY;
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
+        return ResponseEntity.status(status).body(response);
+    }
+
+    @ExceptionHandler(DanfeApiException.class)
+    private ResponseEntity<RestErrorMenssage> danfeApiError(DanfeApiException exception, WebRequest request){
         HttpStatus status = HttpStatus.BAD_GATEWAY;
         RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
         return ResponseEntity.status(status).body(response);

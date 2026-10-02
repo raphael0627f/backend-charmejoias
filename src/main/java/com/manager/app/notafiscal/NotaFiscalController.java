@@ -130,6 +130,35 @@ public class NotaFiscalController {
     // sistema) - operação stateless, sem relação com a tabela de notas fiscais
     @PostMapping(value = "/danfe/gerar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<byte[]> gerarDanfeDeXml(@RequestParam("xml") MultipartFile xml){
+        return gerarPdfDeXml(xml, DanfeGeneratorService.TipoDocumento.NFE, "danfe");
+    }
+
+    // PDF do evento de cancelamento a partir do XML do evento (procEventoNFe, tpEvento 110111)
+    @PostMapping(value = "/cancelamento/gerar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<byte[]> gerarPdfCancelamentoDeXml(@RequestParam("xml") MultipartFile xml){
+        return gerarPdfDeXml(xml, DanfeGeneratorService.TipoDocumento.CANCELAMENTO, "cancelamento");
+    }
+
+    // PDF da carta de correção a partir do XML do evento (procEventoNFe, tpEvento 110110)
+    @PostMapping(value = "/correcao/gerar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<byte[]> gerarPdfCorrecaoDeXml(@RequestParam("xml") MultipartFile xml){
+        return gerarPdfDeXml(xml, DanfeGeneratorService.TipoDocumento.CORRECAO, "correcao");
+    }
+
+    // mesmo fluxo do DANFE local, usando o XML do cancelamento arquivado (404 se não existir em disco)
+    @GetMapping(value = "/{id}/cancelamento/pdf")
+    public ResponseEntity<byte[]> baixarPdfCancelamento(@PathVariable Long id){
+        byte[] pdf = service.gerarPdfCancelamentoDoArquivoLocal(id);
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(pdf);
+    }
+
+    @GetMapping(value = "/{id}/correcao/{sequencia}/pdf")
+    public ResponseEntity<byte[]> baixarPdfCorrecao(@PathVariable Long id, @PathVariable Integer sequencia){
+        byte[] pdf = service.gerarPdfCorrecaoDoArquivoLocal(id, sequencia);
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(pdf);
+    }
+
+    private ResponseEntity<byte[]> gerarPdfDeXml(MultipartFile xml, DanfeGeneratorService.TipoDocumento tipo, String prefixoArquivo){
         if (xml == null || xml.isEmpty()) {
             throw new ItemInvalidoException("Arquivo XML é obrigatório");
         }
@@ -150,9 +179,9 @@ public class NotaFiscalController {
             throw new ItemInvalidoException("Não foi possível ler o arquivo enviado");
         }
 
-        byte[] pdf = danfeGeneratorService.gerarDanfePdf(xmlBytes);
+        byte[] pdf = danfeGeneratorService.gerarPdf(xmlBytes, tipo);
         String chaveAcesso = danfeGeneratorService.extrairChaveAcesso(xmlBytes);
-        String nomeArquivo = chaveAcesso != null ? "danfe-" + chaveAcesso + ".pdf" : "danfe.pdf";
+        String nomeArquivo = chaveAcesso != null ? prefixoArquivo + "-" + chaveAcesso + ".pdf" : prefixoArquivo + ".pdf";
 
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
