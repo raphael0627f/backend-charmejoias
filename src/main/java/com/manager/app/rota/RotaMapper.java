@@ -1,5 +1,6 @@
 package com.manager.app.rota;
 
+import com.manager.app.consignacao.Consignacao;
 import com.manager.app.consignacao.dto.ClienteResumoDTO;
 import com.manager.app.endereco.EnderecoMapper;
 import com.manager.app.rota.dto.RotaClienteResponseDTO;
@@ -22,8 +23,15 @@ public interface RotaMapper {
         return new ClienteResumoDTO(entity.getCliente().getCodigo(), entity.getCliente().getNome());
     }
 
-    default RotaConsignacaoResumoDTO toConsignacaoResumoDTO(com.manager.app.consignacao.Consignacao entity){
+    default RotaConsignacaoResumoDTO toConsignacaoResumoDTO(RotaConsignacaoDeixar entity){
         if (entity == null) return null;
-        return new RotaConsignacaoResumoDTO(entity.getId(), entity.getDescricao(), entity.getQuantidadeTotal(), entity.getValorTotal());
+        Consignacao consignacao = entity.getConsignacao();
+        return new RotaConsignacaoResumoDTO(consignacao.getId(), consignacao.getDescricao(), consignacao.getQuantidadeTotal(), consignacao.getValorTotal(), entity.getConfirmada());
+    }
+
+    default RotaConsignacaoResumoDTO toConsignacaoResumoDTO(RotaConsignacaoTrazer entity){
+        if (entity == null) return null;
+        Consignacao consignacao = entity.getConsignacao();
+        return new RotaConsignacaoResumoDTO(consignacao.getId(), consignacao.getDescricao(), consignacao.getQuantidadeTotal(), consignacao.getValorTotal(), entity.getConfirmada());
     }
 }

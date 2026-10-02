@@ -7,6 +7,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,10 +19,9 @@ import lombok.Setter;
         "endereco",
         "ordem",
         "observacao",
-        "consignacaoDeixar",
-        "consignacaoTrazer",
-        "deixouReal",
-        "trouxeReal"
+        "consignacoesDeixar",
+        "consignacoesTrazer",
+        "valorAPagar"
 })
 public class RotaClienteResponseDTO {
     private Long id;
@@ -27,8 +29,7 @@ public class RotaClienteResponseDTO {
     private EnderecoDTO endereco;
     private Integer ordem;
     private String observacao;
-    private RotaConsignacaoResumoDTO consignacaoDeixar;
-    private RotaConsignacaoResumoDTO consignacaoTrazer;
-    private Boolean deixouReal;
-    private Boolean trouxeReal;
+    private List<RotaConsignacaoResumoDTO> consignacoesDeixar;
+    private List<RotaConsignacaoResumoDTO> consignacoesTrazer;
+    private BigDecimal valorAPagar;
 }

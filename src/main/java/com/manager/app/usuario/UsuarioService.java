@@ -117,6 +117,10 @@ public class UsuarioService {
             enderecoAtual.setUf(enderecoRequest.getUf());
             enderecoAtual.setCep(enderecoRequest.getCep());
             enderecoAtual.setIbge(enderecoRequest.getIbge());
+            enderecoAtual.setPontoReferencia(enderecoRequest.getPontoReferencia());
+            enderecoAtual.setDescricao(enderecoRequest.getDescricao());
+            enderecoAtual.setLatitude(enderecoRequest.getLatitude());
+            enderecoAtual.setLongitude(enderecoRequest.getLongitude());
             enderecoService.enriquecerIbge(enderecoAtual);
         } else {
             enderecoService.enriquecerIbge(enderecoRequest);

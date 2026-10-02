@@ -1,10 +1,13 @@
 package com.manager.app.rota;
 
 import com.manager.app.cliente.Cliente;
-import com.manager.app.consignacao.Consignacao;
 import com.manager.app.endereco.Endereco;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "rota_clientes")
@@ -37,17 +40,38 @@ public class RotaCliente {
 
     private String observacao;
 
-    // o cliente pode ter no máximo uma consignação a deixar e uma a trazer por rota - nunca as duas nulas
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "consignacao_deixar_id")
-    private Consignacao consignacaoDeixar;
+    // informado pelo frontend (nao calculado aqui) - quanto deve ser cobrado/recebido
+    // desse cliente nessa parada da rota. Nome de coluna explicito porque o "AP" maiusculo
+    // consecutivo confunde a conversao automatica pra snake_case (viraria "valorapagar")
+    @Column(name = "valor_a_pagar", precision = 10, scale = 2)
+    private BigDecimal valorAPagar;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "consignacao_trazer_id")
-    private Consignacao consignacaoTrazer;
+    // pode ter mais de uma consignação a deixar/trazer por cliente - a confirmação de
+    // entrega/coleta é registrada por consignação (RotaConsignacaoDeixar/Trazer.confirmada),
+    // não agregada aqui, senão perde-se qual item especifico nao foi entregue/recolhido
+    @OneToMany(mappedBy = "rotaCliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RotaConsignacaoDeixar> consignacoesDeixar = new ArrayList<>();
 
-    // preenchidos só depois, quando o usuário edita a rota pra registrar o que
-    // realmente aconteceu em campo - nulos enquanto a rota está só planejada
-    private Boolean deixouReal;
-    private Boolean trouxeReal;
+    @OneToMany(mappedBy = "rotaCliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RotaConsignacaoTrazer> consignacoesTrazer = new ArrayList<>();
+
+    public void adicionarConsignacaoDeixar(RotaConsignacaoDeixar item) {
+        item.setRotaCliente(this);
+        this.consignacoesDeixar.add(item);
+    }
+
+    public void removerConsignacaoDeixar(RotaConsignacaoDeixar item) {
+        item.setRotaCliente(null);
+        this.consignacoesDeixar.remove(item);
+    }
+
+    public void adicionarConsignacaoTrazer(RotaConsignacaoTrazer item) {
+        item.setRotaCliente(this);
+        this.consignacoesTrazer.add(item);
+    }
+
+    public void removerConsignacaoTrazer(RotaConsignacaoTrazer item) {
+        item.setRotaCliente(null);
+        this.consignacoesTrazer.remove(item);
+    }
 }

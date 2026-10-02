@@ -18,6 +18,7 @@ public class MostruarioService {
 
     private final MostruarioRepository repository;
     private final ConsignacaoRepository consignacaoRepository;
+    private final MostruarioValidation validation;
 
     public Page<Mostruario> findAll(String busca, ModoBusca modoBusca, Pageable pageable){
         return repository.findAll(comBusca(busca, modoBusca), pageable);
@@ -34,12 +35,14 @@ public class MostruarioService {
 
     @Transactional
     public Mostruario create(Mostruario mostruario){
+        validation.descricaoExistenteCreate(mostruario.getDescricao());
         return repository.save(mostruario);
     }
 
     @Transactional
     public Mostruario update(Mostruario mostruario){
         Mostruario mostruarioUpdate = this.findById(mostruario.getId());
+        validation.descricaoExistenteUpdate(mostruario.getDescricao(), mostruarioUpdate.getId());
         mostruarioUpdate.setDescricao(mostruario.getDescricao());
         return mostruarioUpdate;
     }

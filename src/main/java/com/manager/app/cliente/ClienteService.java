@@ -159,6 +159,10 @@ public class ClienteService {
                 existente.setCep(enderecoRequest.getCep());
                 existente.setIbge(enderecoRequest.getIbge());
                 existente.setPrincipal(enderecoRequest.isPrincipal());
+                existente.setPontoReferencia(enderecoRequest.getPontoReferencia());
+                existente.setDescricao(enderecoRequest.getDescricao());
+                existente.setLatitude(enderecoRequest.getLatitude());
+                existente.setLongitude(enderecoRequest.getLongitude());
                 enderecoService.enriquecerIbge(existente);
             } else {
                 enderecoService.enriquecerIbge(enderecoRequest);

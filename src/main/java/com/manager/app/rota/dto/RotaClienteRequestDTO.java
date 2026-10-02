@@ -1,10 +1,13 @@
 package com.manager.app.rota.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -24,11 +27,11 @@ public class RotaClienteRequestDTO {
 
     private String observacao;
 
-    private Long consignacaoDeixarId;
+    private BigDecimal valorAPagar;
 
-    private Long consignacaoTrazerId;
+    @Valid
+    private List<RotaConsignacaoItemRequestDTO> consignacoesDeixar;
 
-    private Boolean deixouReal;
-
-    private Boolean trouxeReal;
+    @Valid
+    private List<RotaConsignacaoItemRequestDTO> consignacoesTrazer;
 }

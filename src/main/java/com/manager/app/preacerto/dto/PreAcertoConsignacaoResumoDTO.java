@@ -26,6 +26,8 @@ import java.util.List;
         "itensCount",
         "quantidadeTotal",
         "valorTotal",
+        "desconto",
+        "valorTotalComDesconto",
         "quantidadePorCategoria",
         "createdAt",
         "updatedAt",
@@ -41,6 +43,8 @@ public class PreAcertoConsignacaoResumoDTO {
     private Integer itensCount;
     private Integer quantidadeTotal;
     private BigDecimal valorTotal;
+    private BigDecimal desconto;
+    private BigDecimal valorTotalComDesconto;
     private List<QuantidadePorCategoriaDTO> quantidadePorCategoria;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

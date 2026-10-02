@@ -57,6 +57,13 @@ public class RotaController {
         return ResponseEntity.ok(mapper.toResponseDTO(rota));
     }
 
+    @DeleteMapping(value = "/{id}")
+    @PreAuthorize("hasAuthority('ROTA_GERENCIAR')")
+    public ResponseEntity<Void> delete(@PathVariable Long id){
+        service.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping(value = "/{id}/xlsx")
     public ResponseEntity<byte[]> gerarXlsx(@PathVariable Long id){
         Rota rota = service.findById(id);

@@ -7,6 +7,7 @@ import com.manager.app.consignacao.ConsignacaoRepository;
 import com.manager.app.endereco.Endereco;
 import com.manager.app.endereco.EnderecoRepository;
 import com.manager.app.rota.dto.RotaClienteRequestDTO;
+import com.manager.app.rota.dto.RotaConsignacaoItemRequestDTO;
 import com.manager.app.rota.dto.RotaRequestDTO;
 import com.manager.app.rota.dto.RotaResumoDTO;
 import com.manager.app.shared.ModoBusca;
@@ -103,25 +104,88 @@ public class RotaService {
         }
     }
 
+    // resolve e valida (pertence ao cliente, sem duplicata) a lista de consignacaoId dos requests -
+    // usado tanto pra deixar quanto pra trazer, cada lado resolve e valida sozinho depois
+    private List<Consignacao> resolverEValidarConsignacoes(Cliente cliente, List<RotaConsignacaoItemRequestDTO> requests){
+        if (requests == null) return new ArrayList<>();
+        List<Consignacao> consignacoes = new ArrayList<>();
+        for (RotaConsignacaoItemRequestDTO request : requests) {
+            Consignacao consignacao = consignacaoRepository.findById(request.getConsignacaoId())
+                    .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. id: " + request.getConsignacaoId()));
+            consignacoes.add(consignacao);
+        }
+        validation.validarConsignacoesDoCliente(cliente, consignacoes);
+        return consignacoes;
+    }
+
+    private void atualizarConsignacoesDeixar(RotaCliente item, List<RotaConsignacaoItemRequestDTO> requests){
+        List<RotaConsignacaoDeixar> atuais = new ArrayList<>(item.getConsignacoesDeixar());
+        List<RotaConsignacaoItemRequestDTO> pendentes = requests != null ? requests : new ArrayList<>();
+
+        for (RotaConsignacaoItemRequestDTO request : pendentes) {
+            RotaConsignacaoDeixar existente = atuais.stream()
+                    .filter(c -> c.getConsignacao().getId().equals(request.getConsignacaoId()))
+                    .findFirst().orElse(null);
+
+            if (existente != null) {
+                existente.setConfirmada(Boolean.TRUE.equals(request.getConfirmada()));
+                atuais.remove(existente);
+            } else {
+                RotaConsignacaoDeixar novo = new RotaConsignacaoDeixar();
+                novo.setConsignacao(resolverConsignacao(request.getConsignacaoId()));
+                novo.setConfirmada(Boolean.TRUE.equals(request.getConfirmada()));
+                item.adicionarConsignacaoDeixar(novo);
+            }
+        }
+
+        for (RotaConsignacaoDeixar remover : atuais) {
+            item.removerConsignacaoDeixar(remover);
+        }
+    }
+
+    private void atualizarConsignacoesTrazer(RotaCliente item, List<RotaConsignacaoItemRequestDTO> requests){
+        List<RotaConsignacaoTrazer> atuais = new ArrayList<>(item.getConsignacoesTrazer());
+        List<RotaConsignacaoItemRequestDTO> pendentes = requests != null ? requests : new ArrayList<>();
+
+        for (RotaConsignacaoItemRequestDTO request : pendentes) {
+            RotaConsignacaoTrazer existente = atuais.stream()
+                    .filter(c -> c.getConsignacao().getId().equals(request.getConsignacaoId()))
+                    .findFirst().orElse(null);
+
+            if (existente != null) {
+                existente.setConfirmada(Boolean.TRUE.equals(request.getConfirmada()));
+                atuais.remove(existente);
+            } else {
+                RotaConsignacaoTrazer novo = new RotaConsignacaoTrazer();
+                novo.setConsignacao(resolverConsignacao(request.getConsignacaoId()));
+                novo.setConfirmada(Boolean.TRUE.equals(request.getConfirmada()));
+                item.adicionarConsignacaoTrazer(novo);
+            }
+        }
+
+        for (RotaConsignacaoTrazer remover : atuais) {
+            item.removerConsignacaoTrazer(remover);
+        }
+    }
+
     private void preencherItem(RotaCliente item, RotaClienteRequestDTO itemRequest){
         Cliente cliente = resolverCliente(itemRequest.getClienteId());
         Endereco endereco = resolverEndereco(itemRequest.getEnderecoId());
         validation.validarEndereco(cliente, endereco);
 
-        Consignacao consignacaoDeixar = resolverConsignacao(itemRequest.getConsignacaoDeixarId());
-        Consignacao consignacaoTrazer = resolverConsignacao(itemRequest.getConsignacaoTrazerId());
-        validation.validarConsignacaoDoCliente(cliente, consignacaoDeixar);
-        validation.validarConsignacaoDoCliente(cliente, consignacaoTrazer);
-        validation.validarPossuiAcao(consignacaoDeixar, consignacaoTrazer);
+        // deixar/trazer sao opcionais - um cliente pode entrar na rota so pra
+        // deixar consignacao nova sem trazer nenhuma de volta, ou vice-versa,
+        // ou ate sem nenhuma das duas (ex.: so uma visita de cobranca)
+        resolverEValidarConsignacoes(cliente, itemRequest.getConsignacoesDeixar());
+        resolverEValidarConsignacoes(cliente, itemRequest.getConsignacoesTrazer());
 
         item.setCliente(cliente);
         item.setEndereco(endereco);
         item.setOrdem(itemRequest.getOrdem());
         item.setObservacao(itemRequest.getObservacao());
-        item.setConsignacaoDeixar(consignacaoDeixar);
-        item.setConsignacaoTrazer(consignacaoTrazer);
-        item.setDeixouReal(itemRequest.getDeixouReal());
-        item.setTrouxeReal(itemRequest.getTrouxeReal());
+        item.setValorAPagar(itemRequest.getValorAPagar());
+        atualizarConsignacoesDeixar(item, itemRequest.getConsignacoesDeixar());
+        atualizarConsignacoesTrazer(item, itemRequest.getConsignacoesTrazer());
     }
 
     @Transactional
@@ -188,5 +252,11 @@ public class RotaService {
         rotaUpdate.setUpdatedBy(usuarioAtual);
 
         return rotaUpdate;
+    }
+
+    @Transactional
+    public void delete(Long id){
+        Rota rota = this.findById(id);
+        repository.delete(rota);
     }
 }

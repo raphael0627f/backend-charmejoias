@@ -11,6 +11,7 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import com.manager.app.usuario.Usuario;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +38,11 @@ public class PreAcertoConsignacao {
     private Cliente cliente;
 
     private String observacoes;
+
+    // mesmo formato do desconto do Acerto: valor absoluto, nao percentual (ver
+    // AcertoConsignacao.getValorTotalComDesconto)
+    @Column(precision = 10, scale = 2)
+    private BigDecimal desconto;
 
     @OneToMany(mappedBy = "preAcerto", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PreAcertoConsignacaoProduto> produtos = new ArrayList<>();

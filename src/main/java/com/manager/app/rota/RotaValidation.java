@@ -6,6 +6,8 @@ import com.manager.app.endereco.Endereco;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class RotaValidation {
 
@@ -17,16 +19,11 @@ public class RotaValidation {
         }
     }
 
-    public void validarConsignacaoDoCliente(Cliente cliente, Consignacao consignacao){
-        if (consignacao == null) return;
-        if (consignacao.getCliente() == null || !consignacao.getCliente().getId().equals(cliente.getId())) {
-            throw new ItemInvalidoException("Consignação " + consignacao.getId() + " não pertence ao cliente selecionado. clienteId: " + cliente.getId());
-        }
-    }
-
-    public void validarPossuiAcao(Consignacao consignacaoDeixar, Consignacao consignacaoTrazer){
-        if (consignacaoDeixar == null && consignacaoTrazer == null) {
-            throw new ItemInvalidoException("Informe uma Consignação para deixar ou trazer.");
+    public void validarConsignacoesDoCliente(Cliente cliente, List<Consignacao> consignacoes){
+        for (Consignacao consignacao : consignacoes) {
+            if (consignacao.getCliente() == null || !consignacao.getCliente().getId().equals(cliente.getId())) {
+                throw new ItemInvalidoException("Consignação " + consignacao.getId() + " não pertence ao cliente selecionado. clienteId: " + cliente.getId());
+            }
         }
     }
 }

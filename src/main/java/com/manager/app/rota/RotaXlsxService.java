@@ -23,7 +23,8 @@ public class RotaXlsxService {
 
     private static final String[] CABECALHO = {
             "ITEM", "codigo", "VISITA", "ROTA", "IDA", "VOLTA", "DEIXOU", "TROUXE",
-            "nome do cliente", "Endereço", "Latitude", "Longitude", "Notas", "Cliente Móvel", "COR", "observação"
+            "nome do cliente", "Endereço", "Latitude", "Longitude", "Notas", "Cliente Móvel", "COR", "observação",
+            "Valor a pagar"
     };
 
     public byte[] gerarXlsx(Rota rota){
@@ -65,19 +66,21 @@ public class RotaXlsxService {
     private void preencherLinha(Row row, Rota rota, RotaCliente item, CellStyle enderecoStyle){
         Cliente cliente = item.getCliente();
         Endereco enderecoSelecionado = item.getEndereco();
-        // IDA/VOLTA = previsto (existe consignacao planejada pra deixar/trazer); DEIXOU/TROUXE =
-        // resultado real preenchido depois, na edicao pos-rota (null enquanto ainda nao foi a campo)
-        boolean previstoDeixar = item.getConsignacaoDeixar() != null;
-        boolean previstoTrazer = item.getConsignacaoTrazer() != null;
+        // IDA/VOLTA = previsto (quantidade de consignacoes planejadas pra deixar/trazer); DEIXOU/TROUXE =
+        // resultado real (quantas dessas ja foram confirmadas), preenchido na edicao pos-rota
+        int previstoDeixar = item.getConsignacoesDeixar().size();
+        int previstoTrazer = item.getConsignacoesTrazer().size();
+        long confirmadoDeixar = item.getConsignacoesDeixar().stream().filter(c -> Boolean.TRUE.equals(c.getConfirmada())).count();
+        long confirmadoTrazer = item.getConsignacoesTrazer().stream().filter(c -> Boolean.TRUE.equals(c.getConfirmada())).count();
 
         row.createCell(0).setCellValue(item.getOrdem() != null ? item.getOrdem() : row.getRowNum());
         row.createCell(1).setCellValue(cliente.getCodigo());
         row.createCell(2).setCellValue(rota.getDataRota() != null ? rota.getDataRota().format(FORMATO_DATA) : "");
         row.createCell(3).setCellValue(rota.getNome());
-        row.createCell(4).setCellValue(previstoDeixar ? 1 : 0);
-        row.createCell(5).setCellValue(previstoTrazer ? 1 : 0);
-        row.createCell(6).setCellValue(Boolean.TRUE.equals(item.getDeixouReal()) ? 1 : 0);
-        row.createCell(7).setCellValue(Boolean.TRUE.equals(item.getTrouxeReal()) ? 1 : 0);
+        row.createCell(4).setCellValue(previstoDeixar > 0 ? 1 : 0);
+        row.createCell(5).setCellValue(previstoTrazer > 0 ? 1 : 0);
+        row.createCell(6).setCellValue(confirmadoDeixar);
+        row.createCell(7).setCellValue(confirmadoTrazer);
         row.createCell(8).setCellValue(cliente.getNome());
 
         Cell enderecoCell = row.createCell(9);
@@ -90,6 +93,7 @@ public class RotaXlsxService {
         row.createCell(13).setCellValue(cliente.getCelular() != null ? cliente.getCelular() : "");
         row.createCell(14).setCellValue("");
         row.createCell(15).setCellValue(item.getObservacao() != null ? item.getObservacao() : "");
+        row.createCell(16).setCellValue(item.getValorAPagar() != null ? item.getValorAPagar().doubleValue() : 0);
     }
 
     // todos os enderecos cadastrados do cliente, comecando pelo selecionado, um por linha na mesma celula
