@@ -30,7 +30,7 @@ import java.util.List;
         "createdAt",
         "updatedAt",
         "createdBy",
-        "updatedBy"
+        "updatedBy",
 })
 public class ConsignacaoResponseDTO {
 

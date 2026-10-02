@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="relPedidoResumoCliente" columnCount="1" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2001">
+	<field name="clienteCodigo" class="java.lang.String"/>
+	<field name="clienteNome" class="java.lang.String"/>
+	<field name="cidade" class="java.lang.String"/>
+	<field name="dataEntrega" class="java.lang.String"/>
+	<field name="totalPedidos" class="java.lang.Integer"/>
+	<field name="totalPecas" class="java.lang.Integer"/>
+	<field name="pecasPorCategoria" class="java.lang.String"/>
+	<variable name="SomaPedidos" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{totalPedidos}]]></variableExpression>
+	</variable>
+	<variable name="SomaPecas" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{totalPecas}]]></variableExpression>
+	</variable>
+	<pageHeader>
+		<band height="50">
+			<staticText>
+				<reportElement x="0" y="0" width="500" height="28" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2002"/>
+				<textElement verticalAlignment="Middle"><font size="18" isBold="true"/></textElement>
+				<text><![CDATA[RELATÓRIO FINAL DE PEDIDOS (POR CLIENTE)]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="0" y="30" width="200" height="14" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2003"/>
+				<textElement verticalAlignment="Middle"><font size="8"/></textElement>
+				<textFieldExpression><![CDATA[new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new java.util.Date())]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="15">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="25" height="15" backcolor="#D6D6D6" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2004"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+				<text><![CDATA[#]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="25" y="0" width="55" height="15" backcolor="#D6D6D6" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2005"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+				<text><![CDATA[Cód. Cliente]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="80" y="0" width="200" height="15" backcolor="#D6D6D6" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2006"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+				<text><![CDATA[Cliente]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="280" y="0" width="120" height="15" backcolor="#D6D6D6" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2007"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+				<text><![CDATA[Cidade]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="400" y="0" width="62" height="15" backcolor="#D6D6D6" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2008"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+				<text><![CDATA[Entrega]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="462" y="0" width="55" height="15" backcolor="#D6D6D6" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2009"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+				<text><![CDATA[Pedidos]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="517" y="0" width="55" height="15" backcolor="#D6D6D6" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2010"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+				<text><![CDATA[Peças]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="572" y="0" width="230" height="15" backcolor="#D6D6D6" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2011"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+				<text><![CDATA[Peças por categoria]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="15">
+			<textField>
+				<reportElement x="0" y="0" width="25" height="15" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2012"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{REPORT_COUNT}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="25" y="0" width="55" height="15" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2013"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{clienteCodigo}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="80" y="0" width="200" height="15" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2014"/>
+				<textElement verticalAlignment="Middle"><font size="8"/></textElement>
+				<textFieldExpression><![CDATA[" " + $F{clienteNome}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="280" y="0" width="120" height="15" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2015"/>
+				<textElement verticalAlignment="Middle"><font size="8"/></textElement>
+				<textFieldExpression><![CDATA[" " + $F{cidade}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="400" y="0" width="62" height="15" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2016"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{dataEntrega}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="462" y="0" width="55" height="15" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2017"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="8"/></textElement>
+				<textFieldExpression><![CDATA[$F{totalPedidos}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="517" y="0" width="55" height="15" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2018"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{totalPecas}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true" isStretchWithOverflow="true">
+				<reportElement x="572" y="0" width="230" height="15" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2019"/>
+				<textElement verticalAlignment="Middle"><font size="7"/></textElement>
+				<textFieldExpression><![CDATA[" " + $F{pecasPorCategoria}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="15">
+			<textField>
+				<reportElement x="752" y="0" width="50" height="15" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2021"/>
+				<textElement textAlignment="Right"><font size="8" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="22">
+			<textField>
+				<reportElement mode="Opaque" x="400" y="4" width="402" height="16" backcolor="#EFEFEF" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b2020"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA["Total: " + $V{SomaPedidos} + " pedido(s) - " + $V{SomaPecas} + " peça(s)  "]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

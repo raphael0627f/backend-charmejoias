@@ -14,6 +14,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @JsonPropertyOrder({
+        "id",
         "descricao",
         "variacao",
         "dataEntrega",
@@ -28,13 +29,22 @@ import java.util.UUID;
         "joiaId",
         "joiaCodigo",
         "joiaNome",
+        "grupoId",
+        "grupoNome",
+        "quantidadeCancelada",
+        "motivoCancelamento",
+        "separado",
 })
 public class PedidoProdutoResponseDTO {
 
+    private Long id;
     private String descricao;
     private String variacao;
     private Integer quantidade;
     private BigDecimal preco;
+    private Integer quantidadeCancelada;
+    private String motivoCancelamento;
+    private boolean separado;
     private UUID produtoId;
     private String produtoCodigo;
     private String produtoNome;
@@ -44,4 +54,10 @@ public class PedidoProdutoResponseDTO {
     private UUID joiaId;
     private String joiaCodigo;
     private String joiaNome;
+    // grupoId só vem preenchido em itens avulsos (onde o usuário escolheu o
+    // departamento manualmente); grupoNome vem sempre que dá pra resolver - do(s)
+    // grupo(s) do produto/joia cadastrado (juntos, separados por "/") ou, se
+    // avulso, do grupo escolhido
+    private Long grupoId;
+    private String grupoNome;
 }

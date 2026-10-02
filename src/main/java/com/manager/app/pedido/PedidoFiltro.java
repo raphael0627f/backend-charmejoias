@@ -1,0 +1,33 @@
+package com.manager.app.pedido;
+
+import com.manager.app.shared.ModoBusca;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public record PedidoFiltro(
+        String busca,
+        ModoBusca modoBusca,
+        List<StatusPedido> status,
+        List<CategoriaPedido> categoria,
+        Long numero,
+        String clienteCodigo,
+        String clienteNome,
+        String cidade,
+        LocalDate dataEntregaInicio,
+        LocalDate dataEntregaFim,
+        LocalDate criadoInicio,
+        LocalDate criadoFim
+) {
+    // as contagens por status/categoria ignoram o próprio filtro, senão o total dos outros
+    // status/categorias sempre sairia zerado quando o usuário filtra um deles
+    public PedidoFiltro semStatus(){
+        return new PedidoFiltro(busca, modoBusca, null, categoria, numero, clienteCodigo, clienteNome, cidade,
+                dataEntregaInicio, dataEntregaFim, criadoInicio, criadoFim);
+    }
+
+    public PedidoFiltro semCategoria(){
+        return new PedidoFiltro(busca, modoBusca, status, null, numero, clienteCodigo, clienteNome, cidade,
+                dataEntregaInicio, dataEntregaFim, criadoInicio, criadoFim);
+    }
+}

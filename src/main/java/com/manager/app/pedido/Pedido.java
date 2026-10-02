@@ -34,11 +34,28 @@ public class Pedido {
     @Column(name = "data_entrega")
     private LocalDate dataEntrega;
 
+    // data em que o pedido foi feito (informada pelo usuário) - diferente de createdAt, que é o
+    // timestamp de auditoria de quando o registro foi criado no sistema
+    @Column(name = "data_pedido")
+    private LocalDate dataPedido;
+
     @Enumerated(EnumType.STRING)
     private StatusPedido status;
 
+    @Column(name = "motivo_cancelamento")
+    private String motivoCancelamento;
+
     @Enumerated(EnumType.STRING)
     private TipoItem tipo;
+
+    @Enumerated(EnumType.STRING)
+    private CategoriaPedido categoria;
+
+    // marcado ao imprimir o relatório de separação/individual; volta pra false quando o pedido é editado
+    private boolean impresso;
+
+    @Column(name = "impresso_em")
+    private LocalDateTime impressoEm;
 
     @ManyToOne
     @JoinColumn(name = "cliente_id")

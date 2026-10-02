@@ -1,7 +1,9 @@
 package com.manager.app.pedido.dto;
 
-import com.manager.app.pedido.StatusPedido;
+import com.manager.app.pedido.CategoriaPedido;
 import com.manager.app.shared.TipoItem;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,8 +26,11 @@ public class PedidoRequestDTO {
     @NotNull(message = "Data de entrega é obrigatória")
     private LocalDate dataEntrega;
 
-    @NotNull(message = "Status é obrigatório")
-    private StatusPedido status;
+    @NotNull(message = "Data do pedido é obrigatória")
+    private LocalDate dataPedido;
+
+    @NotNull(message = "Categoria é obrigatória")
+    private CategoriaPedido categoria;
 
     @NotNull(message = "Tipo é obrigatório")
     private TipoItem tipo;
@@ -33,7 +38,8 @@ public class PedidoRequestDTO {
     @NotNull(message = "clienteId é obrigatório")
     private UUID clienteId;
 
-    @NotNull(message = "Produto é obrigatório")
+    @Valid
+    @NotEmpty(message = "Informe ao menos um produto")
     private List<PedidoProdutoRequestDTO> produtosRequest = new ArrayList<>();
 
 }

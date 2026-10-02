@@ -1,5 +1,6 @@
 package com.manager.app.pedido;
 
+import com.manager.app.grupo.TipoGrupo;
 import com.manager.app.pedido.dto.PedidoProdutoResponseDTO;
 import com.manager.app.variacao.ItemVariacao;
 import com.manager.app.variacao.dto.ItemVariacaoDTO;
@@ -20,6 +21,7 @@ public interface PedidoProdutoMapper {
     @Mapping(source = "joia.id", target = "joiaId")
     @Mapping(source = "joia.codigo", target = "joiaCodigo")
     @Mapping(source = "joia.nome", target = "joiaNome")
+    @Mapping(source = "grupo.id", target = "grupoId")
     PedidoProdutoResponseDTO toDTOBase(PedidoProduto entity);
 
     @Named("pedidoProdutoToDTO")
@@ -30,7 +32,31 @@ public interface PedidoProdutoMapper {
                     .map(item -> toItemVariacaoDTO(item.getItemVariacao()))
                     .toList());
         }
+        dto.setGrupoNome(grupoNomeDe(entity));
         return dto;
+    }
+
+    // produto/joia cadastrado tem precedência (o grupo é do catálogo, podendo ter
+    // mais de um - junta os nomes); senão usa o grupo escolhido manualmente no
+    // item avulso
+    private String grupoNomeDe(PedidoProduto entity) {
+        if (entity.getProduto() != null && entity.getProduto().getGrupos() != null) {
+            String nomes = nomesDosGruposDeProduto(entity.getProduto().getGrupos());
+            if (!nomes.isEmpty()) return nomes;
+        }
+        if (entity.getJoia() != null && entity.getJoia().getGrupos() != null) {
+            String nomes = nomesDosGruposDeProduto(entity.getJoia().getGrupos());
+            if (!nomes.isEmpty()) return nomes;
+        }
+        return entity.getGrupo() != null ? entity.getGrupo().getNome() : null;
+    }
+
+    private String nomesDosGruposDeProduto(java.util.List<com.manager.app.grupo.Grupo> grupos) {
+        return grupos.stream()
+                .filter(g -> g.getTipo() == TipoGrupo.PRODUTO)
+                .map(com.manager.app.grupo.Grupo::getNome)
+                .reduce((a, b) -> a + " / " + b)
+                .orElse("");
     }
 
     ItemVariacaoDTO toItemVariacaoDTO(ItemVariacao entity);
