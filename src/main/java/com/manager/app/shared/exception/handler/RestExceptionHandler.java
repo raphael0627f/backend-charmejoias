@@ -1,5 +1,6 @@
 package com.manager.app.shared.exception.handler;
 
+import com.manager.app.backup.BackupException;
 import com.manager.app.notafiscal.DanfeApiException;
 import com.manager.app.notafiscal.client.ContoraApiException;
 import com.manager.app.spc.client.SpcApiException;
@@ -67,6 +68,13 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(DanfeApiException.class)
     private ResponseEntity<RestErrorMenssage> danfeApiError(DanfeApiException exception, WebRequest request){
         HttpStatus status = HttpStatus.BAD_GATEWAY;
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
+        return ResponseEntity.status(status).body(response);
+    }
+
+    @ExceptionHandler(BackupException.class)
+    private ResponseEntity<RestErrorMenssage> backupError(BackupException exception, WebRequest request){
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
         RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
         return ResponseEntity.status(status).body(response);
     }
