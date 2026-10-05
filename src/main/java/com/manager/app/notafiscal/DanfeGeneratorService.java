@@ -119,7 +119,9 @@ public class DanfeGeneratorService {
             resposta = client.post()
                     .uri("/fd/convert/xml-to-da")
                     .header("Api-Key", apiKey)
-                    .contentType(MediaType.TEXT_PLAIN)
+                    // charset explícito: sem ele o Spring codifica text/plain em ISO-8859-1 e os
+                    // acentos do XML (UTF-8) chegam como "�" no PDF (ex.: "SÃO MIGUEL" -> "S�O MIGUEL")
+                    .contentType(new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8))
                     .accept(MediaType.APPLICATION_JSON)
                     .body(new String(xmlBytes, StandardCharsets.UTF_8))
                     .retrieve()
