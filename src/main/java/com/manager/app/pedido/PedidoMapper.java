@@ -13,6 +13,8 @@ public interface PedidoMapper {
     @Mapping(source = "cliente.id", target = "clienteId")
     @Mapping(source = "cliente.codigo", target = "clienteCodigo")
     @Mapping(source = "cliente.nome", target = "clienteNome")
+    @Mapping(source = "mostruario.id", target = "mostruarioId")
+    @Mapping(source = "mostruario.descricao", target = "mostruarioDescricao")
     @Mapping(source = "produtos", target = "produtosResponse", qualifiedByName = "pedidoProdutoToDTO")
     @Mapping(source = "cliente", target = "cidade", qualifiedByName = "cidadePrincipal")
     PedidoResponseDTO toResponseDTO(Pedido entity);

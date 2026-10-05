@@ -22,6 +22,8 @@ public class PedidoResumoDTO {
     private String clienteCodigo;
     private String clienteNome;
     private String cidade;
+    private Long mostruarioId;
+    private String mostruarioDescricao;
     private CategoriaPedido categoria;
     private StatusPedido status;
     private TipoItem tipo;

@@ -38,6 +38,9 @@ public class PedidoRequestDTO {
     @NotNull(message = "clienteId é obrigatório")
     private UUID clienteId;
 
+    // opcional
+    private Long mostruarioId;
+
     @Valid
     @NotEmpty(message = "Informe ao menos um produto")
     private List<PedidoProdutoRequestDTO> produtosRequest = new ArrayList<>();

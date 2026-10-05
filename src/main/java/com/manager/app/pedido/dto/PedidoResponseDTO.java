@@ -32,6 +32,8 @@ import java.util.UUID;
         "clienteCodigo",
         "clienteNome",
         "cidade",
+        "mostruarioId",
+        "mostruarioDescricao",
         "produtosResponse",
         "motivoCancelamento",
         "createdAt",
@@ -55,6 +57,8 @@ public class PedidoResponseDTO {
     private String clienteCodigo;
     private String clienteNome;
     private String cidade;
+    private Long mostruarioId;
+    private String mostruarioDescricao;
     private List<PedidoProdutoResponseDTO> produtosResponse = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

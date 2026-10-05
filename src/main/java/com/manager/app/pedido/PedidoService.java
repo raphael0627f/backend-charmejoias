@@ -27,6 +27,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.manager.app.grupo.GrupoService;
+import com.manager.app.mostruario.Mostruario;
+import com.manager.app.mostruario.MostruarioService;
 import com.manager.app.cliente.ClienteService;
 import com.manager.app.joia.JoiaService;
 import com.manager.app.produto.ProdutoService;
@@ -47,6 +49,7 @@ public class PedidoService {
     private final ProdutoService produtoService;
     private final JoiaService joiaService;
     private final GrupoService grupoService;
+    private final MostruarioService mostruarioService;
     private final PedidoValidation validation;
     private final UsuarioResumoMapper usuarioResumoMapper;
 
@@ -90,6 +93,10 @@ public class PedidoService {
             dto.setClienteNome(pedido.getCliente().getNome());
             var endereco = pedido.getCliente().getEnderecoPrincipal();
             dto.setCidade(endereco != null ? endereco.getMunicipio() : null);
+        }
+        if (pedido.getMostruario() != null) {
+            dto.setMostruarioId(pedido.getMostruario().getId());
+            dto.setMostruarioDescricao(pedido.getMostruario().getDescricao());
         }
         dto.setCategoria(pedido.getCategoria());
         dto.setStatus(pedido.getStatus());
@@ -212,6 +219,10 @@ public class PedidoService {
         return variacao;
     }
 
+    private Mostruario resolverMostruario(Long mostruarioId){
+        return mostruarioId == null ? null : mostruarioService.findById(mostruarioId);
+    }
+
     @Transactional
     public Pedido create(PedidoRequestDTO request){
         Pedido pedido = new Pedido();
@@ -223,6 +234,7 @@ public class PedidoService {
         pedido.setStatus(validation.statusInicial(request.getCategoria()));
         pedido.setTipo(request.getTipo());
         pedido.setCliente(clienteService.findByIdAndAtivo(request.getClienteId()));
+        pedido.setMostruario(resolverMostruario(request.getMostruarioId()));
 
         for (PedidoProdutoRequestDTO produtoRequest : request.getProdutosRequest()){
             PedidoProduto produto = new PedidoProduto();
@@ -256,6 +268,7 @@ public class PedidoService {
         pedidoUpdate.setDataEntrega(request.getDataEntrega());
         pedidoUpdate.setTipo(request.getTipo());
         pedidoUpdate.setCliente(clienteService.findByIdAndAtivo(request.getClienteId()));
+        pedidoUpdate.setMostruario(resolverMostruario(request.getMostruarioId()));
 
         List<PedidoProduto> produtosAtuais = new ArrayList<>(pedidoUpdate.getProdutos());
 
