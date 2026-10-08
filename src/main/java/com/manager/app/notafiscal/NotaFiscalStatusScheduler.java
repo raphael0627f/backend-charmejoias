@@ -30,6 +30,12 @@ public class NotaFiscalStatusScheduler {
 
         for (NotaFiscal notaFiscal : repository.findAllByStatusIn(STATUS_PENDENTES)) {
             jaConsultadas.add(notaFiscal.getId());
+            // ENVIADA sem contoraDocumentId: ou o envio está em andamento (rascunho ainda não
+            // criado na Contora) ou ficou preso por uma falha - não há o que consultar
+            if (notaFiscal.getContoraDocumentId() == null) {
+                log.debug("Nota fiscal {} sem documento na Contora ainda, pulando a consulta de status", notaFiscal.getId());
+                continue;
+            }
             atualizarStatusSemQuebrar(notaFiscal.getId());
         }
 

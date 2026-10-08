@@ -289,7 +289,12 @@ public class NotaFiscalService {
         int tentativa = tentativaEnvioService.iniciarNovaTentativa(id);
 
         try {
-            NotaFiscal notaFiscal = repository.findByIdForUpdate(id)
+            // leitura SEM lock de propósito: um FOR UPDATE aqui ficaria preso até o fim desta
+            // transação, e o reverterParaRascunho (REQUIRES_NEW, outra conexão) abaixo precisaria
+            // do lock da mesma linha pra devolver a nota a RASCUNHO -> a requisição travava pra
+            // sempre quando a Contora falhava e a nota ficava ENVIADA sem contoraDocumentId.
+            // O lock de verdade (contra envio duplicado) é o iniciarNovaTentativa acima
+            NotaFiscal notaFiscal = repository.findById(id)
                     .orElseThrow(() -> new ObjetoNaoEncontradoException("Nota fiscal não encontrada. id: " + id));
 
             String contoraCompanyId = notaFiscal.getEmpresa().getContoraCompanyId();

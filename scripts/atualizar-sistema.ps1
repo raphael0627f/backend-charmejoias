@@ -39,8 +39,8 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 }
 
 try {
-    Invoke-Passo "Reiniciando backend ($BackendServiceName)" {
-        & $NssmPath restart $BackendServiceName
+    Invoke-Passo "Atualizando backend (baixa o jar mais recente e reinicia $BackendServiceName)" {
+        & "$PSScriptRoottualizar-backend.ps1" -ServiceName $BackendServiceName -NssmPath $NssmPath
     }
 
     Invoke-Passo "Parando frontend ($FrontendServiceName)" {
