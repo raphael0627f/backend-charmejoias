@@ -9,7 +9,7 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0atualizar-sistema.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0atualizar-sistema.ps1" %*
 
 echo.
 pause
