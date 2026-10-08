@@ -17,5 +17,6 @@ public class PedidoItemCancelamentoRequestDTO {
     private Integer quantidade;
 
     @NotBlank(message = "Motivo é obrigatório")
+    @jakarta.validation.constraints.Size(min = 5, message = "Motivo deve ter ao menos 5 caracteres")
     private String motivo;
 }

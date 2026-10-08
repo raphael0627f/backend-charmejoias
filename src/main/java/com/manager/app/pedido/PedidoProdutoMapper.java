@@ -33,7 +33,28 @@ public interface PedidoProdutoMapper {
                     .toList());
         }
         dto.setGrupoNome(grupoNomeDe(entity));
+        dto.setCategoriaNome(categoriaNomeDe(entity));
+        if (entity.getProdutoVariacao() != null && entity.getProdutoVariacao().getCodigoBarras() != null) {
+            dto.setCodigoBarras(entity.getProdutoVariacao().getCodigoBarras());
+        } else if (entity.getProduto() != null) {
+            dto.setCodigoBarras(entity.getProduto().getCodigoBarras());
+        }
+        if (entity.getProduto() != null) {
+            dto.setReferencia(entity.getProduto().getReferencia());
+        } else if (entity.getJoia() != null) {
+            dto.setReferencia(entity.getJoia().getReferencia());
+        }
         return dto;
+    }
+
+    private String categoriaNomeDe(PedidoProduto entity) {
+        if (entity.getProduto() != null && entity.getProduto().getCategoria() != null) {
+            return entity.getProduto().getCategoria().getNome();
+        }
+        if (entity.getJoia() != null && entity.getJoia().getCategoria() != null) {
+            return entity.getJoia().getCategoria().getNome();
+        }
+        return null;
     }
 
     // produto/joia cadastrado tem precedência (o grupo é do catálogo, podendo ter

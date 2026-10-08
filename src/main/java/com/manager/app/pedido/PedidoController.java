@@ -89,6 +89,14 @@ public class PedidoController {
         return pdf("relatorio-pedidos.pdf", relatorioService.gerarGrupoEFinal(ids, ordem, marcarImpresso));
     }
 
+    // relPedidoIndividual: uma página por pedido, todos os selecionados num PDF só. Marca como impressos
+    // (marcarImpresso=false desliga)
+    @GetMapping(value = "/relatorios/individual")
+    public ResponseEntity<byte[]> relatorioIndividual(@RequestParam List<Long> ids,
+                                                      @RequestParam(defaultValue = "true") boolean marcarImpresso){
+        return pdf("pedido-individual.pdf", relatorioService.gerarIndividual(ids, marcarImpresso));
+    }
+
     private ResponseEntity<byte[]> pdf(String nome, byte[] conteudo){
         return ResponseEntity.ok()
                 .header("Content-Disposition", "inline; filename=" + nome)

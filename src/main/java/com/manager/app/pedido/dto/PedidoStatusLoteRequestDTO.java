@@ -19,4 +19,7 @@ public class PedidoStatusLoteRequestDTO {
 
     @NotNull(message = "Status é obrigatório")
     private StatusPedido status;
+
+    // marca como impresso os pedidos cujo status foi alterado com sucesso
+    private boolean imprimir;
 }

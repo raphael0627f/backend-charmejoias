@@ -60,4 +60,10 @@ public class PedidoProdutoResponseDTO {
     // avulso, do grupo escolhido
     private Long grupoId;
     private String grupoNome;
+    // categoria do produto/joia cadastrado (nulo em item avulso)
+    private String categoriaNome;
+    // pra busca na tela de separação (bipagem): código de barras da variação (ou do produto
+    // simples) e referência do produto/joia cadastrado
+    private String codigoBarras;
+    private String referencia;
 }

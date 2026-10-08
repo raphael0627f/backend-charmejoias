@@ -349,7 +349,13 @@ public class PedidoService {
                 PedidoStatusRequestDTO unitario = new PedidoStatusRequestDTO();
                 unitario.setId(id);
                 unitario.setStatus(request.getStatus());
-                transactionTemplate.executeWithoutResult(tx -> updateStatus(unitario));
+                transactionTemplate.executeWithoutResult(tx -> {
+                    Pedido pedido = updateStatus(unitario);
+                    if (request.isImprimir()) {
+                        pedido.setImpresso(true);
+                        pedido.setImpressoEm(java.time.LocalDateTime.now());
+                    }
+                });
                 resultados.add(new PedidoStatusLoteResultadoDTO(id, true, null));
             } catch (RuntimeException e) {
                 resultados.add(new PedidoStatusLoteResultadoDTO(id, false, e.getMessage()));
@@ -386,9 +392,9 @@ public class PedidoService {
         return pedido;
     }
 
-    private static final int MOTIVO_CANCELAMENTO_TAMANHO_MINIMO = 15;
+    private static final int MOTIVO_CANCELAMENTO_TAMANHO_MINIMO = 5;
 
-    // cancelamento do pedido inteiro - igual ao padrão de nota fiscal: exige um motivo com no mínimo 15
+    // cancelamento do pedido inteiro - igual ao padrão de nota fiscal: exige um motivo com no mínimo 5
     // caracteres e respeita a mesma máquina de transição de status (não dá pra cancelar um pedido ENVIADO)
     @Transactional
     public Pedido cancelar(Long id, String motivo){

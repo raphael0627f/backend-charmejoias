@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.3.final using JasperReports Library version 6.21.3-4a3078d20785ebe464f18037d738d12fc98c13cf  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="relPedidoIndividual" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3001">
+	<property name="net.sf.jasperreports.text.truncate.at.char" value="true"/>
+	<property name="net.sf.jasperreports.export.pdf.force.linebreak.policy" value="true"/>
+	<parameter name="LOGO" class="java.io.InputStream" isForPrompting="false"/>
+	<field name="idProduto" class="java.lang.Long"/>
+	<field name="categoriaPedido" class="java.lang.String"/>
+	<field name="statusPedido" class="java.lang.String"/>
+	<field name="codCliente" class="java.lang.String"/>
+	<field name="nomeCliente" class="java.lang.String"/>
+	<field name="municipioCliente" class="java.lang.String"/>
+	<field name="dataEntrega" class="java.lang.String"/>
+	<field name="observacao" class="java.lang.String"/>
+	<field name="skuProduto" class="java.lang.String"/>
+	<field name="nomeProduto" class="java.lang.String"/>
+	<field name="variacaoProduto" class="java.lang.String"/>
+	<field name="quantidadeProduto" class="java.lang.Integer"/>
+	<field name="precoProduto" class="java.lang.String"/>
+	<field name="totalProduto" class="java.lang.String"/>
+	<field name="quantidadeTotalProduto" class="java.lang.Integer"/>
+	<field name="valorTotalPedido" class="java.lang.String"/>
+	<group name="Pedido" isStartNewPage="true" isReprintHeaderOnEachPage="true">
+		<groupExpression><![CDATA[$F{idProduto}]]></groupExpression>
+		<groupHeader>
+			<band height="108">
+				<textField>
+					<reportElement x="0" y="0" width="478" height="26" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3002"/>
+					<textElement verticalAlignment="Middle">
+						<font size="16" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["PEDIDO Nº " + $F{idProduto} + "  -  " + $F{categoriaPedido}]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement x="0" y="28" width="478" height="16" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3003"/>
+					<textElement verticalAlignment="Middle">
+						<font size="11" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{codCliente} + " - " + $F{nomeCliente}]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement x="0" y="46" width="478" height="14" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3004"/>
+					<textElement verticalAlignment="Middle">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Município: " + ($F{municipioCliente} == null ? "-" : $F{municipioCliente}) + "     Entrega: " + $F{dataEntrega} + "     Status: " + $F{statusPedido}]]></textFieldExpression>
+				</textField>
+				<textField textAdjust="StretchHeight" isBlankWhenNull="true">
+					<reportElement x="0" y="62" width="478" height="18" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3005"/>
+					<textElement verticalAlignment="Top">
+						<font size="9"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{observacao} == null || $F{observacao}.isEmpty() ? "" : "Obs.: " + $F{observacao}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement mode="Opaque" x="0" y="93" width="70" height="15" backcolor="#D6D6D6" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3006"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[SKU]]></text>
+				</staticText>
+				<staticText>
+					<reportElement mode="Opaque" x="70" y="93" width="270" height="15" backcolor="#D6D6D6" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3007"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Produto]]></text>
+				</staticText>
+				<staticText>
+					<reportElement mode="Opaque" x="340" y="93" width="40" height="15" backcolor="#D6D6D6" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3008"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Qtd.]]></text>
+				</staticText>
+				<staticText>
+					<reportElement mode="Opaque" x="380" y="93" width="85" height="15" backcolor="#D6D6D6" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3009"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Preço U.]]></text>
+				</staticText>
+				<staticText>
+					<reportElement mode="Opaque" x="465" y="93" width="90" height="15" backcolor="#D6D6D6" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3010"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Total]]></text>
+				</staticText>
+				<image>
+					<reportElement x="478" y="5" width="71" height="64" uuid="b681b62c-13fa-4104-8565-e9da7ab89465">
+						<property name="com.jaspersoft.studio.unit.width" value="px"/>
+						<property name="com.jaspersoft.studio.unit.height" value="px"/>
+						<property name="com.jaspersoft.studio.unit.x" value="px"/>
+						<property name="com.jaspersoft.studio.unit.y" value="px"/>
+					</reportElement>
+					<imageExpression><![CDATA[$P{LOGO}]]></imageExpression>
+				</image>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="20">
+				<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				<textField>
+					<reportElement x="0" y="4" width="555" height="16" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3011"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="10" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Total: " + $F{quantidadeTotalProduto} + " peça(s)   -   " + $F{valorTotalPedido}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<detail>
+		<band height="29">
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="70" height="28" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3012"/>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{skuProduto}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="70" y="0" width="270" height="14" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3013"/>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Bottom">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{nomeProduto}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="340" y="0" width="40" height="28" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3014"/>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{quantidadeProduto}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="380" y="0" width="85" height="28" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3015"/>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{precoProduto}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="465" y="0" width="90" height="28" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3016"/>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{totalProduto}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="68" y="14" width="272" height="14" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3017">
+					<property name="com.jaspersoft.studio.unit.height" value="pixel"/>
+				</reportElement>
+				<box>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{variacaoProduto} == null || $F{variacaoProduto}.isEmpty() ? "" : " " + $F{variacaoProduto}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="28" width="555" height="1" uuid="67d59872-85fb-4ccf-936a-409613b004bd"/>
+			</line>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="15">
+			<property name="com.jaspersoft.studio.unit.height" value="px"/>
+			<textField>
+				<reportElement x="505" y="0" width="50" height="15" uuid="5b0f7c1e-7a43-4c43-9d57-0a1e4c9b3018"/>
+				<textElement textAlignment="Right">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

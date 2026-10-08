@@ -4,6 +4,7 @@ import com.manager.app.grupo.Grupo;
 import com.manager.app.grupo.TipoGrupo;
 import com.manager.app.pedido.dto.PedidoFinalLinhaDTO;
 import com.manager.app.pedido.dto.PedidoGrupoLinhaDTO;
+import com.manager.app.pedido.dto.PedidoIndividualLinhaDTO;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
 import jakarta.transaction.Transactional;
@@ -61,6 +62,89 @@ public class PedidoRelatorioService {
         byte[] pdf = exportar(List.of(resumoFinal, grupo));
         if (marcarImpresso) marcarComoImpresso(pedidos);
         return pdf;
+    }
+
+    // relPedidoIndividual: uma página por pedido (o relatório agrupa por pedidoId e quebra a página), todos
+    // os pedidos selecionados no mesmo PDF, na ordem dos ids informados. Conta só o que ainda está
+    // disponível (quantidade - cancelada); item cancelado por completo não sai no relatório
+    @Transactional
+    public byte[] gerarIndividual(List<Long> ids, boolean marcarImpresso){
+        List<Pedido> pedidos = carregar(ids);
+        Map<Long, Pedido> porId = new HashMap<>();
+        pedidos.forEach(p -> porId.put(p.getId(), p));
+
+        List<PedidoIndividualLinhaDTO> linhas = new ArrayList<>();
+        for (Long id : ids.stream().distinct().toList()) {
+            linhas.addAll(montarLinhasIndividual(porId.get(id)));
+        }
+        if (linhas.isEmpty()) {
+            throw new ItemInvalidoException("Os pedidos selecionados não têm itens disponíveis para imprimir");
+        }
+
+        byte[] pdf = exportar(List.of(preencher("/reports/pedido/relPedidoIndividual.jasper", linhas)));
+        if (marcarImpresso) marcarComoImpresso(pedidos);
+        return pdf;
+    }
+
+    private List<PedidoIndividualLinhaDTO> montarLinhasIndividual(Pedido pedido){
+        List<PedidoProduto> itens = pedido.getProdutos().stream()
+                .filter(i -> quantidadeDisponivel(i) > 0)
+                .toList();
+
+        int totalPecas = 0;
+        BigDecimal totalPedido = BigDecimal.ZERO;
+        for (PedidoProduto item : itens) {
+            int qtd = quantidadeDisponivel(item);
+            totalPecas += qtd;
+            totalPedido = totalPedido.add(subtotal(item, qtd));
+        }
+
+        List<PedidoIndividualLinhaDTO> linhas = new ArrayList<>();
+        for (PedidoProduto item : itens) {
+            int qtd = quantidadeDisponivel(item);
+            linhas.add(new PedidoIndividualLinhaDTO(
+                    pedido.getId(),
+                    rotuloCategoria(pedido.getCategoria()), rotuloStatus(pedido.getStatus()),
+                    codigoClienteDe(pedido), nomeClienteDe(pedido), cidadeDe(pedido),
+                    data(pedido.getDataEntrega()),
+                    pedido.getObservacao() != null ? pedido.getObservacao() : "",
+                    codigoDe(item), nomeDe(item), variacaoDe(item),
+                    qtd, moeda(item.getPreco()), moeda(subtotal(item, qtd)),
+                    totalPecas, moeda(totalPedido)));
+        }
+        return linhas;
+    }
+
+    private static int quantidadeDisponivel(PedidoProduto item){
+        int quantidade = item.getQuantidade() != null ? item.getQuantidade() : 0;
+        int cancelada = item.getQuantidadeCancelada() != null ? item.getQuantidadeCancelada() : 0;
+        return quantidade - cancelada;
+    }
+
+    private static BigDecimal subtotal(PedidoProduto item, int quantidade){
+        BigDecimal preco = item.getPreco() != null ? item.getPreco() : BigDecimal.ZERO;
+        return preco.multiply(BigDecimal.valueOf(quantidade));
+    }
+
+    private static String rotuloCategoria(CategoriaPedido categoria){
+        if (categoria == null) return "";
+        return switch (categoria) {
+            case ENCOMENDA -> "Encomenda";
+            case PERSONALIZADO -> "Personalizado";
+            case ORDEM_SERVICO -> "Ordem de serviço";
+        };
+    }
+
+    private static String rotuloStatus(StatusPedido status){
+        if (status == null) return "";
+        return switch (status) {
+            case PRODUCAO -> "Produção";
+            case PENDENTE -> "Pendente";
+            case SEPARACAO -> "Em separação";
+            case SEPARADO -> "Separado";
+            case ENVIADO -> "Enviado";
+            case CANCELADO -> "Cancelado";
+        };
     }
 
     private List<PedidoGrupoLinhaDTO> montarLinhasGrupo(List<Pedido> pedidos, OrdemSeparacao ordem){
