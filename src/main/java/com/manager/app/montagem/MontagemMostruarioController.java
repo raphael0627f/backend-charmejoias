@@ -66,6 +66,30 @@ public class MontagemMostruarioController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping(value = "/{id}/consignacoes/{consignacaoId}")
+    @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
+    public ResponseEntity<MontagemResponseDTO> vincularConsignacao(@PathVariable Long id, @PathVariable Long consignacaoId){
+        return ResponseEntity.ok(mapper.toResponseDTO(service.vincularConsignacao(id, consignacaoId)));
+    }
+
+    @DeleteMapping(value = "/{id}/consignacoes/{consignacaoId}")
+    @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
+    public ResponseEntity<MontagemResponseDTO> desvincularConsignacao(@PathVariable Long id, @PathVariable Long consignacaoId){
+        return ResponseEntity.ok(mapper.toResponseDTO(service.desvincularConsignacao(id, consignacaoId)));
+    }
+
+    @PostMapping(value = "/{id}/pedidos/{pedidoId}")
+    @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
+    public ResponseEntity<MontagemResponseDTO> vincularPedido(@PathVariable Long id, @PathVariable Long pedidoId){
+        return ResponseEntity.ok(mapper.toResponseDTO(service.vincularPedido(id, pedidoId)));
+    }
+
+    @DeleteMapping(value = "/{id}/pedidos/{pedidoId}")
+    @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
+    public ResponseEntity<MontagemResponseDTO> desvincularPedido(@PathVariable Long id, @PathVariable Long pedidoId){
+        return ResponseEntity.ok(mapper.toResponseDTO(service.desvincularPedido(id, pedidoId)));
+    }
+
     @PatchMapping(value = "/{id}/iniciar")
     @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
     public ResponseEntity<MontagemResponseDTO> iniciar(@PathVariable Long id){

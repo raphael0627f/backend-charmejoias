@@ -1,6 +1,10 @@
 package com.manager.app.montagem;
 
 import com.manager.app.cliente.ClienteService;
+import com.manager.app.consignacao.Consignacao;
+import com.manager.app.consignacao.ConsignacaoService;
+import com.manager.app.pedido.Pedido;
+import com.manager.app.pedido.PedidoService;
 import com.manager.app.montagem.dto.MontagemRequestDTO;
 import com.manager.app.mostruario.Mostruario;
 import com.manager.app.mostruario.MostruarioService;
@@ -28,6 +32,8 @@ public class MontagemMostruarioService {
     private final ClienteService clienteService;
     private final MostruarioService mostruarioService;
     private final UsuarioAuditorAware auditorAware;
+    private final ConsignacaoService consignacaoService;
+    private final PedidoService pedidoService;
 
     public Page<MontagemMostruario> findAll(String busca, ModoBusca modoBusca, StatusMontagem status, UUID clienteId,
                                             LocalDate dataEntregaDe, LocalDate dataEntregaAte, Pageable pageable){
@@ -90,6 +96,45 @@ public class MontagemMostruarioService {
         MontagemMostruario montagem = this.findById(id);
         validation.validarExclusao(montagem);
         repository.delete(montagem);
+    }
+
+    // desvincular só tira o item da lista da montagem; a consignação/pedido em si não é alterado
+    @Transactional
+    public MontagemMostruario vincularConsignacao(Long montagemId, Long consignacaoId){
+        MontagemMostruario montagem = this.findById(montagemId);
+        Consignacao consignacao = consignacaoService.findById(consignacaoId);
+        validation.validarVinculoConsignacao(montagem, consignacao, repository.findByConsignacoes_Id(consignacaoId));
+        montagem.getConsignacoes().add(consignacao);
+        return montagem;
+    }
+
+    @Transactional
+    public MontagemMostruario desvincularConsignacao(Long montagemId, Long consignacaoId){
+        MontagemMostruario montagem = this.findById(montagemId);
+        validation.validarEditavel(montagem);
+        if (!montagem.getConsignacoes().removeIf(c -> c.getId().equals(consignacaoId))) {
+            throw new ObjetoNaoEncontradoException("Consignação " + consignacaoId + " não está vinculada à montagem " + montagemId);
+        }
+        return montagem;
+    }
+
+    @Transactional
+    public MontagemMostruario vincularPedido(Long montagemId, Long pedidoId){
+        MontagemMostruario montagem = this.findById(montagemId);
+        Pedido pedido = pedidoService.findById(pedidoId);
+        validation.validarVinculoPedido(montagem, pedido, repository.findByPedidos_Id(pedidoId));
+        montagem.getPedidos().add(pedido);
+        return montagem;
+    }
+
+    @Transactional
+    public MontagemMostruario desvincularPedido(Long montagemId, Long pedidoId){
+        MontagemMostruario montagem = this.findById(montagemId);
+        validation.validarEditavel(montagem);
+        if (!montagem.getPedidos().removeIf(p -> p.getId().equals(pedidoId))) {
+            throw new ObjetoNaoEncontradoException("Pedido " + pedidoId + " não está vinculado à montagem " + montagemId);
+        }
+        return montagem;
     }
 
     @Transactional

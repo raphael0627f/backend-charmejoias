@@ -1,9 +1,13 @@
 package com.manager.app.montagem;
 
+import com.manager.app.consignacao.Consignacao;
+import com.manager.app.pedido.Pedido;
+import com.manager.app.pedido.StatusPedido;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoEmUsoException;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -61,6 +65,35 @@ public class MontagemValidation {
         if (montagem.getStatus() != StatusMontagem.ABERTA && montagem.getStatus() != StatusMontagem.EM_MONTAGEM) {
             throw new ItemInvalidoException("Só é possível cancelar uma montagem ABERTA ou EM_MONTAGEM. Status atual: " + montagem.getStatus());
         }
+    }
+
+    // item (consignação/pedido) a vincular: do mesmo cliente da montagem e ainda livre
+    public void validarVinculoConsignacao(MontagemMostruario montagem, Consignacao consignacao, Optional<MontagemMostruario> vinculoAtual){
+        validarEditavel(montagem);
+        if (consignacao.getCliente() == null || !consignacao.getCliente().getId().equals(montagem.getCliente().getId())) {
+            throw new ItemInvalidoException("A consignação " + consignacao.getId() + " não pertence ao cliente da montagem");
+        }
+        validarSemOutraMontagem(montagem, "Consignação " + consignacao.getId(), vinculoAtual);
+    }
+
+    public void validarVinculoPedido(MontagemMostruario montagem, Pedido pedido, Optional<MontagemMostruario> vinculoAtual){
+        validarEditavel(montagem);
+        if (pedido.getCliente() == null || !pedido.getCliente().getId().equals(montagem.getCliente().getId())) {
+            throw new ItemInvalidoException("O pedido " + pedido.getId() + " não pertence ao cliente da montagem");
+        }
+        if (pedido.getStatus() == StatusPedido.CANCELADO) {
+            throw new ItemInvalidoException("O pedido " + pedido.getId() + " está cancelado e não pode ser vinculado à montagem");
+        }
+        validarSemOutraMontagem(montagem, "Pedido " + pedido.getId(), vinculoAtual);
+    }
+
+    private void validarSemOutraMontagem(MontagemMostruario montagem, String item, Optional<MontagemMostruario> vinculoAtual){
+        vinculoAtual.ifPresent(outra -> {
+            if (outra.getId().equals(montagem.getId())) {
+                throw new ItemInvalidoException(item + " já está vinculado(a) a esta montagem");
+            }
+            throw new ObjetoEmUsoException(item + " já está vinculado(a) à montagem " + outra.getId());
+        });
     }
 
     private boolean temVinculos(MontagemMostruario montagem){
