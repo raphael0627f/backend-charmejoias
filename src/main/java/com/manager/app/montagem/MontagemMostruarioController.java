@@ -1,5 +1,13 @@
 package com.manager.app.montagem;
 
+import com.manager.app.consignacao.Consignacao;
+import com.manager.app.consignacao.ConsignacaoMapper;
+import com.manager.app.consignacao.dto.ConsignacaoRequestDTO;
+import com.manager.app.consignacao.dto.ConsignacaoResponseDTO;
+import com.manager.app.pedido.Pedido;
+import com.manager.app.pedido.PedidoMapper;
+import com.manager.app.pedido.dto.PedidoRequestDTO;
+import com.manager.app.pedido.dto.PedidoResponseDTO;
 import com.manager.app.montagem.dto.MontagemCancelamentoRequestDTO;
 import com.manager.app.montagem.dto.MontagemRequestDTO;
 import com.manager.app.montagem.dto.MontagemResponseDTO;
@@ -26,6 +34,8 @@ public class MontagemMostruarioController {
 
     private final MontagemMostruarioService service;
     private final MontagemMostruarioMapper mapper;
+    private final PedidoMapper pedidoMapper;
+    private final ConsignacaoMapper consignacaoMapper;
 
     @GetMapping
     public ResponseEntity<Page<MontagemResponseDTO>> findAll(
@@ -88,6 +98,24 @@ public class MontagemMostruarioController {
     @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
     public ResponseEntity<MontagemResponseDTO> desvincularPedido(@PathVariable Long id, @PathVariable Long pedidoId){
         return ResponseEntity.ok(mapper.toResponseDTO(service.desvincularPedido(id, pedidoId)));
+    }
+
+    // cria o pedido/consignação já vinculado à montagem; body igual ao de POST /pedidos e POST /consignacoes
+    // (o clienteId é sempre o da montagem; o mostruário da montagem vale se o body não trouxer um)
+    @PostMapping(value = "/{id}/pedidos")
+    @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
+    public ResponseEntity<PedidoResponseDTO> criarPedido(@PathVariable Long id, @RequestBody PedidoRequestDTO request){
+        Pedido pedido = service.criarPedido(id, request);
+        URI location = ServletUriComponentsBuilder.fromCurrentContextPath().path("/pedidos/{id}").buildAndExpand(pedido.getId()).toUri();
+        return ResponseEntity.created(location).body(pedidoMapper.toResponseDTO(pedido));
+    }
+
+    @PostMapping(value = "/{id}/consignacoes")
+    @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
+    public ResponseEntity<ConsignacaoResponseDTO> criarConsignacao(@PathVariable Long id, @RequestBody ConsignacaoRequestDTO request){
+        Consignacao consignacao = service.criarConsignacao(id, request);
+        URI location = ServletUriComponentsBuilder.fromCurrentContextPath().path("/consignacoes/{id}").buildAndExpand(consignacao.getId()).toUri();
+        return ResponseEntity.created(location).body(consignacaoMapper.toResponseDTO(consignacao));
     }
 
     @PatchMapping(value = "/{id}/iniciar")

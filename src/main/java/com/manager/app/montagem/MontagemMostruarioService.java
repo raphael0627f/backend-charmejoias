@@ -3,6 +3,11 @@ package com.manager.app.montagem;
 import com.manager.app.cliente.ClienteService;
 import com.manager.app.consignacao.Consignacao;
 import com.manager.app.consignacao.ConsignacaoService;
+import com.manager.app.consignacao.dto.ConsignacaoRequestDTO;
+import com.manager.app.pedido.dto.PedidoRequestDTO;
+import com.manager.app.shared.exception.ItemInvalidoException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import com.manager.app.pedido.Pedido;
 import com.manager.app.pedido.PedidoService;
 import com.manager.app.montagem.dto.MontagemRequestDTO;
@@ -21,7 +26,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +41,7 @@ public class MontagemMostruarioService {
     private final UsuarioAuditorAware auditorAware;
     private final ConsignacaoService consignacaoService;
     private final PedidoService pedidoService;
+    private final Validator validator;
 
     public Page<MontagemMostruario> findAll(String busca, ModoBusca modoBusca, StatusMontagem status, UUID clienteId,
                                             LocalDate dataEntregaDe, LocalDate dataEntregaAte, Pageable pageable){
@@ -135,6 +143,54 @@ public class MontagemMostruarioService {
             throw new ObjetoNaoEncontradoException("Pedido " + pedidoId + " não está vinculado à montagem " + montagemId);
         }
         return montagem;
+    }
+
+    // cria o pedido pelo PedidoService (mesmas regras de itens/preços) já para o cliente da montagem e o vincula,
+    // tudo na mesma transação. O clienteId do body é substituído pelo da montagem; o mostruário da montagem
+    // vale quando o body não traz um
+    @Transactional
+    public Pedido criarPedido(Long montagemId, PedidoRequestDTO request){
+        MontagemMostruario montagem = this.findById(montagemId);
+        validation.validarEditavel(montagem);
+
+        request.setId(null);
+        request.setClienteId(montagem.getCliente().getId());
+        if (request.getMostruarioId() == null && montagem.getMostruario() != null) {
+            request.setMostruarioId(montagem.getMostruario().getId());
+        }
+        validar(request);
+
+        Pedido pedido = pedidoService.create(request);
+        montagem.getPedidos().add(pedido);
+        return pedido;
+    }
+
+    @Transactional
+    public Consignacao criarConsignacao(Long montagemId, ConsignacaoRequestDTO request){
+        MontagemMostruario montagem = this.findById(montagemId);
+        validation.validarEditavel(montagem);
+
+        request.setId(null);
+        request.setClienteId(montagem.getCliente().getId());
+        if (request.getMostruarioId() == null && montagem.getMostruario() != null) {
+            request.setMostruarioId(montagem.getMostruario().getId());
+        }
+        validar(request);
+
+        Consignacao consignacao = consignacaoService.create(request);
+        montagem.getConsignacoes().add(consignacao);
+        return consignacao;
+    }
+
+    // o body chega sem @Valid no controller: o clienteId/mostruarioId podem ser preenchidos aqui antes de validar
+    private void validar(Object request){
+        Set<ConstraintViolation<Object>> violacoes = validator.validate(request);
+        if (!violacoes.isEmpty()) {
+            throw new ItemInvalidoException(violacoes.stream()
+                    .map(v -> v.getMessage())
+                    .sorted()
+                    .collect(Collectors.joining("; ")));
+        }
     }
 
     @Transactional
