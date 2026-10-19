@@ -1,6 +1,7 @@
 package com.manager.app.fornecedor;
 
 import com.manager.app.shared.exception.ObjetoEmUsoException;
+import com.manager.app.shared.exception.ObjetoExistenteException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
 import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.specification.SpecificationUtils;
@@ -34,15 +35,28 @@ public class FornecedorService {
 
     @Transactional
     public Fornecedor create(Fornecedor fornecedor){
+        normalizarNome(fornecedor);
+        if (repository.existsByNomeIgnoreCase(fornecedor.getNome())) {
+            throw new ObjetoExistenteException("Fornecedor existente com este nome: " + fornecedor.getNome());
+        }
         return repository.save(fornecedor);
     }
 
     @Transactional
     public Fornecedor update(Fornecedor fornecedor){
+        normalizarNome(fornecedor);
+        if (repository.existsByNomeIgnoreCaseAndIdNot(fornecedor.getNome(), fornecedor.getId())) {
+            throw new ObjetoExistenteException("Fornecedor existente com este nome: " + fornecedor.getNome());
+        }
         Fornecedor fornecedorUpdate = repository.findById(fornecedor.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Fornecedor não encontrado. id: " + fornecedor.getId()));
         fornecedorUpdate.setNome(fornecedor.getNome());
         fornecedorUpdate.setAtivo(fornecedor.isAtivo());
         return fornecedorUpdate;
+    }
+
+    // espaços nas pontas não contam como diferença de nome
+    private void normalizarNome(Fornecedor fornecedor){
+        if (fornecedor.getNome() != null) fornecedor.setNome(fornecedor.getNome().trim());
     }
 
     @Transactional

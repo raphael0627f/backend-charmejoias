@@ -1,6 +1,7 @@
 package com.manager.app.grupo;
 
 import com.manager.app.shared.exception.ObjetoEmUsoException;
+import com.manager.app.shared.exception.ObjetoExistenteException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
 import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.specification.SpecificationUtils;
@@ -45,6 +46,10 @@ public class GrupoService {
 
     @Transactional
     public Grupo create(Grupo grupo){
+        normalizarNome(grupo);
+        if (repository.existsByNomeIgnoreCaseAndTipo(grupo.getNome(), grupo.getTipo())) {
+            throw new ObjetoExistenteException("Grupo existente com este nome para o tipo " + grupo.getTipo() + ": " + grupo.getNome());
+        }
         return repository.save(grupo);
     }
 
@@ -56,6 +61,10 @@ public class GrupoService {
 
     @Transactional
     public Grupo update(Grupo grupo){
+        normalizarNome(grupo);
+        if (repository.existsByNomeIgnoreCaseAndTipoAndIdNot(grupo.getNome(), grupo.getTipo(), grupo.getId())) {
+            throw new ObjetoExistenteException("Grupo existente com este nome para o tipo " + grupo.getTipo() + ": " + grupo.getNome());
+        }
         Grupo grupoUpdate = repository.findById(grupo.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Grupo não encontrado. id: " + grupo.getId()));
 
         if (grupoUpdate.getTipo() != grupo.getTipo() && emUso(grupoUpdate)) {
@@ -66,6 +75,11 @@ public class GrupoService {
         grupoUpdate.setAtivo(grupo.isAtivo());
         grupoUpdate.setTipo(grupo.getTipo());
         return grupoUpdate;
+    }
+
+    // espaços nas pontas não contam como diferença de nome
+    private void normalizarNome(Grupo grupo){
+        if (grupo.getNome() != null) grupo.setNome(grupo.getNome().trim());
     }
 
     @Transactional
