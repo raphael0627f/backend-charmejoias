@@ -45,6 +45,7 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -350,6 +351,54 @@ public class ConsignacaoService {
         consignacaoUpdate.setUpdatedBy(usuarioAtual);
 
         return consignacaoUpdate;
+    }
+
+    // soma produtos numa consignação existente (usado pela conferência da montagem): se o produto/variação já está
+    // na consignação a quantidade é somada, senão entra um item novo com o preço de venda do produto/variação
+    @Transactional
+    public Consignacao adicionarProdutos(Long id, List<ConsignacaoItemAdicionar> itens){
+        Consignacao consignacao = this.findById(id);
+
+        if (Boolean.TRUE.equals(consignacao.getConfirmada())) {
+            throw new ObjetoEmUsoException("Consignação confirmada não pode ser editada. id: " + consignacao.getId());
+        }
+        if (consignacao.getTipo() != TipoItem.PRODUTO) {
+            throw new ItemInvalidoException("Só é possível adicionar produtos em consignação do tipo PRODUTO. id: " + consignacao.getId());
+        }
+
+        for (ConsignacaoItemAdicionar adicionar : itens) {
+            var produto = produtoService.findByIdAndAtivo(adicionar.produtoId());
+            ProdutoVariacao variacao = resolverProdutoVariacao(adicionar.produtoVariacaoId(), produto.getId());
+
+            ConsignacaoProduto existente = consignacao.getProdutos().stream()
+                    .filter(p -> p.getProduto() != null && p.getProduto().getId().equals(produto.getId()))
+                    .filter(p -> Objects.equals(p.getProdutoVariacao() != null ? p.getProdutoVariacao().getId() : null, adicionar.produtoVariacaoId()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (existente != null) {
+                existente.setQuantidade(existente.getQuantidade() + adicionar.quantidade());
+            } else {
+                BigDecimal preco = variacao != null && variacao.getPrecoVenda() != null ? variacao.getPrecoVenda() : produto.getPrecoVenda();
+                if (preco == null || preco.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new ItemInvalidoException("O produto " + produto.getNome() + " não tem preço de venda cadastrado; cadastre o preço antes de adicioná-lo à consignação");
+                }
+                ConsignacaoProduto novo = new ConsignacaoProduto();
+                novo.setProduto(produto);
+                novo.setProdutoVariacao(variacao);
+                novo.setQuantidade(adicionar.quantidade());
+                novo.setPreco(preco);
+                consignacao.adicionarProduto(novo);
+            }
+        }
+
+        // mesmo motivo do update: sem isso updatedAt/updatedBy não mudam numa edição só de produtos
+        LocalDateTime agora = LocalDateTime.now();
+        var usuarioAtual = usuarioAuditorAware.getCurrentAuditor().orElse(null);
+        repository.tocarAtualizacao(consignacao.getId(), agora, usuarioAtual);
+        consignacao.setUpdatedAt(agora);
+        consignacao.setUpdatedBy(usuarioAtual);
+        return consignacao;
     }
 
     @Transactional

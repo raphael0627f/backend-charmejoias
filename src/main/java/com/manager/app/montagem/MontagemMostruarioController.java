@@ -55,6 +55,19 @@ public class MontagemMostruarioController {
         return ResponseEntity.ok(mapper.toResponseDTO(service.findById(id)));
     }
 
+    // conferência dos produtos dos pedidos vs. consignações da montagem (calculada a cada chamada)
+    @GetMapping(value = "/{id}/conferencia")
+    public ResponseEntity<com.manager.app.montagem.dto.MontagemConferenciaDTO> conferencia(@PathVariable Long id){
+        return ResponseEntity.ok(service.conferir(id));
+    }
+
+    // adiciona na consignação escolhida os produtos dos pedidos que ainda não estão nas consignações da montagem
+    @PostMapping(value = "/{id}/consignacoes/{consignacaoId}/adicionar-pendentes")
+    @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
+    public ResponseEntity<com.manager.app.montagem.dto.MontagemConferenciaDTO> adicionarPendentes(@PathVariable Long id, @PathVariable Long consignacaoId){
+        return ResponseEntity.ok(service.adicionarPendentes(id, consignacaoId));
+    }
+
     @PostMapping
     @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
     public ResponseEntity<MontagemResponseDTO> create(@RequestBody @Valid MontagemRequestDTO request){

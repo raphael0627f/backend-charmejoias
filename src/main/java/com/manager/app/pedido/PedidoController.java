@@ -146,6 +146,14 @@ public class PedidoController {
         return ResponseEntity.ok(mapper.toResponseDTO(pedido));
     }
 
+    // vincula um item avulso a um produto cadastrado (só com o pedido em separação)
+    @PutMapping(value = "/{id}/itens/{itemId}/produto")
+    public ResponseEntity<PedidoResponseDTO> vincularProdutoItem(@PathVariable Long id, @PathVariable Long itemId,
+                                                                  @RequestBody @Valid com.manager.app.pedido.dto.PedidoItemProdutoRequestDTO request){
+        Pedido pedido = service.vincularProdutoItem(id, itemId, request.getProdutoId(), request.getProdutoVariacaoId());
+        return ResponseEntity.ok(mapper.toResponseDTO(pedido));
+    }
+
     @PutMapping(value = "/{id}/itens/{itemId}/cancelar")
     public ResponseEntity<PedidoResponseDTO> cancelarItem(@PathVariable Long id, @PathVariable Long itemId,
                                                            @RequestBody @Valid PedidoItemCancelamentoRequestDTO request){

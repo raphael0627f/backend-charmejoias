@@ -3,7 +3,9 @@ package com.manager.app.montagem;
 import com.manager.app.cliente.ClienteService;
 import com.manager.app.consignacao.Consignacao;
 import com.manager.app.consignacao.ConsignacaoService;
+import com.manager.app.consignacao.ConsignacaoItemAdicionar;
 import com.manager.app.consignacao.dto.ConsignacaoRequestDTO;
+import com.manager.app.montagem.dto.MontagemConferenciaDTO;
 import com.manager.app.pedido.dto.PedidoRequestDTO;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import jakarta.validation.ConstraintViolation;
@@ -42,6 +44,7 @@ public class MontagemMostruarioService {
     private final ConsignacaoService consignacaoService;
     private final PedidoService pedidoService;
     private final Validator validator;
+    private final MontagemConferencia conferencia;
 
     public Page<MontagemMostruario> findAll(String busca, ModoBusca modoBusca, StatusMontagem status, UUID clienteId,
                                             LocalDate dataEntregaDe, LocalDate dataEntregaAte, Pageable pageable){
@@ -193,6 +196,36 @@ public class MontagemMostruarioService {
         }
     }
 
+    // conferência sempre recalculada (pedidos/consignações podem mudar a qualquer momento)
+    @Transactional
+    public MontagemConferenciaDTO conferir(Long id){
+        return conferencia.calcular(this.findById(id));
+    }
+
+    // acrescenta, na consignação escolhida, só o que falta dos produtos dos pedidos (soma das consignações da
+    // montagem vs. soma dos pedidos); o preço é o de venda do produto/variação, como no cadastro da consignação
+    @Transactional
+    public MontagemConferenciaDTO adicionarPendentes(Long montagemId, Long consignacaoId){
+        MontagemMostruario montagem = this.findById(montagemId);
+        validation.validarEditavel(montagem);
+        montagem.getConsignacoes().stream()
+                .filter(c -> c.getId().equals(consignacaoId))
+                .findFirst()
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação " + consignacaoId + " não está vinculada à montagem " + montagemId));
+
+        // só entram produtos de pedidos já separados
+        var faltantes = conferencia.calcular(montagem).produtos().stream()
+                .filter(l -> l.faltandoSeparados() > 0)
+                .toList();
+        if (faltantes.isEmpty()) {
+            throw new ItemInvalidoException("Não há produtos pendentes de pedidos separados para adicionar às consignações da montagem " + montagemId);
+        }
+        consignacaoService.adicionarProdutos(consignacaoId, faltantes.stream()
+                .map(l -> new ConsignacaoItemAdicionar(l.produtoId(), l.produtoVariacaoId(), l.faltandoSeparados()))
+                .toList());
+        return conferencia.calcular(montagem);
+    }
+
     @Transactional
     public MontagemMostruario iniciar(Long id){
         MontagemMostruario montagem = this.findById(id);
@@ -207,6 +240,7 @@ public class MontagemMostruarioService {
     public MontagemMostruario concluir(Long id){
         MontagemMostruario montagem = this.findById(id);
         validation.validarConcluir(montagem);
+        validation.validarConferencia(conferencia.calcular(montagem));
         montagem.setStatus(StatusMontagem.CONCLUIDA);
         montagem.setConcluidaEm(LocalDateTime.now());
         return montagem;

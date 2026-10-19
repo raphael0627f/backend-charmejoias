@@ -388,7 +388,44 @@ public class PedidoService {
                 .filter(produto -> produto.getId().equals(itemId))
                 .findFirst()
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Item não encontrado no pedido. id: " + itemId));
+        if (separado) {
+            validation.validarItemVinculado(pedido, item);
+        }
         item.setSeparado(separado);
+        return pedido;
+    }
+
+    // vincula um item avulso a um produto cadastrado (obrigatório na separação): o item passa a apontar
+    // para o produto/variação e o grupo passa a vir do produto; a descrição digitada continua guardada
+    @Transactional
+    public Pedido vincularProdutoItem(Long pedidoId, Long itemId, java.util.UUID produtoId, Long produtoVariacaoId){
+        Pedido pedido = repository.findByIdForUpdate(pedidoId)
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Pedido não encontrada. id: " + pedidoId));
+
+        PedidoProduto item = pedido.getProdutos().stream()
+                .filter(produto -> produto.getId().equals(itemId))
+                .findFirst()
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Item não encontrado no pedido. id: " + itemId));
+        validation.validarVinculoProduto(pedido, item);
+
+        var produto = produtoService.findByIdAndAtivo(produtoId);
+        ProdutoVariacao variacao = resolverProdutoVariacao(produtoVariacaoId, produto.getId());
+        if (variacao != null && !variacao.isAtivo()) {
+            throw new ItemInvalidoException("A variação informada está inativa. id: " + variacao.getId());
+        }
+        boolean temVariacoesAtivas = produto.getVariacoes().stream().anyMatch(ProdutoVariacao::isAtivo);
+        if (variacao == null && temVariacoesAtivas) {
+            throw new ItemInvalidoException("Informe a variação do produto " + produto.getNome());
+        }
+
+        boolean trocou = item.getProduto() != null;
+        item.setProduto(produto);
+        item.setProdutoVariacao(variacao);
+        item.setGrupo(null);
+        if (trocou) {
+            // o produto mudou: o que já havia sido separado não vale mais, precisa separar de novo
+            item.setSeparado(false);
+        }
         return pedido;
     }
 

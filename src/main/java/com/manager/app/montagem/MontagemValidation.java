@@ -5,7 +5,12 @@ import com.manager.app.pedido.Pedido;
 import com.manager.app.pedido.StatusPedido;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoEmUsoException;
+import com.manager.app.montagem.dto.MontagemConferenciaDTO;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -56,6 +61,29 @@ public class MontagemValidation {
         if (montagem.getConsignacoes().isEmpty()) {
             throw new ItemInvalidoException("Para concluir a montagem é necessário ao menos uma consignação vinculada");
         }
+    }
+
+    // só conclui com todos os pedidos (não cancelados) separados, sem item avulso pendente de vínculo e com
+    // todos os produtos dos pedidos já nas consignações vinculadas
+    public void validarConferencia(MontagemConferenciaDTO conferencia){
+        if (conferencia.ok()) return;
+        List<String> motivos = new ArrayList<>();
+        if (!conferencia.pedidosNaoSeparados().isEmpty()) {
+            motivos.add("pedidos ainda não separados: " + conferencia.pedidosNaoSeparados().stream()
+                    .map(p -> String.valueOf(p.pedidoId())).collect(Collectors.joining(", ")));
+        }
+        if (!conferencia.avulsosSemVinculo().isEmpty()) {
+            motivos.add("itens avulsos sem produto vinculado nos pedidos: " + conferencia.avulsosSemVinculo().stream()
+                    .map(a -> String.valueOf(a.pedidoId())).distinct().collect(Collectors.joining(", ")));
+        }
+        List<String> faltantes = conferencia.produtos().stream()
+                .filter(l -> l.faltando() > 0)
+                .map(l -> l.nome() + " (faltam " + l.faltando() + ")")
+                .toList();
+        if (!faltantes.isEmpty()) {
+            motivos.add("produtos dos pedidos que não estão nas consignações: " + String.join(", ", faltantes));
+        }
+        throw new ItemInvalidoException("Não é possível concluir a montagem - " + String.join("; ", motivos));
     }
 
     public void validarCancelar(MontagemMostruario montagem, String motivo){

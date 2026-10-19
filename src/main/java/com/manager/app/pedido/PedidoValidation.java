@@ -41,9 +41,50 @@ public class PedidoValidation {
         }
     }
 
+    // item avulso = sem produto nem joia cadastrados (só descrição/grupo digitados)
+    public boolean itemAvulso(PedidoProduto item){
+        return item.getProduto() == null && item.getJoia() == null;
+    }
+
+    // um item avulso precisa ser vinculado a um produto cadastrado antes de ser separado
+    public void validarItemVinculado(Pedido pedido, PedidoProduto item){
+        if (itemAvulso(item)) {
+            throw new ItemInvalidoException("O item avulso \"" + item.getDescricao() + "\" do pedido " + pedido.getId()
+                    + " precisa ser vinculado a um produto cadastrado antes de ser separado");
+        }
+    }
+
+    // item que nasceu avulso e já foi vinculado a um produto: a descrição digitada continua guardada (item
+    // cadastrado normal sempre tem descricao nula). Esse vínculo ainda pode ser trocado na separação
+    public boolean itemVinculadoDeAvulso(PedidoProduto item){
+        return item.getProduto() != null && item.getDescricao() != null && !item.getDescricao().isBlank();
+    }
+
+    // o vínculo do item avulso com um produto só é feito (ou trocado) durante a separação
+    public void validarVinculoProduto(Pedido pedido, PedidoProduto item){
+        if (pedido.getStatus() != StatusPedido.SEPARACAO) {
+            throw new ItemInvalidoException("O item só pode ser vinculado a um produto com o pedido em separação. id: " + pedido.getId());
+        }
+        if (pedido.getTipo() == TipoItem.JOIA) {
+            throw new ItemInvalidoException("Pedidos do tipo JOIA não têm item avulso. id: " + pedido.getId());
+        }
+        if (!itemAvulso(item) && !itemVinculadoDeAvulso(item)) {
+            throw new ItemInvalidoException("O item " + item.getId() + " é um produto cadastrado do pedido e não pode ser trocado na separação");
+        }
+    }
+
     // o pedido só vira SEPARADO quando todos os itens ainda disponíveis (não totalmente
-    // cancelados) já foram separados
+    // cancelados) já foram separados - e nenhum item avulso fica sem vínculo com produto
     public void validarTodosSeparados(Pedido pedido){
+        pedido.getProdutos().stream()
+                .filter(item -> {
+                    int cancelada = item.getQuantidadeCancelada() != null ? item.getQuantidadeCancelada() : 0;
+                    return item.getQuantidade() - cancelada > 0;
+                })
+                .filter(this::itemAvulso)
+                .findFirst()
+                .ifPresent(item -> validarItemVinculado(pedido, item));
+
         boolean faltaSeparar = pedido.getProdutos().stream().anyMatch(item -> {
             int cancelada = item.getQuantidadeCancelada() != null ? item.getQuantidadeCancelada() : 0;
             boolean disponivel = item.getQuantidade() - cancelada > 0;
