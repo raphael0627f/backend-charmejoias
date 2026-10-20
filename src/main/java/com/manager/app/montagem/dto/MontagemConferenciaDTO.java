@@ -12,7 +12,8 @@ public record MontagemConferenciaDTO(
         boolean ok,
         List<ProdutoLinha> produtos,
         List<AvulsoSemVinculo> avulsosSemVinculo,
-        List<PedidoNaoSeparado> pedidosNaoSeparados) {
+        List<PedidoNaoSeparado> pedidosNaoSeparados,
+        List<String> instrucoesPendentes) {
 
     // necessario = soma (qtd - cancelada) nos pedidos; naConsignacao = soma nas consignações vinculadas;
     // faltandoSeparados = o que falta considerando só os pedidos já separados - é o que "adicionar faltantes"

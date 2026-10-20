@@ -40,7 +40,10 @@ public class MontagemMostruario {
     @JoinColumn(name = "mostruario_id")
     private Mostruario mostruario;
 
-    private String instrucoes;
+    // lista de instruções que o usuário marca como feitas (a montagem só conclui com todas feitas)
+    @OneToMany(mappedBy = "montagem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("ordem")
+    private List<MontagemInstrucao> instrucoes = new ArrayList<>();
 
     @Column(name = "data_entrega")
     private LocalDate dataEntrega;

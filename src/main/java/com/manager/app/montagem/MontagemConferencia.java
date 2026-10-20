@@ -112,7 +112,13 @@ public class MontagemConferencia {
                         new ArrayList<>(a.pedidosIds)))
                 .toList();
 
-        boolean ok = avulsos.isEmpty() && naoSeparados.isEmpty() && linhas.stream().allMatch(l -> l.faltando() == 0);
-        return new MontagemConferenciaDTO(ok, linhas, avulsos, naoSeparados);
+        List<String> instrucoesPendentes = montagem.getInstrucoes().stream()
+                .filter(i -> !i.isConcluida())
+                .map(MontagemInstrucao::getTexto)
+                .toList();
+
+        boolean ok = avulsos.isEmpty() && naoSeparados.isEmpty() && instrucoesPendentes.isEmpty()
+                && linhas.stream().allMatch(l -> l.faltando() == 0);
+        return new MontagemConferenciaDTO(ok, linhas, avulsos, naoSeparados, instrucoesPendentes);
     }
 }

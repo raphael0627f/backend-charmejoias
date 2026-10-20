@@ -114,7 +114,7 @@ public class MontagemMostruarioController {
     }
 
     // cria o pedido/consignação já vinculado à montagem; body igual ao de POST /pedidos e POST /consignacoes
-    // (o clienteId é sempre o da montagem; o mostruário da montagem vale se o body não trouxer um)
+    // (o clienteId é sempre o da montagem; o mostruário vem só do body, não é herdado da montagem)
     @PostMapping(value = "/{id}/pedidos")
     @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
     public ResponseEntity<PedidoResponseDTO> criarPedido(@PathVariable Long id, @RequestBody PedidoRequestDTO request){
@@ -129,6 +129,14 @@ public class MontagemMostruarioController {
         Consignacao consignacao = service.criarConsignacao(id, request);
         URI location = ServletUriComponentsBuilder.fromCurrentContextPath().path("/consignacoes/{id}").buildAndExpand(consignacao.getId()).toUri();
         return ResponseEntity.created(location).body(consignacaoMapper.toResponseDTO(consignacao));
+    }
+
+    // marca/desmarca uma instrução da montagem como feita
+    @PatchMapping(value = "/{id}/instrucoes/{instrucaoId}")
+    @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
+    public ResponseEntity<MontagemResponseDTO> marcarInstrucao(@PathVariable Long id, @PathVariable Long instrucaoId,
+                                                               @RequestBody @Valid com.manager.app.montagem.dto.MontagemInstrucaoMarcacaoRequestDTO request){
+        return ResponseEntity.ok(mapper.toResponseDTO(service.marcarInstrucao(id, instrucaoId, request.getConcluida())));
     }
 
     @PatchMapping(value = "/{id}/iniciar")

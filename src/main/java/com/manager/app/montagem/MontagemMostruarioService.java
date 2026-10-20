@@ -4,8 +4,12 @@ import com.manager.app.cliente.ClienteService;
 import com.manager.app.consignacao.Consignacao;
 import com.manager.app.consignacao.ConsignacaoService;
 import com.manager.app.consignacao.ConsignacaoItemAdicionar;
+import com.manager.app.consignacao.ConsignacaoRepository;
+import com.manager.app.pedido.PedidoRepository;
+import com.manager.app.pedido.StatusPedido;
 import com.manager.app.consignacao.dto.ConsignacaoRequestDTO;
 import com.manager.app.montagem.dto.MontagemConferenciaDTO;
+import com.manager.app.montagem.dto.MontagemInstrucaoRequestDTO;
 import com.manager.app.pedido.dto.PedidoRequestDTO;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import jakarta.validation.ConstraintViolation;
@@ -19,6 +23,8 @@ import com.manager.app.security.UsuarioAuditorAware;
 import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
 import com.manager.app.shared.specification.SpecificationUtils;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +34,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -45,13 +54,14 @@ public class MontagemMostruarioService {
     private final PedidoService pedidoService;
     private final Validator validator;
     private final MontagemConferencia conferencia;
+    private final ConsignacaoRepository consignacaoRepository;
+    private final PedidoRepository pedidoRepository;
 
     public Page<MontagemMostruario> findAll(String busca, ModoBusca modoBusca, StatusMontagem status, UUID clienteId,
                                             LocalDate dataEntregaDe, LocalDate dataEntregaAte, Pageable pageable){
         Specification<MontagemMostruario> spec = null;
         if (busca != null && !busca.isBlank()) {
-            spec = SpecificationUtils.and(spec, (root, query, cb) ->
-                    SpecificationUtils.likeIgnoreCase(cb, root.get("cliente").get("nome"), busca, modoBusca));
+            spec = SpecificationUtils.and(spec, comBusca(busca, modoBusca));
         }
         if (status != null) {
             spec = SpecificationUtils.and(spec, (root, query, cb) -> cb.equal(root.get("status"), status));
@@ -68,6 +78,25 @@ public class MontagemMostruarioService {
         return repository.findAll(spec, pageable);
     }
 
+    // mesma busca da listagem de consignações: número da montagem, código/nome do cliente e o kit (descrição do
+    // mostruário, ex.: "5245" - o que o usuário vê na tela, não o id interno)
+    private Specification<MontagemMostruario> comBusca(String busca, ModoBusca modoBusca){
+        Long comoNumero = SpecificationUtils.comoLong(busca);
+        return (root, query, cb) -> {
+            var cliente = root.join("cliente", JoinType.LEFT);
+            var mostruario = root.join("mostruario", JoinType.LEFT);
+            List<Predicate> predicates = new ArrayList<>(List.of(
+                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca, modoBusca),
+                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca, modoBusca),
+                    SpecificationUtils.likeIgnoreCase(cb, mostruario.get("descricao"), busca, modoBusca)
+            ));
+            if (comoNumero != null) {
+                predicates.add(cb.equal(root.get("id"), comoNumero));
+            }
+            return cb.or(predicates.toArray(new Predicate[0]));
+        };
+    }
+
     public MontagemMostruario findById(Long id){
         return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Montagem não encontrada. id: " + id));
     }
@@ -76,15 +105,78 @@ public class MontagemMostruarioService {
         return mostruarioId == null ? null : mostruarioService.findById(mostruarioId);
     }
 
+    // mantém as instruções enviadas (com id = existentes, preservando se já foram feitas), cria as novas e remove as que
+    // não vieram; a ordem é a da lista enviada
+    private void sincronizarInstrucoes(MontagemMostruario montagem, List<MontagemInstrucaoRequestDTO> enviadas){
+        Map<Long, MontagemInstrucao> atuais = montagem.getInstrucoes().stream()
+                .collect(Collectors.toMap(MontagemInstrucao::getId, i -> i));
+        List<MontagemInstrucao> resultado = new ArrayList<>();
+        int ordem = 0;
+        for (MontagemInstrucaoRequestDTO dto : enviadas != null ? enviadas : List.<MontagemInstrucaoRequestDTO>of()) {
+            if (dto.getTexto() == null || dto.getTexto().isBlank()) continue;
+            MontagemInstrucao instrucao = null;
+            if (dto.getId() != null) {
+                instrucao = atuais.get(dto.getId());
+                if (instrucao == null) {
+                    throw new ObjetoNaoEncontradoException("Instrução " + dto.getId() + " não pertence à montagem " + montagem.getId());
+                }
+            }
+            if (instrucao == null) {
+                instrucao = new MontagemInstrucao();
+                instrucao.setMontagem(montagem);
+            }
+            instrucao.setTexto(dto.getTexto().trim());
+            instrucao.setOrdem(ordem++);
+            resultado.add(instrucao);
+        }
+        montagem.getInstrucoes().clear();
+        montagem.getInstrucoes().addAll(resultado);
+    }
+
+    // ao criar a montagem, vincula sozinho (sem perguntar) as consignações e os pedidos do mesmo cliente e da mesma data
+    // de entrega: consignação só se ainda não confirmada, pedido só se não cancelado, e nunca o que já está em outra montagem
+    private void vincularExistentesDoCliente(MontagemMostruario montagem){
+        UUID clienteId = montagem.getCliente().getId();
+        LocalDate dataEntrega = montagem.getDataEntrega();
+
+        for (Consignacao consignacao : consignacaoRepository.findByCliente_IdAndDataEntregaAndConfirmadaFalse(clienteId, dataEntrega)) {
+            if (repository.findByConsignacoes_Id(consignacao.getId()).isEmpty()) {
+                montagem.getConsignacoes().add(consignacao);
+            }
+        }
+        for (Pedido pedido : pedidoRepository.findByCliente_IdAndDataEntregaAndStatusNot(clienteId, dataEntrega, StatusPedido.CANCELADO)) {
+            if (repository.findByPedidos_Id(pedido.getId()).isEmpty()) {
+                montagem.getPedidos().add(pedido);
+            }
+        }
+    }
+
+    // marcar/desmarcar uma instrução como feita: não depende de salvar o formulário da montagem
+    @Transactional
+    public MontagemMostruario marcarInstrucao(Long montagemId, Long instrucaoId, boolean concluida){
+        MontagemMostruario montagem = this.findById(montagemId);
+        validation.validarEditavel(montagem);
+        MontagemInstrucao instrucao = montagem.getInstrucoes().stream()
+                .filter(i -> i.getId().equals(instrucaoId))
+                .findFirst()
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Instrução " + instrucaoId + " não pertence à montagem " + montagemId));
+        instrucao.setConcluida(concluida);
+        instrucao.setConcluidaEm(concluida ? LocalDateTime.now() : null);
+        instrucao.setConcluidaPor(concluida ? auditorAware.getCurrentAuditor().orElse(null) : null);
+        return montagem;
+    }
+
     @Transactional
     public MontagemMostruario create(MontagemRequestDTO request){
         MontagemMostruario montagem = new MontagemMostruario();
         montagem.setCliente(clienteService.findByIdAndAtivo(request.getClienteId()));
         montagem.setMostruario(resolverMostruario(request.getMostruarioId()));
-        montagem.setInstrucoes(request.getInstrucoes());
+        sincronizarInstrucoes(montagem, request.getInstrucoes());
         montagem.setDataEntrega(request.getDataEntrega());
         montagem.setStatus(StatusMontagem.ABERTA);
-        return repository.save(montagem);
+        MontagemMostruario salva = repository.save(montagem);
+        vincularExistentesDoCliente(salva);
+        return salva;
     }
 
     @Transactional
@@ -97,7 +189,7 @@ public class MontagemMostruarioService {
             montagem.setCliente(clienteService.findByIdAndAtivo(request.getClienteId()));
         }
         montagem.setMostruario(resolverMostruario(request.getMostruarioId()));
-        montagem.setInstrucoes(request.getInstrucoes());
+        sincronizarInstrucoes(montagem, request.getInstrucoes());
         montagem.setDataEntrega(request.getDataEntrega());
         return montagem;
     }
@@ -149,8 +241,7 @@ public class MontagemMostruarioService {
     }
 
     // cria o pedido pelo PedidoService (mesmas regras de itens/preços) já para o cliente da montagem e o vincula,
-    // tudo na mesma transação. O clienteId do body é substituído pelo da montagem; o mostruário da montagem
-    // vale quando o body não traz um
+    // tudo na mesma transação. O clienteId do body é substituído pelo da montagem; o mostruário vem só do body
     @Transactional
     public Pedido criarPedido(Long montagemId, PedidoRequestDTO request){
         MontagemMostruario montagem = this.findById(montagemId);
@@ -158,9 +249,6 @@ public class MontagemMostruarioService {
 
         request.setId(null);
         request.setClienteId(montagem.getCliente().getId());
-        if (request.getMostruarioId() == null && montagem.getMostruario() != null) {
-            request.setMostruarioId(montagem.getMostruario().getId());
-        }
         validar(request);
 
         Pedido pedido = pedidoService.create(request);
@@ -175,9 +263,6 @@ public class MontagemMostruarioService {
 
         request.setId(null);
         request.setClienteId(montagem.getCliente().getId());
-        if (request.getMostruarioId() == null && montagem.getMostruario() != null) {
-            request.setMostruarioId(montagem.getMostruario().getId());
-        }
         validar(request);
 
         Consignacao consignacao = consignacaoService.create(request);

@@ -39,7 +39,10 @@ ABERTA ──iniciar──▶ EM_MONTAGEM ──concluir──▶ CONCLUIDA
   "clienteId": "uuid",
   "cliente": { "codigo": "123", "nome": "Fulana de Tal" },
   "mostruario": { "id": 1, "descricao": "Mostruário Prata 001", "createdAt": "...", "updatedAt": "..." },
-  "instrucoes": "Separar peças douradas em caixa à parte",
+  "instrucoes": [
+    { "id": 1, "texto": "Separar peças douradas em caixa à parte", "concluida": true, "concluidaEm": "2026-10-20T10:00:00", "concluidaPor": { "...": "UsuarioResumoDTO" } },
+    { "id": 2, "texto": "Conferir a etiqueta de cada produto", "concluida": false, "concluidaEm": null, "concluidaPor": null }
+  ],
   "dataEntrega": "2026-11-05",
   "status": "EM_MONTAGEM",
   "motivoCancelamento": null,
@@ -73,11 +76,16 @@ ABERTA ──iniciar──▶ EM_MONTAGEM ──concluir──▶ CONCLUIDA
 ### Cadastro
 - `POST /montagens` — `201` + `Location`.
   ```json
-  { "clienteId": "uuid", "mostruarioId": 1, "instrucoes": "texto", "dataEntrega": "2026-11-05" }
+  { "clienteId": "uuid", "mostruarioId": 1, "instrucoes": [ { "texto": "Separar peças douradas" } ], "dataEntrega": "2026-11-05" }
   ```
-  - `clienteId` (cliente ativo) e `dataEntrega` obrigatórios; `mostruarioId` e `instrucoes` opcionais. Nasce `ABERTA`.
+  - `clienteId` (cliente ativo) e `dataEntrega` obrigatórios; `mostruarioId` e `instrucoes` opcionais. Nasce `ABERTA`. `instrucoes` é a lista completa de itens (`texto`, e `id` ao editar uma existente): na edição, os itens com `id` são mantidos (preservando se já foram feitos), os sem `id` são criados e os que não vierem são removidos.
+  - **Vínculo automático:** ao criar, o backend já vincula (sem perguntar) as consignações **não confirmadas** e os pedidos **não cancelados** do mesmo cliente com a mesma `dataEntrega`, exceto os que já estão em outra montagem. A resposta já traz as listas preenchidas.
 - `PUT /montagens` — mesmo corpo + `"id"`. Troca de `clienteId` só em `ABERTA` e sem vínculos (senão `400`).
 - `DELETE /montagens/{id}` — `204`. `400` se não estiver `ABERTA`; `409` se tiver vínculos.
+
+### Instruções (checklist)
+- `PATCH /montagens/{id}/instrucoes/{instrucaoId}` — `{ "concluida": true }` marca/desmarca a instrução como feita (grava `concluidaEm`/`concluidaPor`). Retorna a montagem. Só com a montagem `ABERTA` ou `EM_MONTAGEM`. Não depende de salvar o `PUT /montagens`.
+- A montagem **só pode ser concluída com todas as instruções marcadas como feitas**; `GET /montagens/{id}/conferencia` lista as pendentes em `instrucoesPendentes` e conta no `ok`.
 
 ### Andamento
 - `PATCH /montagens/{id}/iniciar` — sem corpo. `ABERTA → EM_MONTAGEM`.
@@ -105,7 +113,7 @@ Dica de tela: ao escolher o item a vincular, listar `GET /consignacoes?clienteId
 
 Particularidades:
 - o `clienteId` do corpo é **ignorado e substituído** pelo cliente da montagem (pode omitir);
-- se o corpo não trouxer `mostruarioId` e a montagem tiver um mostruário, ele é usado (na consignação o mostruário é obrigatório: sem nenhum dos dois, `400 "Mostruário é obrigatório"`);
+- o mostruário **não** é herdado da montagem: vale o `mostruarioId` do corpo (opcional no pedido; na consignação é obrigatório, sem ele `400 "Mostruário é obrigatório"`);
 - o `id` do corpo é ignorado (sempre cria);
 - as validações de itens, preços etc. são as mesmas de `/pedidos` e `/consignacoes`; erros de campo voltam como `400` com as mensagens separadas por `;`;
 - a criação e o vínculo são atômicos: se qualquer parte falhar, nada é salvo;

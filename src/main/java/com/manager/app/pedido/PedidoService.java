@@ -398,7 +398,7 @@ public class PedidoService {
     // vincula um item avulso a um produto cadastrado (obrigatório na separação): o item passa a apontar
     // para o produto/variação e o grupo passa a vir do produto; a descrição digitada continua guardada
     @Transactional
-    public Pedido vincularProdutoItem(Long pedidoId, Long itemId, java.util.UUID produtoId, Long produtoVariacaoId){
+    public Pedido vincularProdutoItem(Long pedidoId, Long itemId, java.util.UUID produtoId, Long produtoVariacaoId, Integer quantidade){
         Pedido pedido = repository.findByIdForUpdate(pedidoId)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Pedido não encontrada. id: " + pedidoId));
 
@@ -418,14 +418,44 @@ public class PedidoService {
             throw new ItemInvalidoException("Informe a variação do produto " + produto.getNome());
         }
 
-        boolean trocou = item.getProduto() != null;
-        item.setProduto(produto);
-        item.setProdutoVariacao(variacao);
-        item.setGrupo(null);
-        if (trocou) {
-            // o produto mudou: o que já havia sido separado não vale mais, precisa separar de novo
-            item.setSeparado(false);
+        int cancelada = item.getQuantidadeCancelada() != null ? item.getQuantidadeCancelada() : 0;
+        int disponivel = item.getQuantidade() - cancelada;
+        if (disponivel <= 0) {
+            throw new ItemInvalidoException("O item " + item.getId() + " está totalmente cancelado e não pode ser vinculado a um produto");
         }
+        int quantidadeVinculo = quantidade != null ? quantidade : disponivel;
+        if (quantidadeVinculo < 1 || quantidadeVinculo > disponivel) {
+            throw new ItemInvalidoException("A quantidade a vincular deve estar entre 1 e " + disponivel);
+        }
+
+        if (quantidadeVinculo == disponivel && cancelada == 0) {
+            // todas as unidades vão para o produto: o próprio item é vinculado
+            boolean trocou = item.getProduto() != null;
+            item.setProduto(produto);
+            item.setProdutoVariacao(variacao);
+            item.setGrupo(null);
+            if (trocou) {
+                // o produto mudou: o que já havia sido separado não vale mais, precisa separar de novo
+                item.setSeparado(false);
+            }
+            return pedido;
+        }
+
+        // só parte das unidades: o item é dividido. Uma linha nova leva a quantidade vinculada ao produto e o
+        // item original fica com o restante (ainda avulso, ou com o produto anterior). O valor total do pedido
+        // não muda, pois o preço unitário é o mesmo. Unidades já canceladas ficam no item original
+        PedidoProduto vinculado = new PedidoProduto();
+        vinculado.setDescricao(item.getDescricao());
+        vinculado.setVariacao(item.getVariacao());
+        vinculado.setPreco(item.getPreco());
+        vinculado.setQuantidade(quantidadeVinculo);
+        vinculado.setQuantidadeCancelada(0);
+        vinculado.setSeparado(false);
+        vinculado.setProduto(produto);
+        vinculado.setProdutoVariacao(variacao);
+        vinculado.setGrupo(null);
+        item.setQuantidade(item.getQuantidade() - quantidadeVinculo);
+        pedido.adicionarProduto(vinculado);
         return pedido;
     }
 

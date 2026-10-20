@@ -150,7 +150,7 @@ public class PedidoController {
     @PutMapping(value = "/{id}/itens/{itemId}/produto")
     public ResponseEntity<PedidoResponseDTO> vincularProdutoItem(@PathVariable Long id, @PathVariable Long itemId,
                                                                   @RequestBody @Valid com.manager.app.pedido.dto.PedidoItemProdutoRequestDTO request){
-        Pedido pedido = service.vincularProdutoItem(id, itemId, request.getProdutoId(), request.getProdutoVariacaoId());
+        Pedido pedido = service.vincularProdutoItem(id, itemId, request.getProdutoId(), request.getProdutoVariacaoId(), request.getQuantidade());
         return ResponseEntity.ok(mapper.toResponseDTO(pedido));
     }
 

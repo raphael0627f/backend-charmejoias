@@ -1,11 +1,13 @@
 package com.manager.app.montagem.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -21,7 +23,9 @@ public class MontagemRequestDTO {
     // opcional
     private Long mostruarioId;
 
-    private String instrucoes;
+    // lista de instruções; as que não vierem na edição são removidas
+    @Valid
+    private List<MontagemInstrucaoRequestDTO> instrucoes;
 
     @NotNull(message = "Data de entrega é obrigatória")
     private LocalDate dataEntrega;

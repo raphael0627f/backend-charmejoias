@@ -25,7 +25,7 @@ public class MontagemResponseDTO {
     private UUID clienteId;
     private ClienteResumoDTO cliente;
     private MostruarioResponseDTO mostruario;
-    private String instrucoes;
+    private List<MontagemInstrucaoResponseDTO> instrucoes;
     private LocalDate dataEntrega;
     private StatusMontagem status;
     private String motivoCancelamento;

@@ -76,6 +76,9 @@ public class MontagemValidation {
             motivos.add("itens avulsos sem produto vinculado nos pedidos: " + conferencia.avulsosSemVinculo().stream()
                     .map(a -> String.valueOf(a.pedidoId())).distinct().collect(Collectors.joining(", ")));
         }
+        if (!conferencia.instrucoesPendentes().isEmpty()) {
+            motivos.add("instruções ainda não marcadas como feitas: " + String.join(", ", conferencia.instrucoesPendentes()));
+        }
         List<String> faltantes = conferencia.produtos().stream()
                 .filter(l -> l.faltando() > 0)
                 .map(l -> l.nome() + " (faltam " + l.faltando() + ")")
