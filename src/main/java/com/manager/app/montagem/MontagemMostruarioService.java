@@ -56,6 +56,18 @@ public class MontagemMostruarioService {
     private final MontagemConferencia conferencia;
     private final ConsignacaoRepository consignacaoRepository;
     private final PedidoRepository pedidoRepository;
+    private final MontagemItemIncluidoRepository itemIncluidoRepository;
+
+    // quantidades de consignações/pedidos por montagem para a listagem (uma consulta cada, para a página inteira)
+    public Map<Long, Integer> contarConsignacoes(List<Long> ids){
+        return ids.isEmpty() ? Map.of() : repository.contarConsignacoes(ids).stream()
+                .collect(Collectors.toMap(MontagemContagemProjecao::getMontagemId, c -> c.getTotal().intValue()));
+    }
+
+    public Map<Long, Integer> contarPedidos(List<Long> ids){
+        return ids.isEmpty() ? Map.of() : repository.contarPedidos(ids).stream()
+                .collect(Collectors.toMap(MontagemContagemProjecao::getMontagemId, c -> c.getTotal().intValue()));
+    }
 
     public Page<MontagemMostruario> findAll(String busca, ModoBusca modoBusca, StatusMontagem status, UUID clienteId,
                                             LocalDate dataEntregaDe, LocalDate dataEntregaAte, Pageable pageable){
@@ -287,8 +299,10 @@ public class MontagemMostruarioService {
         return conferencia.calcular(this.findById(id));
     }
 
-    // acrescenta, na consignação escolhida, só o que falta dos produtos dos pedidos (soma das consignações da
-    // montagem vs. soma dos pedidos); o preço é o de venda do produto/variação, como no cadastro da consignação
+    // SOMA, na consignação escolhida, os produtos dos pedidos já separados que ainda não foram incluídos: consignação com
+    // 3 do produto + pedido com 4 = 7 (o que a consignação já tinha não abate o do pedido). O que foi incluído fica
+    // registrado por item de pedido, para a conferência saber o que já entrou. O preço é o de venda do produto/variação,
+    // como no cadastro da consignação
     @Transactional
     public MontagemConferenciaDTO adicionarPendentes(Long montagemId, Long consignacaoId){
         MontagemMostruario montagem = this.findById(montagemId);
@@ -299,15 +313,34 @@ public class MontagemMostruarioService {
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação " + consignacaoId + " não está vinculada à montagem " + montagemId));
 
         // só entram produtos de pedidos já separados
-        var faltantes = conferencia.calcular(montagem).produtos().stream()
-                .filter(l -> l.faltandoSeparados() > 0)
+        var pendentes = conferencia.itensPendentes(montagem).stream()
+                .filter(p -> p.separado() && p.pendente() > 0)
                 .toList();
-        if (faltantes.isEmpty()) {
+        if (pendentes.isEmpty()) {
             throw new ItemInvalidoException("Não há produtos pendentes de pedidos separados para adicionar às consignações da montagem " + montagemId);
         }
-        consignacaoService.adicionarProdutos(consignacaoId, faltantes.stream()
-                .map(l -> new ConsignacaoItemAdicionar(l.produtoId(), l.produtoVariacaoId(), l.faltandoSeparados()))
-                .toList());
+
+        // uma linha por produto/variação, com a soma do pendente dos itens
+        Map<String, ConsignacaoItemAdicionar> somados = new java.util.LinkedHashMap<>();
+        for (var p : pendentes) {
+            Long variacaoId = p.item().getProdutoVariacao() != null ? p.item().getProdutoVariacao().getId() : null;
+            String chave = p.item().getProduto().getId() + ":" + (variacaoId != null ? variacaoId : "");
+            somados.merge(chave,
+                    new ConsignacaoItemAdicionar(p.item().getProduto().getId(), variacaoId, p.pendente()),
+                    (a, b) -> new ConsignacaoItemAdicionar(a.produtoId(), a.produtoVariacaoId(), a.quantidade() + b.quantidade()));
+        }
+        consignacaoService.adicionarProdutos(consignacaoId, new ArrayList<>(somados.values()));
+
+        LocalDateTime agora = LocalDateTime.now();
+        for (var p : pendentes) {
+            MontagemItemIncluido registro = new MontagemItemIncluido();
+            registro.setMontagemId(montagemId);
+            registro.setConsignacaoId(consignacaoId);
+            registro.setPedidoProdutoId(p.item().getId());
+            registro.setQuantidade(p.pendente());
+            registro.setCreatedAt(agora);
+            itemIncluidoRepository.save(registro);
+        }
         return conferencia.calcular(montagem);
     }
 

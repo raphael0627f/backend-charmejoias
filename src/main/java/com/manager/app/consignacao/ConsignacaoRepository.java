@@ -2,6 +2,10 @@ package com.manager.app.consignacao;
 
 import com.manager.app.mostruario.Mostruario;
 import com.manager.app.usuario.Usuario;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -14,6 +18,11 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ConsignacaoRepository  extends JpaRepository<Consignacao, Long>, JpaSpecificationExecutor<Consignacao> {
+    // listagem: traz cliente e mostruário na mesma consulta (sem uma consulta extra por linha)
+    @Override
+    @EntityGraph(attributePaths = {"cliente", "mostruario"})
+    Page<Consignacao> findAll(Specification<Consignacao> spec, Pageable pageable);
+
     boolean existsByMostruario(Mostruario mostruario);
 
     // consignações ainda não confirmadas do cliente para uma data de entrega (vínculo automático à montagem)

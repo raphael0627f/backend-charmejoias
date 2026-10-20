@@ -11,6 +11,7 @@ import com.manager.app.pedido.dto.PedidoResponseDTO;
 import com.manager.app.montagem.dto.MontagemCancelamentoRequestDTO;
 import com.manager.app.montagem.dto.MontagemRequestDTO;
 import com.manager.app.montagem.dto.MontagemResponseDTO;
+import com.manager.app.montagem.dto.MontagemResumoDTO;
 import com.manager.app.shared.ModoBusca;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -38,7 +41,7 @@ public class MontagemMostruarioController {
     private final ConsignacaoMapper consignacaoMapper;
 
     @GetMapping
-    public ResponseEntity<Page<MontagemResponseDTO>> findAll(
+    public ResponseEntity<Page<MontagemResumoDTO>> findAll(
             @RequestParam(required = false) String busca,
             @RequestParam(required = false) ModoBusca modoBusca,
             @RequestParam(required = false) StatusMontagem status,
@@ -46,8 +49,17 @@ public class MontagemMostruarioController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataEntregaDe,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataEntregaAte,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAll(busca, modoBusca, status, clienteId, dataEntregaDe, dataEntregaAte, pageable)
-                .map(mapper::toResponseDTO));
+        Page<MontagemMostruario> pagina = service.findAll(busca, modoBusca, status, clienteId, dataEntregaDe, dataEntregaAte, pageable);
+        // listagem enxuta: quantidades por montagem em uma consulta só (sem carregar as listas de cada uma)
+        List<Long> ids = pagina.getContent().stream().map(MontagemMostruario::getId).toList();
+        Map<Long, Integer> consignacoes = service.contarConsignacoes(ids);
+        Map<Long, Integer> pedidos = service.contarPedidos(ids);
+        return ResponseEntity.ok(pagina.map(montagem -> {
+            MontagemResumoDTO dto = mapper.toResumoDTO(montagem);
+            dto.setQuantidadeConsignacoes(consignacoes.getOrDefault(montagem.getId(), 0));
+            dto.setQuantidadePedidos(pedidos.getOrDefault(montagem.getId(), 0));
+            return dto;
+        }));
     }
 
     @GetMapping(value = "/{id}")

@@ -1,6 +1,10 @@
 package com.manager.app.acertoconsignacao;
 
 import com.manager.app.usuario.Usuario;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -11,6 +15,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface AcertoConsignacaoRepository extends JpaRepository<AcertoConsignacao, Long>, JpaSpecificationExecutor<AcertoConsignacao> {
+
+    // listagem: traz a consignação e o cliente na mesma consulta
+    @Override
+    @EntityGraph(attributePaths = {"consignacao", "consignacao.cliente"})
+    Page<AcertoConsignacao> findAll(Specification<AcertoConsignacao> spec, Pageable pageable);
 
     boolean existsByConsignacaoId(Long consignacaoId);
 

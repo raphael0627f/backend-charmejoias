@@ -15,16 +15,18 @@ public record MontagemConferenciaDTO(
         List<PedidoNaoSeparado> pedidosNaoSeparados,
         List<String> instrucoesPendentes) {
 
-    // necessario = soma (qtd - cancelada) nos pedidos; naConsignacao = soma nas consignações vinculadas;
-    // faltandoSeparados = o que falta considerando só os pedidos já separados - é o que "adicionar faltantes"
-    // pode colocar na consignação (produto de pedido ainda não separado não entra)
+    // necessario = soma (qtd - cancelada) nos pedidos; incluido = quanto disso já foi incluído (somado) numa consignação
+    // da montagem; faltando = necessario - incluido. Os produtos do pedido são SOMADOS à consignação (consignação com 3
+    // + pedido com 4 = 7), por isso o que a consignação já tinha antes não abate o necessário.
+    // faltandoSeparados = o que falta considerando só os pedidos já separados - é o que "incluir pendentes" pode
+    // colocar na consignação (produto de pedido ainda não separado não entra)
     public record ProdutoLinha(
             UUID produtoId,
             Long produtoVariacaoId,
             String sku,
             String nome,
             int necessario,
-            int naConsignacao,
+            int incluido,
             int faltando,
             int faltandoSeparados,
             List<Long> pedidosIds) {
