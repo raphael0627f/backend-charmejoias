@@ -31,4 +31,28 @@ public interface MontagemMostruarioRepository extends JpaRepository<MontagemMost
     @Query("select m.id as montagemId, count(p) as total from MontagemMostruario m join m.pedidos p "
             + "where m.id in :ids and p.status <> com.manager.app.pedido.StatusPedido.CANCELADO group by m.id")
     List<MontagemContagemProjecao> contarPedidos(@Param("ids") List<Long> ids);
+
+    // andamento: pedidos (não cancelados) e quantos já estão separados (Separado ou Enviado)
+    @Query("select m.id as montagemId, count(p) as total, "
+            + "coalesce(sum(case when p.status in (com.manager.app.pedido.StatusPedido.SEPARADO, "
+            + "com.manager.app.pedido.StatusPedido.ENVIADO) then 1 else 0 end), 0) as concluidos "
+            + "from MontagemMostruario m join m.pedidos p "
+            + "where m.id in :ids and p.status <> com.manager.app.pedido.StatusPedido.CANCELADO group by m.id")
+    List<MontagemProgressoProjecao> progressoPedidos(@Param("ids") List<Long> ids);
+
+    // andamento: instruções e quantas já foram marcadas como feitas
+    @Query("select m.id as montagemId, count(i) as total, "
+            + "coalesce(sum(case when i.concluida = true then 1 else 0 end), 0) as concluidos "
+            + "from MontagemMostruario m join m.instrucoes i where m.id in :ids group by m.id")
+    List<MontagemProgressoProjecao> progressoInstrucoes(@Param("ids") List<Long> ids);
+
+    // andamento: unidades de produtos dos pedidos (mesma regra da conferência: pedidos de produto, sem O.S. e sem
+    // cancelados, só itens cadastrados, descontando o cancelado)
+    @Query("select m.id as montagemId, coalesce(sum(pp.quantidade - coalesce(pp.quantidadeCancelada, 0)), 0) as total "
+            + "from MontagemMostruario m join m.pedidos p join p.produtos pp "
+            + "where m.id in :ids and p.status <> com.manager.app.pedido.StatusPedido.CANCELADO "
+            + "and p.tipo = com.manager.app.shared.TipoItem.PRODUTO "
+            + "and p.categoria <> com.manager.app.pedido.CategoriaPedido.ORDEM_SERVICO "
+            + "and pp.produto is not null group by m.id")
+    List<MontagemContagemProjecao> necessarioDosPedidos(@Param("ids") List<Long> ids);
 }

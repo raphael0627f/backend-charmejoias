@@ -18,6 +18,7 @@ import jakarta.validation.Validator;
 import com.manager.app.pedido.Pedido;
 import com.manager.app.pedido.PedidoService;
 import com.manager.app.montagem.dto.MontagemRequestDTO;
+import com.manager.app.montagem.dto.MontagemResumoDTO;
 import com.manager.app.mostruario.Mostruario;
 import com.manager.app.mostruario.MostruarioService;
 import com.manager.app.security.UsuarioAuditorAware;
@@ -58,6 +59,53 @@ public class MontagemMostruarioService {
     private final ConsignacaoRepository consignacaoRepository;
     private final PedidoRepository pedidoRepository;
     private final MontagemItemIncluidoRepository itemIncluidoRepository;
+
+    // preenche, para a página inteira da listagem, as quantidades de consignações/pedidos e o andamento
+    // (uma consulta de agregação por item, nunca carregando as listas de cada montagem)
+    public void preencherResumos(List<MontagemResumoDTO> resumos){
+        List<Long> ids = resumos.stream().map(MontagemResumoDTO::getId).toList();
+        if (ids.isEmpty()) return;
+
+        Map<Long, Integer> consignacoes = contarConsignacoes(ids);
+        Map<Long, MontagemProgressoProjecao> pedidos = indexar(repository.progressoPedidos(ids));
+        Map<Long, MontagemProgressoProjecao> instrucoes = indexar(repository.progressoInstrucoes(ids));
+        Map<Long, Integer> necessarios = repository.necessarioDosPedidos(ids).stream()
+                .collect(Collectors.toMap(MontagemContagemProjecao::getMontagemId, c -> c.getTotal().intValue()));
+        Map<Long, Integer> incluidos = itemIncluidoRepository.somarIncluidos(ids).stream()
+                .collect(Collectors.toMap(MontagemContagemProjecao::getMontagemId, c -> c.getTotal().intValue()));
+
+        for (MontagemResumoDTO dto : resumos) {
+            Long id = dto.getId();
+            MontagemProgressoProjecao ped = pedidos.get(id);
+            MontagemProgressoProjecao ins = instrucoes.get(id);
+            dto.setQuantidadeConsignacoes(consignacoes.getOrDefault(id, 0));
+            dto.setQuantidadePedidos(ped != null ? ped.getTotal().intValue() : 0);
+            dto.setPedidosSeparados(ped != null ? ped.getConcluidos().intValue() : 0);
+            dto.setInstrucoesTotal(ins != null ? ins.getTotal().intValue() : 0);
+            dto.setInstrucoesConcluidas(ins != null ? ins.getConcluidos().intValue() : 0);
+            int necessario = necessarios.getOrDefault(id, 0);
+            dto.setProdutosNecessarios(necessario);
+            dto.setProdutosIncluidos(Math.min(incluidos.getOrDefault(id, 0), necessario));
+            dto.setAndamento(calcularAndamento(dto));
+        }
+    }
+
+    private static Map<Long, MontagemProgressoProjecao> indexar(List<MontagemProgressoProjecao> linhas){
+        return linhas.stream().collect(Collectors.toMap(MontagemProgressoProjecao::getMontagemId, l -> l));
+    }
+
+    // média das partes que existem (instruções feitas, pedidos separados, produtos incluídos); concluída = 100,
+    // cancelada = sem andamento
+    private static Integer calcularAndamento(MontagemResumoDTO dto){
+        if (dto.getStatus() == StatusMontagem.CANCELADA) return null;
+        if (dto.getStatus() == StatusMontagem.CONCLUIDA) return 100;
+        List<Double> partes = new ArrayList<>();
+        if (dto.getInstrucoesTotal() > 0) partes.add((double) dto.getInstrucoesConcluidas() / dto.getInstrucoesTotal());
+        if (dto.getQuantidadePedidos() > 0) partes.add((double) dto.getPedidosSeparados() / dto.getQuantidadePedidos());
+        if (dto.getProdutosNecessarios() > 0) partes.add((double) dto.getProdutosIncluidos() / dto.getProdutosNecessarios());
+        if (partes.isEmpty()) return 0;
+        return (int) Math.round(partes.stream().mapToDouble(Double::doubleValue).average().orElse(0) * 100);
+    }
 
     // quantidades de consignações/pedidos por montagem para a listagem (uma consulta cada, para a página inteira)
     public Map<Long, Integer> contarConsignacoes(List<Long> ids){

@@ -17,5 +17,11 @@ public interface MontagemMostruarioMapper {
     @Mapping(target = "clienteId", source = "cliente.id")
     @Mapping(target = "quantidadeConsignacoes", ignore = true)
     @Mapping(target = "quantidadePedidos", ignore = true)
+    @Mapping(target = "instrucoesTotal", ignore = true)
+    @Mapping(target = "instrucoesConcluidas", ignore = true)
+    @Mapping(target = "pedidosSeparados", ignore = true)
+    @Mapping(target = "produtosNecessarios", ignore = true)
+    @Mapping(target = "produtosIncluidos", ignore = true)
+    @Mapping(target = "andamento", ignore = true)
     MontagemResumoDTO toResumoDTO(MontagemMostruario entity);
 }

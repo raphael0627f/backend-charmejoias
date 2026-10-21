@@ -19,7 +19,8 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @JsonPropertyOrder({ "id", "clienteId", "cliente", "mostruario", "dataEntrega", "status", "quantidadeConsignacoes",
-        "quantidadePedidos", "createdAt", "updatedAt" })
+        "quantidadePedidos", "instrucoesTotal", "instrucoesConcluidas", "pedidosSeparados", "produtosNecessarios",
+        "produtosIncluidos", "andamento", "createdAt", "updatedAt" })
 public class MontagemResumoDTO {
 
     private Long id;
@@ -29,7 +30,16 @@ public class MontagemResumoDTO {
     private LocalDate dataEntrega;
     private StatusMontagem status;
     private int quantidadeConsignacoes;
+    // pedidos não cancelados
     private int quantidadePedidos;
+    // andamento: instruções marcadas, pedidos já separados e unidades dos pedidos já incluídas nas consignações
+    private int instrucoesTotal;
+    private int instrucoesConcluidas;
+    private int pedidosSeparados;
+    private int produtosNecessarios;
+    private int produtosIncluidos;
+    // 0 a 100 (média das partes que existem); 100 quando concluída; nulo quando cancelada
+    private Integer andamento;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

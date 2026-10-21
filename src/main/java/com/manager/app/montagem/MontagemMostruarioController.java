@@ -50,16 +50,10 @@ public class MontagemMostruarioController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataEntregaAte,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
         Page<MontagemMostruario> pagina = service.findAll(busca, modoBusca, status, clienteId, dataEntregaDe, dataEntregaAte, pageable);
-        // listagem enxuta: quantidades por montagem em uma consulta só (sem carregar as listas de cada uma)
-        List<Long> ids = pagina.getContent().stream().map(MontagemMostruario::getId).toList();
-        Map<Long, Integer> consignacoes = service.contarConsignacoes(ids);
-        Map<Long, Integer> pedidos = service.contarPedidos(ids);
-        return ResponseEntity.ok(pagina.map(montagem -> {
-            MontagemResumoDTO dto = mapper.toResumoDTO(montagem);
-            dto.setQuantidadeConsignacoes(consignacoes.getOrDefault(montagem.getId(), 0));
-            dto.setQuantidadePedidos(pedidos.getOrDefault(montagem.getId(), 0));
-            return dto;
-        }));
+        // listagem enxuta: quantidades e andamento por montagem em consultas de agregação (sem carregar as listas de cada uma)
+        Page<MontagemResumoDTO> resumos = pagina.map(mapper::toResumoDTO);
+        service.preencherResumos(resumos.getContent());
+        return ResponseEntity.ok(resumos);
     }
 
     @GetMapping(value = "/{id}")
