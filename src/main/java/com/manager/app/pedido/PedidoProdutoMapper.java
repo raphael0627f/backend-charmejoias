@@ -34,6 +34,7 @@ public interface PedidoProdutoMapper {
         }
         dto.setGrupoNome(grupoNomeDe(entity));
         dto.setCategoriaNome(categoriaNomeDe(entity));
+        dto.setAceitaVinculo(aceitaVinculo(entity));
         if (entity.getProdutoVariacao() != null && entity.getProdutoVariacao().getCodigoBarras() != null) {
             dto.setCodigoBarras(entity.getProdutoVariacao().getCodigoBarras());
         } else if (entity.getProduto() != null) {
@@ -45,6 +46,12 @@ public interface PedidoProdutoMapper {
             dto.setReferencia(entity.getJoia().getReferencia());
         }
         return dto;
+    }
+
+    private boolean aceitaVinculo(PedidoProduto entity) {
+        boolean avulso = entity.getProduto() == null && entity.getJoia() == null;
+        boolean deAvulso = entity.getProduto() != null && entity.getDescricao() != null && !entity.getDescricao().isBlank();
+        return avulso || deAvulso || PedidoValidation.produtoDeCategoriaVinculavel(entity);
     }
 
     private String categoriaNomeDe(PedidoProduto entity) {

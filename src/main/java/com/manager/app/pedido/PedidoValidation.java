@@ -60,6 +60,20 @@ public class PedidoValidation {
         return item.getProduto() != null && item.getDescricao() != null && !item.getDescricao().isBlank();
     }
 
+    // produtos dessa categoria (ex.: "variados") também aceitam vínculo com outro produto cadastrado na separação
+    public static final long CATEGORIA_VINCULAVEL_ID = 15L;
+
+    public static boolean produtoDeCategoriaVinculavel(PedidoProduto item){
+        return item.getProduto() != null
+                && item.getProduto().getCategoria() != null
+                && Long.valueOf(CATEGORIA_VINCULAVEL_ID).equals(item.getProduto().getCategoria().getId());
+    }
+
+    // item que aceita vínculo (ou troca de vínculo): avulso, vinculado a partir de avulso ou de categoria vinculável
+    public boolean itemAceitaVinculo(PedidoProduto item){
+        return itemAvulso(item) || itemVinculadoDeAvulso(item) || produtoDeCategoriaVinculavel(item);
+    }
+
     // o vínculo do item avulso com um produto só é feito (ou trocado) durante a separação
     public void validarVinculoProduto(Pedido pedido, PedidoProduto item){
         if (pedido.getStatus() != StatusPedido.SEPARACAO) {
@@ -68,7 +82,7 @@ public class PedidoValidation {
         if (pedido.getTipo() == TipoItem.JOIA) {
             throw new ItemInvalidoException("Pedidos do tipo JOIA não têm item avulso. id: " + pedido.getId());
         }
-        if (!itemAvulso(item) && !itemVinculadoDeAvulso(item)) {
+        if (!itemAceitaVinculo(item)) {
             throw new ItemInvalidoException("O item " + item.getId() + " é um produto cadastrado do pedido e não pode ser trocado na separação");
         }
     }
@@ -92,6 +106,21 @@ public class PedidoValidation {
         });
         if (faltaSeparar) {
             throw new ItemInvalidoException("O pedido " + pedido.getId() + " ainda tem itens não separados");
+        }
+    }
+
+    // cliente é opcional (pedido avulso, como a consignação); com cliente, a data de entrega é obrigatória
+    public void validarClienteEEntrega(UUID clienteId, java.time.LocalDate dataEntrega){
+        if (clienteId != null && dataEntrega == null) {
+            throw new ItemInvalidoException("Data de entrega é obrigatória para pedido com cliente");
+        }
+    }
+
+    // pedido sem cliente ou sem data de entrega não pode ser enviado: esses dados vêm da montagem ao concluí-la
+    public void validarEnvio(Pedido pedido){
+        if (pedido.getCliente() == null || pedido.getDataEntrega() == null) {
+            throw new ItemInvalidoException("O pedido " + pedido.getId()
+                    + " não pode ser enviado sem cliente e data de entrega. Vincule-o a uma montagem e conclua a montagem para preenchê-los");
         }
     }
 

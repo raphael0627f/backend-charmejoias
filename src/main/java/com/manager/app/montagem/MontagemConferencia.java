@@ -93,6 +93,16 @@ public class MontagemConferencia {
         return itens;
     }
 
+    // grupo(s) do produto (só os de tipo PRODUTO), juntos por " / "
+    private static String nomesDosGrupos(com.manager.app.produto.Produto produto){
+        if (produto.getGrupos() == null) return null;
+        String nomes = produto.getGrupos().stream()
+                .filter(g -> g.getTipo() == com.manager.app.grupo.TipoGrupo.PRODUTO)
+                .map(com.manager.app.grupo.Grupo::getNome)
+                .collect(java.util.stream.Collectors.joining(" / "));
+        return nomes.isEmpty() ? null : nomes;
+    }
+
     public MontagemConferenciaDTO calcular(MontagemMostruario montagem){
         Map<String, Acumulado> acumulados = new LinkedHashMap<>();
         List<AvulsoSemVinculo> avulsos = new ArrayList<>();
@@ -137,6 +147,10 @@ public class MontagemConferencia {
                         a.variacao != null ? a.variacao.getId() : null,
                         a.variacao != null && a.variacao.getSku() != null ? a.variacao.getSku() : a.produto.getSku(),
                         a.produto.getNome(),
+                        a.produto.getCategoria() != null ? a.produto.getCategoria().getNome() : null,
+                        nomesDosGrupos(a.produto),
+                        a.variacao != null && a.variacao.getPrecoVenda() != null
+                                ? a.variacao.getPrecoVenda() : a.produto.getPrecoVenda(),
                         a.necessario,
                         a.incluido,
                         a.faltando,

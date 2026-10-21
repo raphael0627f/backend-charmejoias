@@ -59,6 +59,9 @@ public class PedidoResponseDTO {
     private String cidade;
     private Long mostruarioId;
     private String mostruarioDescricao;
+    // montagem a que o pedido está vinculado (só preenchido no GET /pedidos/{id}); com ela, cliente e data de entrega
+    // de um pedido que ainda não os tem só são preenchidos ao concluir a montagem
+    private Long montagemId;
     private List<PedidoProdutoResponseDTO> produtosResponse = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

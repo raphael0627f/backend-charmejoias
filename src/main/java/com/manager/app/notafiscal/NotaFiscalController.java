@@ -191,7 +191,7 @@ public class NotaFiscalController {
 
     @GetMapping(value = "/xmls")
     public ResponseEntity<Page<XmlArquivoResponseDTO>> listarXmls(
-            @PageableDefault(size = 20, sort = "ultimaModificacao") Pageable pageable){
+            @PageableDefault(size = 20, sort = "ultimaModificacao", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable){
         return ResponseEntity.ok(xmlStorageService.listar(pageable));
     }
 

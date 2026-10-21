@@ -24,6 +24,9 @@ ABERTA ──iniciar──▶ EM_MONTAGEM ──concluir──▶ CONCLUIDA
 ```
 
 - **Concluir** exige estar `EM_MONTAGEM` e ter **ao menos 1 consignação** vinculada (pedidos são opcionais).
+- Ao **concluir**, os pedidos da montagem com status `SEPARADO` passam para `ENVIADO` (na mesma transação; `CANCELADO` e `ENVIADO` não mudam). A resposta já traz os pedidos com o novo status.
+- **Pedido sem cliente (avulso, como a consignação):** `clienteId` é opcional em `POST/PUT /pedidos`; a `dataEntrega` só é obrigatória quando há cliente. `GET /pedidos?temCliente=false` lista só os avulsos. Pedido sem cliente/data **pode ser vinculado** a uma montagem; enquanto estiver vinculado, `PUT /pedidos` rejeita (400) informar cliente ou data que ele ainda não tem. Ao **concluir** a montagem, os pedidos não cancelados sem cliente e/ou sem data recebem o cliente e a data de entrega da montagem. Pedido sem cliente ou data **não pode ficar Enviado** (400 na troca de status). `GET /pedidos/{id}` traz `montagemId` (montagem a que está vinculado).
+- Pedido **cancelado** continua vinculado à montagem (histórico), mas não conta: `quantidadePedidos` da listagem não o inclui, a conferência o ignora e ele não é alterado ao concluir.
 - **Cancelar** exige `motivo` com no mínimo 5 caracteres e status `ABERTA` ou `EM_MONTAGEM`.
 - **Excluir** só vale para `ABERTA` e sem pedidos/consignações vinculados; nos demais casos, usar cancelar.
 - `iniciadaEm`/`iniciadaPor` são gravados ao iniciar; `concluidaEm` ao concluir.

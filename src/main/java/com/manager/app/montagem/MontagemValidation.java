@@ -109,7 +109,8 @@ public class MontagemValidation {
 
     public void validarVinculoPedido(MontagemMostruario montagem, Pedido pedido, Optional<MontagemMostruario> vinculoAtual){
         validarEditavel(montagem);
-        if (pedido.getCliente() == null || !pedido.getCliente().getId().equals(montagem.getCliente().getId())) {
+        // pedido sem cliente pode ser vinculado: recebe o cliente (e a data de entrega) da montagem ao concluí-la
+        if (pedido.getCliente() != null && !pedido.getCliente().getId().equals(montagem.getCliente().getId())) {
             throw new ItemInvalidoException("O pedido " + pedido.getId() + " não pertence ao cliente da montagem");
         }
         if (pedido.getStatus() == StatusPedido.CANCELADO) {

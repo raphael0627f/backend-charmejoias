@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import com.manager.app.grupo.GrupoService;
 import com.manager.app.mostruario.Mostruario;
 import com.manager.app.mostruario.MostruarioService;
+import com.manager.app.cliente.Cliente;
 import com.manager.app.cliente.ClienteService;
 import com.manager.app.joia.JoiaService;
 import com.manager.app.produto.ProdutoService;
@@ -46,6 +47,7 @@ public class PedidoService {
     private final PedidoProdutoRepository pedidoProdutoRepository;
     private final TransactionTemplate transactionTemplate;
     private final ClienteService clienteService;
+    private final com.manager.app.montagem.MontagemMostruarioRepository montagemRepository;
     private final ProdutoService produtoService;
     private final JoiaService joiaService;
     private final GrupoService grupoService;
@@ -138,6 +140,11 @@ public class PedidoService {
             });
         }
 
+        if (f.temCliente() != null) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) -> f.temCliente()
+                    ? cb.isNotNull(root.get("cliente"))
+                    : cb.isNull(root.get("cliente")));
+        }
         if (f.status() != null && !f.status().isEmpty()) {
             spec = SpecificationUtils.and(spec, (root, query, cb) -> root.get("status").in(f.status()));
         }
@@ -219,12 +226,25 @@ public class PedidoService {
         return variacao;
     }
 
+    // id da montagem a que o pedido está vinculado (nulo se não está em nenhuma)
+    public Long montagemIdDe(Long pedidoId){
+        return montagemRepository.findByPedidos_Id(pedidoId)
+                .map(com.manager.app.montagem.MontagemMostruario::getId)
+                .orElse(null);
+    }
+
+    // pedido sem cliente (avulso) é permitido, como a consignação
+    private Cliente resolverCliente(java.util.UUID clienteId){
+        return clienteId == null ? null : clienteService.findByIdAndAtivo(clienteId);
+    }
+
     private Mostruario resolverMostruario(Long mostruarioId){
         return mostruarioId == null ? null : mostruarioService.findById(mostruarioId);
     }
 
     @Transactional
     public Pedido create(PedidoRequestDTO request){
+        validation.validarClienteEEntrega(request.getClienteId(), request.getDataEntrega());
         Pedido pedido = new Pedido();
 
         pedido.setObservacao(request.getObservacao());
@@ -233,7 +253,7 @@ public class PedidoService {
         pedido.setCategoria(request.getCategoria());
         pedido.setStatus(validation.statusInicial(request.getCategoria()));
         pedido.setTipo(request.getTipo());
-        pedido.setCliente(clienteService.findByIdAndAtivo(request.getClienteId()));
+        pedido.setCliente(resolverCliente(request.getClienteId()));
         pedido.setMostruario(resolverMostruario(request.getMostruarioId()));
 
         for (PedidoProdutoRequestDTO produtoRequest : request.getProdutosRequest()){
@@ -259,6 +279,16 @@ public class PedidoService {
             throw new ItemInvalidoException("A categoria do pedido não pode ser alterada. id: " + pedidoUpdate.getId());
         }
 
+        validation.validarClienteEEntrega(request.getClienteId(), request.getDataEntrega());
+        // pedido sem cliente/data vinculado a uma montagem recebe esses dados da montagem ao concluí-la:
+        // não dá pra informá-los na mão enquanto estiver vinculado
+        boolean incluiCliente = pedidoUpdate.getCliente() == null && request.getClienteId() != null;
+        boolean incluiEntrega = pedidoUpdate.getDataEntrega() == null && request.getDataEntrega() != null;
+        if ((incluiCliente || incluiEntrega) && montagemRepository.findByPedidos_Id(pedidoUpdate.getId()).isPresent()) {
+            throw new ItemInvalidoException("O pedido " + pedidoUpdate.getId()
+                    + " está vinculado a uma montagem: cliente e data de entrega serão preenchidos com os da montagem ao concluí-la");
+        }
+
         // editou, então o que foi impresso antes pode estar desatualizado
         pedidoUpdate.setImpresso(false);
         pedidoUpdate.setImpressoEm(null);
@@ -267,7 +297,7 @@ public class PedidoService {
         pedidoUpdate.setDataPedido(request.getDataPedido());
         pedidoUpdate.setDataEntrega(request.getDataEntrega());
         pedidoUpdate.setTipo(request.getTipo());
-        pedidoUpdate.setCliente(clienteService.findByIdAndAtivo(request.getClienteId()));
+        pedidoUpdate.setCliente(resolverCliente(request.getClienteId()));
         pedidoUpdate.setMostruario(resolverMostruario(request.getMostruarioId()));
 
         List<PedidoProduto> produtosAtuais = new ArrayList<>(pedidoUpdate.getProdutos());
@@ -372,6 +402,9 @@ public class PedidoService {
         validation.validarTransicao(pedido.getId(), pedido.getStatus(), statusRequest.getStatus());
         if (statusRequest.getStatus() == StatusPedido.SEPARADO) {
             validation.validarTodosSeparados(pedido);
+        }
+        if (statusRequest.getStatus() == StatusPedido.ENVIADO) {
+            validation.validarEnvio(pedido);
         }
         pedido.setStatus(statusRequest.getStatus());
         return pedido;

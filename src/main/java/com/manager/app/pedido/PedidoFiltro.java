@@ -17,17 +17,19 @@ public record PedidoFiltro(
         LocalDate dataEntregaInicio,
         LocalDate dataEntregaFim,
         LocalDate criadoInicio,
-        LocalDate criadoFim
+        LocalDate criadoFim,
+        // true = só pedidos com cliente, false = só pedidos sem cliente (avulsos), null = todos
+        Boolean temCliente
 ) {
     // as contagens por status/categoria ignoram o próprio filtro, senão o total dos outros
     // status/categorias sempre sairia zerado quando o usuário filtra um deles
     public PedidoFiltro semStatus(){
         return new PedidoFiltro(busca, modoBusca, null, categoria, numero, clienteCodigo, clienteNome, cidade,
-                dataEntregaInicio, dataEntregaFim, criadoInicio, criadoFim);
+                dataEntregaInicio, dataEntregaFim, criadoInicio, criadoFim, temCliente);
     }
 
     public PedidoFiltro semCategoria(){
         return new PedidoFiltro(busca, modoBusca, status, null, numero, clienteCodigo, clienteNome, cidade,
-                dataEntregaInicio, dataEntregaFim, criadoInicio, criadoFim);
+                dataEntregaInicio, dataEntregaFim, criadoInicio, criadoFim, temCliente);
     }
 }

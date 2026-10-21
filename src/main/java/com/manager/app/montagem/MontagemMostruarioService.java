@@ -11,6 +11,7 @@ import com.manager.app.consignacao.dto.ConsignacaoRequestDTO;
 import com.manager.app.montagem.dto.MontagemConferenciaDTO;
 import com.manager.app.montagem.dto.MontagemInstrucaoRequestDTO;
 import com.manager.app.pedido.dto.PedidoRequestDTO;
+import com.manager.app.pedido.dto.PedidoStatusRequestDTO;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -361,6 +362,27 @@ public class MontagemMostruarioService {
         validation.validarConferencia(conferencia.calcular(montagem));
         montagem.setStatus(StatusMontagem.CONCLUIDA);
         montagem.setConcluidaEm(LocalDateTime.now());
+        // pedido sem cliente e/ou sem data de entrega recebe os da montagem (nenhum pedido pode ser enviado sem eles);
+        // cancelados não são alterados
+        for (Pedido pedido : montagem.getPedidos()) {
+            if (pedido.getStatus() == StatusPedido.CANCELADO) continue;
+            if (pedido.getCliente() == null) {
+                pedido.setCliente(montagem.getCliente());
+            }
+            if (pedido.getDataEntrega() == null) {
+                pedido.setDataEntrega(montagem.getDataEntrega());
+            }
+        }
+        // os pedidos separados da montagem passam para Enviado (cancelados e já enviados ficam como estão);
+        // na mesma transação: se alguma troca falhar, a montagem também não é concluída
+        for (Pedido pedido : montagem.getPedidos()) {
+            if (pedido.getStatus() == StatusPedido.SEPARADO) {
+                PedidoStatusRequestDTO envio = new PedidoStatusRequestDTO();
+                envio.setId(pedido.getId());
+                envio.setStatus(StatusPedido.ENVIADO);
+                pedidoService.updateStatus(envio);
+            }
+        }
         return montagem;
     }
 

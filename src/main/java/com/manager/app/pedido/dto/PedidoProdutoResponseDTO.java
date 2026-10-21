@@ -62,6 +62,8 @@ public class PedidoProdutoResponseDTO {
     private String grupoNome;
     // categoria do produto/joia cadastrado (nulo em item avulso)
     private String categoriaNome;
+    // o item aceita vínculo/troca de produto na separação (avulso, vinculado a partir de avulso ou de categoria vinculável)
+    private boolean aceitaVinculo;
     // pra busca na tela de separação (bipagem): código de barras da variação (ou do produto
     // simples) e referência do produto/joia cadastrado
     private String codigoBarras;

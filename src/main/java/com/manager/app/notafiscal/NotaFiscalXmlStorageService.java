@@ -89,7 +89,7 @@ public class NotaFiscalXmlStorageService {
             throw new UncheckedIOException("Não foi possível listar os XMLs de NFe salvos", e);
         }
 
-        arquivos.sort(Comparator.comparing(XmlArquivoResponseDTO::getUltimaModificacao).reversed());
+        arquivos.sort(comparador(pageable));
 
         int inicio = (int) pageable.getOffset();
         if (inicio >= arquivos.size()) {
@@ -97,6 +97,25 @@ public class NotaFiscalXmlStorageService {
         }
         int fim = Math.min(inicio + pageable.getPageSize(), arquivos.size());
         return new PageImpl<>(arquivos.subList(inicio, fim), pageable, arquivos.size());
+    }
+
+    // ordenação pedida na listagem (nomeArquivo, tamanhoBytes ou ultimaModificacao); sem sort valido, mais recentes primeiro
+    private Comparator<XmlArquivoResponseDTO> comparador(Pageable pageable){
+        org.springframework.data.domain.Sort.Order ordem = pageable.getSort().stream().findFirst().orElse(null);
+        Comparator<XmlArquivoResponseDTO> comparador = null;
+        if (ordem != null) {
+            comparador = switch (ordem.getProperty()) {
+                case "nomeArquivo" -> Comparator.comparing(x -> x.getNomeArquivo().toLowerCase());
+                case "tamanhoBytes" -> Comparator.comparingLong(XmlArquivoResponseDTO::getTamanhoBytes);
+                case "ultimaModificacao" -> Comparator.comparing(XmlArquivoResponseDTO::getUltimaModificacao);
+                default -> null;
+            };
+            if (comparador != null && ordem.isDescending()) {
+                comparador = comparador.reversed();
+            }
+        }
+        return comparador != null ? comparador
+                : Comparator.comparing(XmlArquivoResponseDTO::getUltimaModificacao).reversed();
     }
 
     // busca o XML da NFe pelo número no início do nome do arquivo, sem exigir bater a chave de

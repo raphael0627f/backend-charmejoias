@@ -23,7 +23,7 @@ public class PedidoRequestDTO {
     private Long id;
     private String observacao;
 
-    @NotNull(message = "Data de entrega é obrigatória")
+    // obrigatória só quando o pedido tem cliente (pedido sem cliente pode ficar sem data de entrega)
     private LocalDate dataEntrega;
 
     @NotNull(message = "Data do pedido é obrigatória")
@@ -35,7 +35,7 @@ public class PedidoRequestDTO {
     @NotNull(message = "Tipo é obrigatório")
     private TipoItem tipo;
 
-    @NotNull(message = "clienteId é obrigatório")
+    // opcional: pedido sem cliente (avulso), como a consignação
     private UUID clienteId;
 
     // opcional
