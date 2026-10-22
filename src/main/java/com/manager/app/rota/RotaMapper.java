@@ -26,12 +26,14 @@ public interface RotaMapper {
     default RotaConsignacaoResumoDTO toConsignacaoResumoDTO(RotaConsignacaoDeixar entity){
         if (entity == null) return null;
         Consignacao consignacao = entity.getConsignacao();
-        return new RotaConsignacaoResumoDTO(consignacao.getId(), consignacao.getDescricao(), consignacao.getQuantidadeTotal(), consignacao.getValorTotal(), entity.getConfirmada());
+        return new RotaConsignacaoResumoDTO(consignacao.getId(), consignacao.getDescricao(), consignacao.getQuantidadeTotal(), consignacao.getValorTotal(), entity.getConfirmada(),
+                consignacao.getMostruario() != null ? consignacao.getMostruario().getDescricao() : null);
     }
 
     default RotaConsignacaoResumoDTO toConsignacaoResumoDTO(RotaConsignacaoTrazer entity){
         if (entity == null) return null;
         Consignacao consignacao = entity.getConsignacao();
-        return new RotaConsignacaoResumoDTO(consignacao.getId(), consignacao.getDescricao(), consignacao.getQuantidadeTotal(), consignacao.getValorTotal(), entity.getConfirmada());
+        return new RotaConsignacaoResumoDTO(consignacao.getId(), consignacao.getDescricao(), consignacao.getQuantidadeTotal(), consignacao.getValorTotal(), entity.getConfirmada(),
+                consignacao.getMostruario() != null ? consignacao.getMostruario().getDescricao() : null);
     }
 }

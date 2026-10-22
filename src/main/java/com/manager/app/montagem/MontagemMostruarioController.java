@@ -44,12 +44,13 @@ public class MontagemMostruarioController {
     public ResponseEntity<Page<MontagemResumoDTO>> findAll(
             @RequestParam(required = false) String busca,
             @RequestParam(required = false) ModoBusca modoBusca,
-            @RequestParam(required = false) StatusMontagem status,
+            @RequestParam(required = false) List<StatusMontagem> status,
+            @RequestParam(required = false) List<Long> mostruarioId,
             @RequestParam(required = false) UUID clienteId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataEntregaDe,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataEntregaAte,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        Page<MontagemMostruario> pagina = service.findAll(busca, modoBusca, status, clienteId, dataEntregaDe, dataEntregaAte, pageable);
+        Page<MontagemMostruario> pagina = service.findAll(busca, modoBusca, status, mostruarioId, clienteId, dataEntregaDe, dataEntregaAte, pageable);
         // listagem enxuta: quantidades e andamento por montagem em consultas de agregação (sem carregar as listas de cada uma)
         Page<MontagemResumoDTO> resumos = pagina.map(mapper::toResumoDTO);
         service.preencherResumos(resumos.getContent());

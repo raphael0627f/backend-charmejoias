@@ -118,14 +118,18 @@ public class MontagemMostruarioService {
                 .collect(Collectors.toMap(MontagemContagemProjecao::getMontagemId, c -> c.getTotal().intValue()));
     }
 
-    public Page<MontagemMostruario> findAll(String busca, ModoBusca modoBusca, StatusMontagem status, UUID clienteId,
+    public Page<MontagemMostruario> findAll(String busca, ModoBusca modoBusca, List<StatusMontagem> status, List<Long> mostruarioIds, UUID clienteId,
                                             LocalDate dataEntregaDe, LocalDate dataEntregaAte, Pageable pageable){
         Specification<MontagemMostruario> spec = null;
         if (busca != null && !busca.isBlank()) {
             spec = SpecificationUtils.and(spec, comBusca(busca, modoBusca));
         }
-        if (status != null) {
-            spec = SpecificationUtils.and(spec, (root, query, cb) -> cb.equal(root.get("status"), status));
+        // filtros cumulativos: cada um aceita vários valores (OU dentro do filtro) e todos se combinam (E entre filtros)
+        if (status != null && !status.isEmpty()) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) -> root.get("status").in(status));
+        }
+        if (mostruarioIds != null && !mostruarioIds.isEmpty()) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) -> root.get("mostruario").get("id").in(mostruarioIds));
         }
         if (clienteId != null) {
             spec = SpecificationUtils.and(spec, (root, query, cb) -> cb.equal(root.get("cliente").get("id"), clienteId));
@@ -139,17 +143,14 @@ public class MontagemMostruarioService {
         return repository.findAll(spec, pageable);
     }
 
-    // mesma busca da listagem de consignações: número da montagem, código/nome do cliente e o kit (descrição do
-    // mostruário, ex.: "5245" - o que o usuário vê na tela, não o id interno)
+    // busca por número da montagem e código/nome do cliente; o mostruário tem filtro próprio (mostruarioId)
     private Specification<MontagemMostruario> comBusca(String busca, ModoBusca modoBusca){
         Long comoNumero = SpecificationUtils.comoLong(busca);
         return (root, query, cb) -> {
             var cliente = root.join("cliente", JoinType.LEFT);
-            var mostruario = root.join("mostruario", JoinType.LEFT);
             List<Predicate> predicates = new ArrayList<>(List.of(
                     SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), busca, modoBusca),
-                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca, modoBusca),
-                    SpecificationUtils.likeIgnoreCase(cb, mostruario.get("descricao"), busca, modoBusca)
+                    SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), busca, modoBusca)
             ));
             if (comoNumero != null) {
                 predicates.add(cb.equal(root.get("id"), comoNumero));

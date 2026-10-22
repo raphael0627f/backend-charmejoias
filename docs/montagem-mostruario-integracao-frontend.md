@@ -23,7 +23,7 @@ ABERTA ──iniciar──▶ EM_MONTAGEM ──concluir──▶ CONCLUIDA
   └────── cancelar ──────┴──▶ CANCELADA
 ```
 
-- **Concluir** exige estar `EM_MONTAGEM` e ter **ao menos 1 consignação** vinculada (pedidos são opcionais).
+- **Concluir** exige estar `EM_MONTAGEM` e ter **ao menos 1 consignação OU ao menos 1 pedido de O.S.** (não cancelado). Só com pedidos de O.S. a montagem conclui sem consignação; havendo qualquer pedido que não seja O.S., é obrigatório ter ao menos 1 consignação.
 - Ao **concluir**, os pedidos da montagem com status `SEPARADO` passam para `ENVIADO` (na mesma transação; `CANCELADO` e `ENVIADO` não mudam). A resposta já traz os pedidos com o novo status.
 - **Pedido sem cliente (avulso, como a consignação):** `clienteId` é opcional em `POST/PUT /pedidos`; a `dataEntrega` só é obrigatória quando há cliente. `GET /pedidos?temCliente=false` lista só os avulsos. Pedido sem cliente/data **pode ser vinculado** a uma montagem; enquanto estiver vinculado, `PUT /pedidos` rejeita (400) informar cliente ou data que ele ainda não tem. Ao **concluir** a montagem, os pedidos não cancelados sem cliente e/ou sem data recebem o cliente e a data de entrega da montagem. Pedido sem cliente ou data **não pode ficar Enviado** (400 na troca de status). `GET /pedidos/{id}` traz `montagemId` (montagem a que está vinculado).
 - Pedido **cancelado** continua vinculado à montagem (histórico), mas não conta: `quantidadePedidos` da listagem não o inclui, a conferência o ignora e ele não é alterado ao concluir.
@@ -69,8 +69,9 @@ ABERTA ──iniciar──▶ EM_MONTAGEM ──concluir──▶ CONCLUIDA
 ## 3. Endpoints
 
 ### Listagem e detalhe
-- `GET /montagens?busca=&modoBusca=&status=&clienteId=&dataEntregaDe=&dataEntregaAte=&page=&size=&sort=`
-  - `busca`: nome do cliente (like, case-insensitive; `modoBusca` como nas outras listagens).
+- `GET /montagens?busca=&modoBusca=&status=&mostruarioId=&clienteId=&dataEntregaDe=&dataEntregaAte=&page=&size=&sort=`
+  - `busca`: número da montagem e código/nome do cliente (like, case-insensitive; `modoBusca` como nas outras listagens). O mostruário tem filtro próprio.
+  - `status` e `mostruarioId` aceitam vários valores separados por vírgula (`status=ABERTA,CONCLUIDA&mostruarioId=5,6`): dentro de cada filtro vale OU, e os filtros se combinam (E).
   - `status`: um dos valores acima. `clienteId`: UUID.
   - `dataEntregaDe` / `dataEntregaAte`: formato **`yyyy-MM-dd`** (ISO), inclusivos.
   - Ordenação padrão: `id`.
@@ -92,7 +93,7 @@ ABERTA ──iniciar──▶ EM_MONTAGEM ──concluir──▶ CONCLUIDA
 
 ### Andamento
 - `PATCH /montagens/{id}/iniciar` — sem corpo. `ABERTA → EM_MONTAGEM`.
-- `PATCH /montagens/{id}/concluir` — sem corpo. `EM_MONTAGEM → CONCLUIDA` (exige ≥ 1 consignação).
+- `PATCH /montagens/{id}/concluir` — sem corpo. `EM_MONTAGEM → CONCLUIDA` (exige ≥ 1 consignação ou ≥ 1 pedido de O.S.; com pedido que não seja O.S., exige consignação).
 - `PATCH /montagens/{id}/cancelar` — `{ "motivo": "mínimo 5 caracteres" }`.
 
 Todos retornam a montagem atualizada (`200`).

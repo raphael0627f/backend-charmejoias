@@ -20,4 +20,6 @@ public class RotaConsignacaoResumoDTO {
     private Integer quantidadeTotal;
     private BigDecimal valorTotal;
     private Boolean confirmada;
+    // descricao do mostruario da consignacao (nulo se nao tiver)
+    private String mostruarioDescricao;
 }

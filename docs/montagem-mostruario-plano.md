@@ -5,7 +5,7 @@ Hoje `Mostruario` é só um cadastro (id + descrição) referenciado por `Consig
 - **Nova entidade** `MontagemMostruario`, separada do `Mostruario`, que não muda.
 - Consignações e pedidos podem ser **vinculados (já existentes)** ou **criados já vinculados** pela montagem, reaproveitando `PedidoService.create` e `ConsignacaoService.create`.
 - Status: `ABERTA → EM_MONTAGEM → CONCLUIDA` ou `CANCELADA` (com motivo).
-- Concluir exige **ao menos 1 consignação** vinculada; pedidos não são obrigatórios.
+- Concluir exige ao menos 1 consignação OU 1 pedido de O.S. (só O.S. dispensa a consignação; outro tipo de pedido exige consignação).
 - Sem relatório/PDF por enquanto. Sem testes unitários. Frontend por conta do usuário. Fases com OK antes de cada uma.
 
 ## Modelo de dados — migration `V51__create-montagens-mostruario.sql`

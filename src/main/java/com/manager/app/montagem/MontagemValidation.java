@@ -1,6 +1,7 @@
 package com.manager.app.montagem;
 
 import com.manager.app.consignacao.Consignacao;
+import com.manager.app.pedido.CategoriaPedido;
 import com.manager.app.pedido.Pedido;
 import com.manager.app.pedido.StatusPedido;
 import com.manager.app.shared.exception.ItemInvalidoException;
@@ -58,8 +59,23 @@ public class MontagemValidation {
         if (montagem.getStatus() != StatusMontagem.EM_MONTAGEM) {
             throw new ItemInvalidoException("Só é possível concluir uma montagem EM_MONTAGEM. Status atual: " + montagem.getStatus());
         }
-        if (montagem.getConsignacoes().isEmpty()) {
-            throw new ItemInvalidoException("Para concluir a montagem é necessário ao menos uma consignação vinculada");
+        validarConsignacaoOuOrdemServico(montagem);
+    }
+
+    // a montagem precisa ter ao menos uma consignação OU ao menos um pedido de O.S. (não cancelado). Se só tiver pedidos
+    // de O.S., pode ser concluída sem consignação; havendo qualquer pedido que não seja O.S., a consignação é obrigatória
+    private void validarConsignacaoOuOrdemServico(MontagemMostruario montagem){
+        if (!montagem.getConsignacoes().isEmpty()) return;
+        List<Pedido> ativos = montagem.getPedidos().stream()
+                .filter(p -> p.getStatus() != StatusPedido.CANCELADO)
+                .toList();
+        boolean temOrdemServico = ativos.stream().anyMatch(p -> p.getCategoria() == CategoriaPedido.ORDEM_SERVICO);
+        boolean temOutroTipo = ativos.stream().anyMatch(p -> p.getCategoria() != CategoriaPedido.ORDEM_SERVICO);
+        if (temOutroTipo) {
+            throw new ItemInvalidoException("Esta montagem tem pedidos que não são O.S.: é necessário ao menos uma consignação vinculada para concluí-la");
+        }
+        if (!temOrdemServico) {
+            throw new ItemInvalidoException("Para concluir a montagem é necessário ao menos uma consignação ou um pedido do tipo O.S.");
         }
     }
 
