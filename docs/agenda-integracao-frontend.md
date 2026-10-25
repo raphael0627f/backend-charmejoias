@@ -22,7 +22,7 @@ Sábado e domingo **não são gravados**: o frontend calcula e sombreia. Um marc
 | `data_conferencia` | date | obrigatória se `TRABALHA`; nula se `NAO_TRABALHA` |
 | `data_acerto` | date | obrigatória se `TRABALHA`; nula se `NAO_TRABALHA` |
 | `created_at` / `updated_at` | timestamp | gerados pelo backend |
-| `created_by` / `updated_by` | uuid (usuário) | gerados pelo backend (ver `auditoria-createdby-updatedby-integracao-frontend.md`) |
+| `created_by_id` / `updated_by_id` | uuid (usuário) | gerados pelo backend (ver `auditoria-createdby-updatedby-integracao-frontend.md`) |
 
 ## 2. Formato de dados
 
@@ -58,13 +58,14 @@ Sábado e domingo **não são gravados**: o frontend calcula e sombreia. Um marc
 
 | Campo | Tipo | Obrigatório | Observação |
 |---|---|---|---|
+| `id` | number | só no `PUT` | identifica o marcador a atualizar |
 | `data` | string `yyyy-MM-dd` | sim | dia do marcador |
 | `nome` | string | sim | texto livre |
 | `tipo` | string | sim | `TRABALHA` \| `NAO_TRABALHA` |
 | `dataConferencia` | string `yyyy-MM-dd` \| null | só `TRABALHA` | nulo em `NAO_TRABALHA` |
 | `dataAcerto` | string `yyyy-MM-dd` \| null | só `TRABALHA` | nulo em `NAO_TRABALHA` |
 
-O `id` do marcador no `PUT` vem **na URL** (`PUT /agenda/marcadores/{id}`); não enviar `id` no corpo. `createdAt`, `updatedAt`, `createdBy` e `updatedBy` são somente leitura e ignorados se enviados.
+No `PUT`, o `id` do marcador vai **no corpo** (campo `id`, obrigatório, mesmo padrão de `/rotas` e `/mostruarios`); no `POST` ele é ignorado. `createdAt`, `updatedAt`, `createdBy` e `updatedBy` são somente leitura e ignorados se enviados.
 
 ### Response (`AgendaMarcadorResponseDTO`)
 
@@ -149,11 +150,20 @@ Marcador `NAO_TRABALHA`:
 { "data": "2026-04-21", "nome": "FERIADO", "tipo": "NAO_TRABALHA", "dataConferencia": null, "dataAcerto": null }
 ```
 
-### 6.4 `PUT /agenda/marcadores/{id}`
+### 6.4 `PUT /agenda/marcadores`
 
-Requer `AGENDA_GERENCIAR`. Mesmo corpo do `POST`; substitui todos os campos. `200` com o marcador atualizado. `404` se o `id` não existir. `409` se a nova `data` já pertence a outro marcador.
+Requer `AGENDA_GERENCIAR`. Mesmo corpo do `POST` mais o campo `id` (obrigatório); substitui todos os campos. `200` com o marcador atualizado. `404` se o `id` não existir. `409` se a nova `data` já pertence a outro marcador.
 
-> Diferença consciente em relação a `/rotas` e `/mostruarios`, onde o `PUT` não leva `id` na URL (vai no corpo): aqui o `id` vai na URL, conforme o plano da Agenda.
+```json
+{
+  "id": 12,
+  "data": "2026-03-12",
+  "nome": "BM / VR / PINHERAL (VM-3)",
+  "tipo": "TRABALHA",
+  "dataConferencia": "2026-03-23",
+  "dataAcerto": "2026-04-09"
+}
+```
 
 ### 6.5 `DELETE /agenda/marcadores/{id}`
 
@@ -179,7 +189,7 @@ Outras mensagens `400` previstas:
 - `"A data do acerto não pode ser anterior à data da conferência"`
 - `"Marcador do tipo TRABALHA exige data da conferência e data do acerto"`
 - `"Marcador do tipo NAO_TRABALHA não pode ter data da conferência nem data do acerto"`
-- `"Nome do marcador é obrigatório"`, `"Data do marcador é obrigatória"`, `"Tipo do marcador é obrigatório"`
+- `"Id do marcador é obrigatório"` (no `PUT`), `"Nome do marcador é obrigatório"`, `"Data do marcador é obrigatória"`, `"Tipo do marcador é obrigatório"`
 - `"Data final não pode ser anterior à data inicial"` (no `GET` da lista)
 
 **409 — já existe marcador no dia**
