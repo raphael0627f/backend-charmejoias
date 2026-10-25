@@ -1,0 +1,246 @@
+# Agenda — guia de integração frontend (contrato, etapa 1A)
+
+> Status: **contrato proposto, ainda não implementado**. Depois da aprovação, o backend implementa exatamente o que está aqui.
+
+Módulo novo e independente de Rota e Consignação. O usuário cria **marcadores** em dias do calendário, com nome livre. Cada marcador é de um de dois tipos:
+
+- `TRABALHA`: dia de trabalho, com data da **conferência** e data do **acerto** obrigatórias.
+- `NAO_TRABALHA`: férias, feriado, carnaval, emenda etc. Sem datas de conferência/acerto.
+
+Sábado e domingo **não são gravados**: o frontend calcula e sombreia. Um marcador no dia prevalece sobre o sombreado. A agenda nasce **vazia** (sem carga de dados).
+
+---
+
+## 1. Modelo (tabela `agenda_marcadores`)
+
+| Coluna | Tipo | Observação |
+|---|---|---|
+| `id` | bigint | gerado pelo backend |
+| `data` | date | obrigatório, **UNIQUE** (1 marcador por dia) |
+| `nome` | varchar | obrigatório, texto livre (ex.: `BM / VR / PINHERAL (VM-3)`, `FERIAS`) |
+| `tipo` | varchar | `TRABALHA` ou `NAO_TRABALHA` |
+| `data_conferencia` | date | obrigatória se `TRABALHA`; nula se `NAO_TRABALHA` |
+| `data_acerto` | date | obrigatória se `TRABALHA`; nula se `NAO_TRABALHA` |
+| `created_at` / `updated_at` | timestamp | gerados pelo backend |
+| `created_by` / `updated_by` | uuid (usuário) | gerados pelo backend (ver `auditoria-createdby-updatedby-integracao-frontend.md`) |
+
+## 2. Formato de dados
+
+- Datas: **`yyyy-MM-dd`** (ISO), no JSON e nos query params (`?inicio=2026-03-01&fim=2026-03-31`). Atenção: diferente de `/rotas`, que usa `dd/MM/yyyy` nos filtros.
+- `createdAt` / `updatedAt`: datetime ISO, ex.: `2026-10-25T16:01:27.905`.
+- `createdBy` / `updatedBy`: objeto `{ id, usuario, primeiroNome, sobrenome }` ou `null`.
+- Erros: corpo `RestErrorMenssage`, campo da mensagem é **`menssage`** (com dois s, proposital).
+
+## 3. Regras de negócio
+
+1. **1 marcador por dia.** Segundo marcador na mesma `data` → `409`.
+2. `TRABALHA` exige `dataConferencia` e `dataAcerto`; `NAO_TRABALHA` exige as duas **nulas** (enviar preenchidas → `400`).
+3. Ordem das datas (bloqueante): `dataConferencia >= data` e `dataAcerto >= dataConferencia`, senão `400` com mensagem clara.
+4. `nome` obrigatório e não vazio (o backend aplica `trim`).
+5. No `PUT`, mudar `data` para um dia já ocupado por **outro** marcador → `409`.
+6. Conferência e acerto podem cair em outro mês ou outro ano (ex.: dezembro → fevereiro do ano seguinte). É válido.
+7. Dias úteis sem marcador são permitidos.
+
+## 4. Permissões
+
+| Permissão | Efeito |
+|---|---|
+| `AGENDA_GERENCIAR` | protege `POST`, `PUT` e `DELETE` (`@PreAuthorize`) → sem ela, `403` |
+| `AGENDA_VISUALIZAR` | existe **só no enum e na tela de Perfis**; o backend **não** a verifica |
+
+- `GET /agenda/marcadores` e `GET /agenda/marcadores/{id}` exigem apenas **estar logado**, como os demais módulos. A restrição de tela (menu e URL `/agenda` exigindo `AGENDA_VISUALIZAR` ou `AGENDA_GERENCIAR`) é feita **no frontend** (`lib/auth/module-permissions.ts`).
+- O perfil `ADMIN` já recebe as duas permissões pela migration. Os demais perfis passam a não ver a Agenda até receberem a permissão.
+- O frontend deve incluir `AGENDA_GERENCIAR` e `AGENDA_VISUALIZAR` na lista `PERMISSOES` (`types/auth.ts`) para aparecerem na tela de Perfis. Botões de criar/editar/excluir só com `AGENDA_GERENCIAR`.
+
+## 5. DTOs
+
+### Request (`POST` e `PUT`)
+
+| Campo | Tipo | Obrigatório | Observação |
+|---|---|---|---|
+| `data` | string `yyyy-MM-dd` | sim | dia do marcador |
+| `nome` | string | sim | texto livre |
+| `tipo` | string | sim | `TRABALHA` \| `NAO_TRABALHA` |
+| `dataConferencia` | string `yyyy-MM-dd` \| null | só `TRABALHA` | nulo em `NAO_TRABALHA` |
+| `dataAcerto` | string `yyyy-MM-dd` \| null | só `TRABALHA` | nulo em `NAO_TRABALHA` |
+
+O `id` do marcador no `PUT` vem **na URL** (`PUT /agenda/marcadores/{id}`); não enviar `id` no corpo. `createdAt`, `updatedAt`, `createdBy` e `updatedBy` são somente leitura e ignorados se enviados.
+
+### Response (`AgendaMarcadorResponseDTO`)
+
+| Campo | Tipo |
+|---|---|
+| `id` | number |
+| `data` | string `yyyy-MM-dd` |
+| `nome` | string |
+| `tipo` | `TRABALHA` \| `NAO_TRABALHA` |
+| `dataConferencia` | string `yyyy-MM-dd` \| null |
+| `dataAcerto` | string `yyyy-MM-dd` \| null |
+| `createdAt` / `updatedAt` | datetime |
+| `createdBy` / `updatedBy` | objeto resumido de usuário \| null |
+
+## 6. Endpoints
+
+### 6.1 `GET /agenda/marcadores?inicio=&fim=`
+
+Lista **sem paginação**, ordenada por `data` crescente. Devolve os marcadores cujo **dia, conferência OU acerto** cai dentro de `[inicio, fim]` (inclusive). Assim o frontend consegue marcar, no mês exibido, os dias de conferência e de acerto vindos de marcadores de outro mês.
+
+| Query param | Tipo | Obrigatório |
+|---|---|---|
+| `inicio` | `yyyy-MM-dd` | sim |
+| `fim` | `yyyy-MM-dd` | sim |
+
+Erros: `400` se faltar `inicio`/`fim`, se o formato for inválido ou se `fim < inicio`.
+
+Exemplo: `GET /agenda/marcadores?inicio=2026-03-01&fim=2026-03-31`
+
+```json
+[
+  {
+    "id": 12,
+    "data": "2026-02-27",
+    "nome": "BM / VR / PINHERAL (VM-3)",
+    "tipo": "TRABALHA",
+    "dataConferencia": "2026-03-09",
+    "dataAcerto": "2026-03-26",
+    "createdAt": "2026-10-25T16:10:00.000",
+    "updatedAt": "2026-10-25T16:10:00.000",
+    "createdBy": { "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "usuario": "admin", "primeiroNome": "Raphael", "sobrenome": "Ferreira" },
+    "updatedBy": null
+  },
+  {
+    "id": 13,
+    "data": "2026-03-03",
+    "nome": "CARNAVAL",
+    "tipo": "NAO_TRABALHA",
+    "dataConferencia": null,
+    "dataAcerto": null,
+    "createdAt": "2026-10-25T16:11:00.000",
+    "updatedAt": "2026-10-25T16:11:00.000",
+    "createdBy": null,
+    "updatedBy": null
+  }
+]
+```
+
+No exemplo, o marcador `12` tem `data` em fevereiro, mas aparece porque a conferência (09/03) e o acerto (26/03) caem em março. O frontend decide, para cada dia do mês, se o marcador é "do dia", "de conferência" ou "de acerto" comparando as três datas.
+
+### 6.2 `GET /agenda/marcadores/{id}`
+
+`200` com um `AgendaMarcadorResponseDTO`. `404` se não existir.
+
+### 6.3 `POST /agenda/marcadores`
+
+Requer `AGENDA_GERENCIAR`. Retorna `201` com header `Location` e o marcador criado.
+
+```json
+{
+  "data": "2026-03-12",
+  "nome": "BM / VR / PINHERAL (VM-3)",
+  "tipo": "TRABALHA",
+  "dataConferencia": "2026-03-23",
+  "dataAcerto": "2026-04-09"
+}
+```
+
+Marcador `NAO_TRABALHA`:
+
+```json
+{ "data": "2026-04-21", "nome": "FERIADO", "tipo": "NAO_TRABALHA", "dataConferencia": null, "dataAcerto": null }
+```
+
+### 6.4 `PUT /agenda/marcadores/{id}`
+
+Requer `AGENDA_GERENCIAR`. Mesmo corpo do `POST`; substitui todos os campos. `200` com o marcador atualizado. `404` se o `id` não existir. `409` se a nova `data` já pertence a outro marcador.
+
+> Diferença consciente em relação a `/rotas` e `/mostruarios`, onde o `PUT` não leva `id` na URL (vai no corpo): aqui o `id` vai na URL, conforme o plano da Agenda.
+
+### 6.5 `DELETE /agenda/marcadores/{id}`
+
+Requer `AGENDA_GERENCIAR`. `204` sem corpo (exclusão definitiva). `404` se não existir.
+
+## 7. Erros (exemplos)
+
+Todos no formato `RestErrorMenssage`: `timestamp`, `status`, `menssage`, `path`.
+
+**400 — datas fora de ordem**
+
+```json
+{
+  "timestamp": "2026-10-25T19:20:00.000+00:00",
+  "status": "BAD_REQUEST",
+  "menssage": "A data da conferência não pode ser anterior à data do marcador",
+  "path": "uri=/agenda/marcadores"
+}
+```
+
+Outras mensagens `400` previstas:
+
+- `"A data do acerto não pode ser anterior à data da conferência"`
+- `"Marcador do tipo TRABALHA exige data da conferência e data do acerto"`
+- `"Marcador do tipo NAO_TRABALHA não pode ter data da conferência nem data do acerto"`
+- `"Nome do marcador é obrigatório"`, `"Data do marcador é obrigatória"`, `"Tipo do marcador é obrigatório"`
+- `"Data final não pode ser anterior à data inicial"` (no `GET` da lista)
+
+**409 — já existe marcador no dia**
+
+```json
+{
+  "timestamp": "2026-10-25T19:21:00.000+00:00",
+  "status": "CONFLICT",
+  "menssage": "Já existe um marcador na data 2026-03-12",
+  "path": "uri=/agenda/marcadores"
+}
+```
+
+**403 — sem `AGENDA_GERENCIAR`** (`POST`/`PUT`/`DELETE`)
+
+```json
+{ "timestamp": "...", "status": "FORBIDDEN", "menssage": "Acesso negado", "path": "uri=/agenda/marcadores" }
+```
+
+**404 — marcador inexistente**
+
+```json
+{ "timestamp": "...", "status": "NOT_FOUND", "menssage": "Marcador de agenda não encontrado com o id 99", "path": "uri=/agenda/marcadores/99" }
+```
+
+**401** — sem token ou token expirado (igual aos demais módulos).
+
+> As mensagens exatas podem sofrer ajuste fino na implementação; o frontend deve exibir o `menssage` recebido, sem depender do texto.
+
+---
+
+## Plano de implementação
+
+### Migration
+
+- **`V54__agenda-marcadores.sql`** (única migration, sem carga de dados):
+  - cria `agenda_marcadores` (`id` bigserial PK, `data` date NOT NULL UNIQUE, `nome`, `tipo`, `data_conferencia`, `data_acerto`, `created_at`, `updated_at`, `created_by`, `updated_by`);
+  - `CHECK` de consistência por tipo: `TRABALHA` → conferência e acerto não nulas; `NAO_TRABALHA` → ambas nulas; mais `CHECK` de tipo válido;
+  - `CHECK` de ordem: `data_conferencia >= data` e `data_acerto >= data_conferencia` quando preenchidas;
+  - índices em `data_conferencia` e `data_acerto` (`data` já é indexada pela constraint UNIQUE);
+  - concede `AGENDA_GERENCIAR` e `AGENDA_VISUALIZAR` ao perfil `ADMIN` em `perfis_permissoes` (mesmo padrão da V50, `INSERT ... SELECT ... WHERE perfis.nome = 'ADMIN'`).
+
+### Arquivos Java (pacote `com.manager.app.agenda`)
+
+Criar:
+
+- `AgendaMarcador.java` (entidade, com auditoria `createdBy`/`updatedBy` no padrão dos vizinhos)
+- `AgendaMarcadorTipo.java` (enum `TRABALHA`, `NAO_TRABALHA`)
+- `AgendaMarcadorRepository.java` (consulta por período: `data`, `dataConferencia` ou `dataAcerto` entre `inicio` e `fim`; `existsByData`, `existsByDataAndIdNot`)
+- `AgendaMarcadorService.java`
+- `AgendaMarcadorValidation.java` (1 por dia → `ObjetoExistenteException`/409; regras por tipo e ordem das datas → `ItemInvalidoException`/400)
+- `AgendaMarcadorMapper.java` (MapStruct)
+- `AgendaMarcadorController.java` (`/agenda/marcadores`)
+- `dto/AgendaMarcadorRequestDTO.java` e `dto/AgendaMarcadorResponseDTO.java`
+
+Alterar:
+
+- `usuario/Permissao.java`: adicionar `AGENDA_GERENCIAR` e `AGENDA_VISUALIZAR` ao enum.
+
+Reaproveitado sem alteração: `RestExceptionHandler` (já mapeia 404, 409, 400 e 403 para `RestErrorMenssage`). Erros de formato de data e de enum inválido seguem o tratamento padrão de `400` do Spring.
+
+### Verificação prevista
+
+`./mvnw -q -DskipTests compile`, subir com perfil `dev` (Flyway aplica a V54) e testar os endpoints com `admin` e com um perfil sem `AGENDA_GERENCIAR`.
