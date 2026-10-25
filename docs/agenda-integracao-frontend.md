@@ -1,6 +1,6 @@
 # Agenda — guia de integração frontend (contrato, etapa 1A)
 
-> Status: **contrato proposto, ainda não implementado**. Depois da aprovação, o backend implementa exatamente o que está aqui.
+> Status: **implementado e testado** (migration V54, backend dev na porta 8080).
 
 Módulo novo e independente de Rota e Consignação. O usuário cria **marcadores** em dias do calendário, com nome livre. Cada marcador é de um de dois tipos:
 
@@ -189,8 +189,11 @@ Outras mensagens `400` previstas:
 - `"A data do acerto não pode ser anterior à data da conferência"`
 - `"Marcador do tipo TRABALHA exige data da conferência e data do acerto"`
 - `"Marcador do tipo NAO_TRABALHA não pode ter data da conferência nem data do acerto"`
-- `"Id do marcador é obrigatório"` (no `PUT`), `"Nome do marcador é obrigatório"`, `"Data do marcador é obrigatória"`, `"Tipo do marcador é obrigatório"`
+- `"Id do marcador é obrigatório"` (no `PUT`)
 - `"Data final não pode ser anterior à data inicial"` (no `GET` da lista)
+- `"Período obrigatório: informe inicio e fim (yyyy-MM-dd)"` (no `GET` da lista, sem `inicio`/`fim`)
+
+**Atenção:** campos obrigatórios ausentes no corpo (`data`, `nome` em branco, `tipo`) são barrados pelo `@Valid` e voltam `400` no formato padrão do Spring (`{ "detail": "Invalid request content.", "instance": "/agenda/marcadores", "status": 400, "title": "Bad Request" }`), **sem** o campo `menssage` — mesmo comportamento dos outros módulos. O formulário deve validar esses campos antes de enviar.
 
 **409 — já existe marcador no dia**
 
@@ -212,12 +215,12 @@ Outras mensagens `400` previstas:
 **404 — marcador inexistente**
 
 ```json
-{ "timestamp": "...", "status": "NOT_FOUND", "menssage": "Marcador de agenda não encontrado com o id 99", "path": "uri=/agenda/marcadores/99" }
+{ "timestamp": "...", "status": "NOT_FOUND", "menssage": "Marcador de agenda não encontrado. id: 99", "path": "uri=/agenda/marcadores/99" }
 ```
 
 **401** — sem token ou token expirado (igual aos demais módulos).
 
-> As mensagens exatas podem sofrer ajuste fino na implementação; o frontend deve exibir o `menssage` recebido, sem depender do texto.
+> O frontend deve exibir o `menssage` recebido, sem depender do texto exato.
 
 ---
 
