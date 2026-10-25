@@ -26,5 +26,8 @@ public enum Permissao {
     SPC_REGISTRAR,
     ROTA_GERENCIAR,
     BACKUP_GERENCIAR,
-    MONTAGEM_GERENCIAR
+    MONTAGEM_GERENCIAR,
+    AGENDA_GERENCIAR,
+    // só existe para a tela de perfis: o backend não a verifica (o GET da agenda exige apenas login)
+    AGENDA_VISUALIZAR
 }
