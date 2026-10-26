@@ -1,5 +1,6 @@
 package com.manager.app.usuario;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -39,11 +40,15 @@ public class Perfil {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    // @JsonIgnore: DTOs que vazam entidades (ex.: Cliente.createdBy -> Usuario.perfil) formavam ciclo
+    // Usuario -> Perfil -> updatedBy -> Usuario...; /perfis usa PerfilResponseDTO e nao e afetado
+    @JsonIgnore
     @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     private Usuario createdBy;
 
+    @JsonIgnore
     @LastModifiedBy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "updated_by_id")
