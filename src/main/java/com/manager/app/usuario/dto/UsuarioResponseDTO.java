@@ -2,7 +2,6 @@ package com.manager.app.usuario.dto;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.manager.app.endereco.Endereco;
-import com.manager.app.usuario.Perfil;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -43,7 +42,7 @@ public class UsuarioResponseDTO {
     private String email;
     private String observacao;
     private Endereco endereco;
-    private Perfil perfil;
+    private PerfilResponseDTO perfil;
     private boolean ativo;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
