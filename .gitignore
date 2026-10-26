@@ -40,3 +40,6 @@ build/
 /application.properties
 /config/application.properties
 /application-*.properties
+
+# maestri
+.maestri/
