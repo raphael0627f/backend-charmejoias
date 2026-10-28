@@ -153,7 +153,7 @@ FROM sistemadb.tb_etiqueta]]>
 			</staticText>
 			<textField>
 				<reportElement x="0" y="115" width="279" height="82" uuid="d40ded84-eae8-4dfa-9005-ff0a3e6631ca"/>
-				<box>
+				<box leftPadding="3" rightPadding="3">
 					<topPen lineWidth="0.25"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
@@ -162,11 +162,11 @@ FROM sistemadb.tb_etiqueta]]>
 				<textElement>
 					<font isBold="true"/>
 				</textElement>
-				<textFieldExpression><![CDATA[" "+$F{enderecos}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{enderecos}]]></textFieldExpression>
 			</textField>
 			<textField>
 				<reportElement x="0" y="76" width="279" height="30" uuid="91233595-0ee3-4811-aedb-4a67b4c606cc"/>
-				<box>
+				<box leftPadding="3" rightPadding="3">
 					<topPen lineWidth="0.25"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
@@ -175,7 +175,7 @@ FROM sistemadb.tb_etiqueta]]>
 				<textElement>
 					<font isBold="true"/>
 				</textElement>
-				<textFieldExpression><![CDATA[" "+$F{nomeContatoCliente}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{nomeContatoCliente}]]></textFieldExpression>
 			</textField>
 			<staticText>
 				<reportElement x="0" y="106" width="279" height="9" uuid="357a2e64-beff-4bd3-8386-f09ab96fd47b">
@@ -213,6 +213,7 @@ FROM sistemadb.tb_etiqueta]]>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
+				<textFieldExpression><![CDATA[" "]]></textFieldExpression>
 			</textField>
 			<staticText>
 				<reportElement x="0" y="245" width="279" height="14" uuid="f39f8ea5-981d-41bc-b2e1-80e0c30e3783"/>
@@ -235,6 +236,7 @@ FROM sistemadb.tb_etiqueta]]>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
+				<textFieldExpression><![CDATA[" "]]></textFieldExpression>
 			</textField>
 			<line>
 				<reportElement x="0" y="286" width="279" height="1" uuid="e5cb453e-1e69-4df4-95eb-01b5dc5a1c9e"/>
@@ -353,7 +355,7 @@ FROM sistemadb.tb_etiqueta]]>
 			</staticText>
 			<textField>
 				<reportElement x="0" y="327" width="279" height="30" uuid="339a1264-0947-4b9e-8510-53b19dacf7e9"/>
-				<box>
+				<box leftPadding="3" rightPadding="3">
 					<topPen lineWidth="0.25"/>
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
@@ -362,7 +364,7 @@ FROM sistemadb.tb_etiqueta]]>
 				<textElement>
 					<font isBold="true"/>
 				</textElement>
-				<textFieldExpression><![CDATA[" "+$F{nomeBairroCidadeCliente}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{nomeBairroCidadeCliente}]]></textFieldExpression>
 			</textField>
 			<line>
 				<reportElement x="0" y="360" width="279" height="1" uuid="2456bd0e-022c-43d7-b596-eb4ecb5d4f2e"/>
@@ -523,28 +525,28 @@ FROM sistemadb.tb_etiqueta]]>
 			</staticText>
 			<textField>
 				<reportElement x="0" y="401" width="68" height="20" uuid="d8cfeaa0-9f54-42c1-8e5e-604b7e652fbd"/>
-				<textElement>
+				<textElement textAlignment="Center">
 					<font size="6"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{sobrenomeCliente}]]></textFieldExpression>
 			</textField>
 			<textField>
 				<reportElement x="70" y="401" width="68" height="20" uuid="11eba767-0570-43a2-be85-6fedc5aef3cb"/>
-				<textElement>
+				<textElement textAlignment="Center">
 					<font size="6"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{sobrenomeCliente}]]></textFieldExpression>
 			</textField>
 			<textField>
 				<reportElement x="140" y="401" width="68" height="20" uuid="9c5a5983-8f13-4602-ba0f-88d81c23edb7"/>
-				<textElement>
+				<textElement textAlignment="Center">
 					<font size="6"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{sobrenomeCliente}]]></textFieldExpression>
 			</textField>
 			<textField>
 				<reportElement x="210" y="401" width="69" height="20" uuid="7436275f-802c-43f2-b6d4-fac73ef0d355"/>
-				<textElement>
+				<textElement textAlignment="Center">
 					<font size="6"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{sobrenomeCliente}]]></textFieldExpression>
