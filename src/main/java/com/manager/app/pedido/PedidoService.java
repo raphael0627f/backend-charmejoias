@@ -145,6 +145,17 @@ public class PedidoService {
                     ? cb.isNotNull(root.get("cliente"))
                     : cb.isNull(root.get("cliente")));
         }
+        if (Boolean.TRUE.equals(f.semMontagem())) {
+            // mesma regra do vínculo (MontagemMostruarioRepository.findByPedidos_Id): qualquer linha em
+            // montagens_mostruario_pedidos conta, inclusive de montagem CANCELADA/CONCLUIDA
+            spec = SpecificationUtils.and(spec, (root, query, cb) -> {
+                var sub = query.subquery(Long.class);
+                var montagem = sub.from(com.manager.app.montagem.MontagemMostruario.class);
+                var pedido = montagem.join("pedidos");
+                sub.select(montagem.get("id")).where(cb.equal(pedido.get("id"), root.get("id")));
+                return cb.not(cb.exists(sub));
+            });
+        }
         if (f.status() != null && !f.status().isEmpty()) {
             spec = SpecificationUtils.and(spec, (root, query, cb) -> root.get("status").in(f.status()));
         }

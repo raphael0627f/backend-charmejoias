@@ -127,6 +127,13 @@ Particularidades:
 
 ---
 
+### Filtro `semMontagem` em `GET /pedidos` (dialog "Vincular pedido")
+
+`GET /pedidos?semMontagem=true` devolve só pedidos que **não constam em nenhuma montagem**. Aceito também em `GET /pedidos/contagem`, e combina com os demais filtros (`clienteCodigo`, `temCliente=false`, `status`, `categoria` etc.); sem o parâmetro (ou `false`) a listagem é a de antes. Paginação e totais respeitam o filtro.
+
+- A regra é a mesma do vínculo: um pedido só pode estar em uma montagem, e **o vínculo não some ao cancelar ou concluir a montagem** (só ao desvincular). Por isso um pedido de montagem `CANCELADA`/`CONCLUIDA` também fica fora de `semMontagem=true` — e de fato o backend não permitiria vinculá-lo a outra montagem (`409`).
+- Pedidos `ENVIADO` não são filtrados por este parâmetro; para escondê-los use o filtro de `status` com os demais valores.
+
 ## 4. Erros
 
 | Código | Quando |

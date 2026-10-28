@@ -55,9 +55,10 @@ public class PedidoController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate criadoInicio,
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate criadoFim,
             @RequestParam(required = false) Boolean temCliente,
+            @RequestParam(required = false) Boolean semMontagem,
             @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable){
         PedidoFiltro filtro = new PedidoFiltro(busca, modoBusca, status, categoria, numero, clienteCodigo, clienteNome, cidade,
-                dataEntregaInicio, dataEntregaFim, criadoInicio, criadoFim, temCliente);
+                dataEntregaInicio, dataEntregaFim, criadoInicio, criadoFim, temCliente, semMontagem);
         return ResponseEntity.ok(service.findAllResumo(filtro, pageable));
     }
 
@@ -76,9 +77,10 @@ public class PedidoController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataEntregaFim,
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate criadoInicio,
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate criadoFim,
-            @RequestParam(required = false) Boolean temCliente){
+            @RequestParam(required = false) Boolean temCliente,
+            @RequestParam(required = false) Boolean semMontagem){
         PedidoFiltro filtro = new PedidoFiltro(busca, modoBusca, status, categoria, numero, clienteCodigo, clienteNome, cidade,
-                dataEntregaInicio, dataEntregaFim, criadoInicio, criadoFim, temCliente);
+                dataEntregaInicio, dataEntregaFim, criadoInicio, criadoFim, temCliente, semMontagem);
         return ResponseEntity.ok(service.contar(filtro));
     }
 
