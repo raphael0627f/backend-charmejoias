@@ -25,7 +25,7 @@ public class AgendaMarcadorRequestDTO {
     @NotNull(message = "Tipo do marcador é obrigatório")
     private AgendaMarcadorTipo tipo;
 
-    private LocalDate dataConferencia;
+    private LocalDate dataPreAcerto;
 
     private LocalDate dataAcerto;
 }

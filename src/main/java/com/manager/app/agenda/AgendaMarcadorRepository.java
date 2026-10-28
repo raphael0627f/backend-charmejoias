@@ -16,7 +16,7 @@ public interface AgendaMarcadorRepository extends JpaRepository<AgendaMarcador, 
     @Query("""
             select m from AgendaMarcador m
             where (m.data between :inicio and :fim)
-               or (m.dataConferencia between :inicio and :fim)
+               or (m.dataPreAcerto between :inicio and :fim)
                or (m.dataAcerto between :inicio and :fim)
             order by m.data asc
             """)

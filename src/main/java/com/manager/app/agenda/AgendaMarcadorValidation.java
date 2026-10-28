@@ -27,17 +27,17 @@ public class AgendaMarcadorValidation {
 
     public void datasPorTipo(AgendaMarcador marcador){
         if (marcador.getTipo() == AgendaMarcadorTipo.TRABALHA) {
-            if (marcador.getDataConferencia() == null || marcador.getDataAcerto() == null) {
-                throw new ItemInvalidoException("Marcador do tipo TRABALHA exige data da conferência e data do acerto");
+            if (marcador.getDataPreAcerto() == null || marcador.getDataAcerto() == null) {
+                throw new ItemInvalidoException("Marcador do tipo TRABALHA exige data do pré-acerto e data do acerto");
             }
-            if (marcador.getDataConferencia().isBefore(marcador.getData())) {
-                throw new ItemInvalidoException("A data da conferência não pode ser anterior à data do marcador");
+            if (marcador.getDataPreAcerto().isBefore(marcador.getData())) {
+                throw new ItemInvalidoException("A data do pré-acerto não pode ser anterior à data do marcador");
             }
-            if (marcador.getDataAcerto().isBefore(marcador.getDataConferencia())) {
-                throw new ItemInvalidoException("A data do acerto não pode ser anterior à data da conferência");
+            if (marcador.getDataAcerto().isBefore(marcador.getDataPreAcerto())) {
+                throw new ItemInvalidoException("A data do acerto não pode ser anterior à data do pré-acerto");
             }
-        } else if (marcador.getDataConferencia() != null || marcador.getDataAcerto() != null) {
-            throw new ItemInvalidoException("Marcador do tipo NAO_TRABALHA não pode ter data da conferência nem data do acerto");
+        } else if (marcador.getDataPreAcerto() != null || marcador.getDataAcerto() != null) {
+            throw new ItemInvalidoException("Marcador do tipo NAO_TRABALHA não pode ter data do pré-acerto nem data do acerto");
         }
     }
 

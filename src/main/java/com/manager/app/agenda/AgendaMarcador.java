@@ -32,7 +32,7 @@ public class AgendaMarcador {
     @Enumerated(EnumType.STRING)
     private AgendaMarcadorTipo tipo;
 
-    private LocalDate dataConferencia;
+    private LocalDate dataPreAcerto;
 
     private LocalDate dataAcerto;
 

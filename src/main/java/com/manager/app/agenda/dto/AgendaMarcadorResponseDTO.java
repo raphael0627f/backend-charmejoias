@@ -13,14 +13,14 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-@JsonPropertyOrder({ "id", "data", "nome", "tipo", "dataConferencia", "dataAcerto", "createdAt", "updatedAt", "createdBy", "updatedBy" })
+@JsonPropertyOrder({ "id", "data", "nome", "tipo", "dataPreAcerto", "dataAcerto", "createdAt", "updatedAt", "createdBy", "updatedBy" })
 public class AgendaMarcadorResponseDTO {
 
     private Long id;
     private LocalDate data;
     private String nome;
     private AgendaMarcadorTipo tipo;
-    private LocalDate dataConferencia;
+    private LocalDate dataPreAcerto;
     private LocalDate dataAcerto;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

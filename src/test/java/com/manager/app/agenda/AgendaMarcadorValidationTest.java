@@ -25,12 +25,12 @@ class AgendaMarcadorValidationTest {
         validation = new AgendaMarcadorValidation(repository);
     }
 
-    private AgendaMarcador marcador(AgendaMarcadorTipo tipo, LocalDate data, LocalDate conferencia, LocalDate acerto) {
+    private AgendaMarcador marcador(AgendaMarcadorTipo tipo, LocalDate data, LocalDate preAcerto, LocalDate acerto) {
         AgendaMarcador m = new AgendaMarcador();
         m.setNome("TESTE");
         m.setTipo(tipo);
         m.setData(data);
-        m.setDataConferencia(conferencia);
+        m.setDataPreAcerto(preAcerto);
         m.setDataAcerto(acerto);
         return m;
     }
@@ -44,7 +44,7 @@ class AgendaMarcadorValidationTest {
     }
 
     @Test
-    void trabalhaComConferenciaEAcertoNoProprioDiaEPermitido() {
+    void trabalhaComPreAcertoEAcertoNoProprioDiaEPermitido() {
         AgendaMarcador m = marcador(AgendaMarcadorTipo.TRABALHA, DIA, DIA, DIA);
         assertThatCode(() -> validation.datasPorTipo(m)).doesNotThrowAnyException();
     }
@@ -57,11 +57,11 @@ class AgendaMarcadorValidationTest {
     }
 
     @Test
-    void trabalhaSemConferenciaEBarrado() {
+    void trabalhaSemPreAcertoEBarrado() {
         AgendaMarcador m = marcador(AgendaMarcadorTipo.TRABALHA, DIA, null, DIA.plusDays(5));
         assertThatThrownBy(() -> validation.datasPorTipo(m))
                 .isInstanceOf(ItemInvalidoException.class)
-                .hasMessage("Marcador do tipo TRABALHA exige data da conferência e data do acerto");
+                .hasMessage("Marcador do tipo TRABALHA exige data do pré-acerto e data do acerto");
     }
 
     @Test
@@ -69,7 +69,7 @@ class AgendaMarcadorValidationTest {
         AgendaMarcador m = marcador(AgendaMarcadorTipo.TRABALHA, DIA, DIA.plusDays(5), null);
         assertThatThrownBy(() -> validation.datasPorTipo(m))
                 .isInstanceOf(ItemInvalidoException.class)
-                .hasMessage("Marcador do tipo TRABALHA exige data da conferência e data do acerto");
+                .hasMessage("Marcador do tipo TRABALHA exige data do pré-acerto e data do acerto");
     }
 
     @Test
@@ -79,19 +79,19 @@ class AgendaMarcadorValidationTest {
     }
 
     @Test
-    void trabalhaComConferenciaAntesDoDiaEBarrado() {
+    void trabalhaComPreAcertoAntesDoDiaEBarrado() {
         AgendaMarcador m = marcador(AgendaMarcadorTipo.TRABALHA, DIA, DIA.minusDays(1), DIA.plusDays(5));
         assertThatThrownBy(() -> validation.datasPorTipo(m))
                 .isInstanceOf(ItemInvalidoException.class)
-                .hasMessage("A data da conferência não pode ser anterior à data do marcador");
+                .hasMessage("A data do pré-acerto não pode ser anterior à data do marcador");
     }
 
     @Test
-    void trabalhaComAcertoAntesDaConferenciaEBarrado() {
+    void trabalhaComAcertoAntesDoPreAcertoEBarrado() {
         AgendaMarcador m = marcador(AgendaMarcadorTipo.TRABALHA, DIA, DIA.plusDays(10), DIA.plusDays(9));
         assertThatThrownBy(() -> validation.datasPorTipo(m))
                 .isInstanceOf(ItemInvalidoException.class)
-                .hasMessage("A data do acerto não pode ser anterior à data da conferência");
+                .hasMessage("A data do acerto não pode ser anterior à data do pré-acerto");
     }
 
     // ---------- NAO_TRABALHA ----------
@@ -103,11 +103,11 @@ class AgendaMarcadorValidationTest {
     }
 
     @Test
-    void naoTrabalhaComConferenciaEBarrado() {
+    void naoTrabalhaComPreAcertoEBarrado() {
         AgendaMarcador m = marcador(AgendaMarcadorTipo.NAO_TRABALHA, DIA, DIA.plusDays(1), null);
         assertThatThrownBy(() -> validation.datasPorTipo(m))
                 .isInstanceOf(ItemInvalidoException.class)
-                .hasMessage("Marcador do tipo NAO_TRABALHA não pode ter data da conferência nem data do acerto");
+                .hasMessage("Marcador do tipo NAO_TRABALHA não pode ter data do pré-acerto nem data do acerto");
     }
 
     @Test

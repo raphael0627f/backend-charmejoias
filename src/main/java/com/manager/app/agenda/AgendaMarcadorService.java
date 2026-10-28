@@ -46,7 +46,7 @@ public class AgendaMarcadorService {
         marcadorUpdate.setData(marcador.getData());
         marcadorUpdate.setNome(marcador.getNome());
         marcadorUpdate.setTipo(marcador.getTipo());
-        marcadorUpdate.setDataConferencia(marcador.getDataConferencia());
+        marcadorUpdate.setDataPreAcerto(marcador.getDataPreAcerto());
         marcadorUpdate.setDataAcerto(marcador.getDataAcerto());
         return marcadorUpdate;
     }
