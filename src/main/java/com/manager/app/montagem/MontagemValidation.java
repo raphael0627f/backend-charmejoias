@@ -28,6 +28,16 @@ public class MontagemValidation {
         }
     }
 
+    // imprime em ABERTA, EM_MONTAGEM e CONCLUIDA; a etiqueta usa a data de acerto da primeira consignação vinculada
+    public void validarEtiqueta(MontagemMostruario montagem){
+        if (montagem.getStatus() == StatusMontagem.CANCELADA) {
+            throw new ItemInvalidoException("Montagem " + montagem.getId() + " está CANCELADA e não pode ter a etiqueta impressa");
+        }
+        if (montagem.getConsignacoes().isEmpty()) {
+            throw new ItemInvalidoException("Para imprimir a etiqueta é necessário ao menos uma consignação vinculada");
+        }
+    }
+
     // o cliente só troca enquanto a montagem não foi iniciada e não tem nenhum vínculo
     // (pedidos e consignações vinculados precisam ser do cliente da montagem)
     public void validarTrocaCliente(MontagemMostruario montagem, UUID novoClienteId){

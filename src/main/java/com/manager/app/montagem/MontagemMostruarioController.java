@@ -19,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +40,7 @@ public class MontagemMostruarioController {
     private final MontagemMostruarioMapper mapper;
     private final PedidoMapper pedidoMapper;
     private final ConsignacaoMapper consignacaoMapper;
+    private final MontagemEtiquetaService etiquetaService;
 
     @GetMapping
     public ResponseEntity<Page<MontagemResumoDTO>> findAll(
@@ -162,5 +164,14 @@ public class MontagemMostruarioController {
     @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
     public ResponseEntity<MontagemResponseDTO> cancelar(@PathVariable Long id, @RequestBody @Valid MontagemCancelamentoRequestDTO request){
         return ResponseEntity.ok(mapper.toResponseDTO(service.cancelar(id, request.getMotivo())));
+    }
+
+    @GetMapping(value = "/{id}/etiqueta")
+    @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
+    public ResponseEntity<byte[]> etiqueta(@PathVariable Long id){
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "inline; filename=etiqueta-montagem-" + id + ".pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(etiquetaService.gerarEtiqueta(id));
     }
 }
