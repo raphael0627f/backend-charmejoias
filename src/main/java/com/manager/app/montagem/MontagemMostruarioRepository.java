@@ -24,6 +24,11 @@ public interface MontagemMostruarioRepository extends JpaRepository<MontagemMost
     Optional<MontagemMostruario> findFirstByCliente_IdAndStatusInOrderById(UUID clienteId, Collection<StatusMontagem> status);
     Optional<MontagemMostruario> findFirstByCliente_IdAndStatusInAndIdNotOrderById(UUID clienteId, Collection<StatusMontagem> status, Long montagemId);
 
+    // trava (advisory lock transacional do Postgres) as operações de montagem de UM cliente até o fim da transação;
+    // o retorno (void cast para texto) só existe porque o JPA não aceita query nativa sem resultado
+    @Query(value = "select cast(pg_advisory_xact_lock(hashtextextended(cast(:clienteId as text), 0)) as text)", nativeQuery = true)
+    String bloquearMontagensDoCliente(@Param("clienteId") UUID clienteId);
+
     // listagem: traz cliente e mostruário na mesma consulta (sem uma consulta extra por linha)
     @Override
     @EntityGraph(attributePaths = {"cliente", "mostruario"})

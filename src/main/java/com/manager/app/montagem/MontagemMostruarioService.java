@@ -228,8 +228,19 @@ public class MontagemMostruarioService {
         return montagem;
     }
 
+    // Regra "uma montagem em andamento por cliente" sem índice único (há duplicidades legadas): a checagem + o insert
+    // não são atômicos, então dois pedidos simultâneos para o mesmo cliente passariam os dois. O advisory lock
+    // transacional (por cliente) serializa esses pedidos: o segundo espera o commit/rollback do primeiro e só então
+    // consulta. No READ COMMITTED (padrão do Postgres) cada comando enxerga o que já foi commitado quando começa,
+    // então a consulta feita DEPOIS de obter o lock já vê a montagem criada pelo primeiro. O lock é liberado sozinho
+    // no fim da transação; clientes diferentes não se bloqueiam, e cada operação trava um único cliente (sem deadlock).
+    private void bloquearMontagensDoCliente(UUID clienteId){
+        repository.bloquearMontagensDoCliente(clienteId);
+    }
+
     @Transactional
     public MontagemMostruario create(MontagemRequestDTO request){
+        bloquearMontagensDoCliente(request.getClienteId());
         validation.validarSemMontagemEmAndamento(
                 repository.findFirstByCliente_IdAndStatusInOrderById(request.getClienteId(), MontagemValidation.STATUS_EM_ANDAMENTO));
         MontagemMostruario montagem = new MontagemMostruario();
@@ -247,6 +258,9 @@ public class MontagemMostruarioService {
     public MontagemMostruario update(MontagemRequestDTO request){
         MontagemMostruario montagem = this.findById(request.getId());
         validation.validarEditavel(montagem);
+        if (!montagem.getCliente().getId().equals(request.getClienteId())) {
+            bloquearMontagensDoCliente(request.getClienteId());
+        }
         validation.validarTrocaCliente(montagem, request.getClienteId(),
                 repository.findFirstByCliente_IdAndStatusInAndIdNotOrderById(request.getClienteId(), MontagemValidation.STATUS_EM_ANDAMENTO, montagem.getId()));
 
