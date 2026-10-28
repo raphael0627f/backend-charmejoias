@@ -230,6 +230,8 @@ public class MontagemMostruarioService {
 
     @Transactional
     public MontagemMostruario create(MontagemRequestDTO request){
+        validation.validarSemMontagemEmAndamento(
+                repository.findFirstByCliente_IdAndStatusInOrderById(request.getClienteId(), MontagemValidation.STATUS_EM_ANDAMENTO));
         MontagemMostruario montagem = new MontagemMostruario();
         montagem.setCliente(clienteService.findByIdAndAtivo(request.getClienteId()));
         montagem.setMostruario(resolverMostruario(request.getMostruarioId()));
@@ -245,7 +247,8 @@ public class MontagemMostruarioService {
     public MontagemMostruario update(MontagemRequestDTO request){
         MontagemMostruario montagem = this.findById(request.getId());
         validation.validarEditavel(montagem);
-        validation.validarTrocaCliente(montagem, request.getClienteId());
+        validation.validarTrocaCliente(montagem, request.getClienteId(),
+                repository.findFirstByCliente_IdAndStatusInAndIdNotOrderById(request.getClienteId(), MontagemValidation.STATUS_EM_ANDAMENTO, montagem.getId()));
 
         if (!montagem.getCliente().getId().equals(request.getClienteId())) {
             montagem.setCliente(clienteService.findByIdAndAtivo(request.getClienteId()));

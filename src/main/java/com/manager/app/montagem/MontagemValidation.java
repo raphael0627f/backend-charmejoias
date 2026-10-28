@@ -40,7 +40,18 @@ public class MontagemValidation {
 
     // o cliente só troca enquanto a montagem não foi iniciada e não tem nenhum vínculo
     // (pedidos e consignações vinculados precisam ser do cliente da montagem)
-    public void validarTrocaCliente(MontagemMostruario montagem, UUID novoClienteId){
+    // montagem em andamento = ABERTA ou EM_MONTAGEM; CONCLUIDA e CANCELADA não bloqueiam uma nova
+    public static final List<StatusMontagem> STATUS_EM_ANDAMENTO = List.of(StatusMontagem.ABERTA, StatusMontagem.EM_MONTAGEM);
+
+    // um cliente só pode ter uma montagem em andamento; recebe o resultado da consulta (as OUTRAS montagens do cliente)
+    public void validarSemMontagemEmAndamento(Optional<MontagemMostruario> existente){
+        existente.ifPresent(m -> {
+            throw new ItemInvalidoException("O cliente já possui a montagem " + m.getId() + " com status " + m.getStatus()
+                    + ". Conclua ou cancele antes de criar outra");
+        });
+    }
+
+    public void validarTrocaCliente(MontagemMostruario montagem, UUID novoClienteId, Optional<MontagemMostruario> outraDoNovoCliente){
         if (montagem.getCliente().getId().equals(novoClienteId)) return;
         if (montagem.getStatus() != StatusMontagem.ABERTA) {
             throw new ItemInvalidoException("O cliente só pode ser alterado enquanto a montagem está ABERTA. id: " + montagem.getId());
@@ -48,6 +59,7 @@ public class MontagemValidation {
         if (temVinculos(montagem)) {
             throw new ItemInvalidoException("Remova os pedidos e consignações vinculados antes de trocar o cliente da montagem. id: " + montagem.getId());
         }
+        validarSemMontagemEmAndamento(outraDoNovoCliente);
     }
 
     public void validarExclusao(MontagemMostruario montagem){

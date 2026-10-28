@@ -9,13 +9,20 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.Optional;
 
 public interface MontagemMostruarioRepository extends JpaRepository<MontagemMostruario, Long>, JpaSpecificationExecutor<MontagemMostruario> {
     // montagem em que a consignação / o pedido já está vinculado (no máximo uma)
     Optional<MontagemMostruario> findByConsignacoes_Id(Long consignacaoId);
     Optional<MontagemMostruario> findByPedidos_Id(Long pedidoId);
+
+    // montagem em andamento do cliente (regra: no máximo uma ABERTA/EM_MONTAGEM por cliente); a segunda consulta
+    // ignora a própria montagem, para a troca de cliente
+    Optional<MontagemMostruario> findFirstByCliente_IdAndStatusInOrderById(UUID clienteId, Collection<StatusMontagem> status);
+    Optional<MontagemMostruario> findFirstByCliente_IdAndStatusInAndIdNotOrderById(UUID clienteId, Collection<StatusMontagem> status, Long montagemId);
 
     // listagem: traz cliente e mostruário na mesma consulta (sem uma consulta extra por linha)
     @Override
