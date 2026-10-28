@@ -15,6 +15,8 @@ Todas as rotas exigem autenticação. As que escrevem (POST/PUT/PATCH/DELETE) ex
 | `CONCLUIDA` | finalizada | somente leitura |
 | `CANCELADA` | cancelada com motivo | somente leitura |
 
+**Uma montagem em andamento por cliente:** um cliente só pode ter **uma** montagem `ABERTA` ou `EM_MONTAGEM` por vez. Vale na criação (`POST /montagens`) e na troca de cliente (`PUT /montagens` com outro `clienteId`; a própria montagem não conta). Clientes que só têm montagens `CONCLUIDA`/`CANCELADA` podem criar normalmente. Violação → `400` com `menssage`, por exemplo: `"O cliente já possui a montagem 731 com status EM_MONTAGEM. Conclua ou cancele antes de criar outra"` (o `id` e o status vêm na mensagem, para o frontend poder apontar a montagem existente). Montagens duplicadas já existentes não são alteradas; a regra só barra novas.
+
 Transições:
 
 ```
@@ -129,7 +131,7 @@ Particularidades:
 
 | Código | Quando |
 |---|---|
-| `400` | validação, transição de status inválida, montagem somente leitura, cliente diferente, pedido cancelado, concluir sem consignação |
+| `400` | validação, transição de status inválida, montagem somente leitura, cliente diferente, pedido cancelado, concluir sem consignação, cliente já com montagem ABERTA/EM_MONTAGEM (criação ou troca de cliente) |
 | `403` | usuário sem `MONTAGEM_GERENCIAR` |
 | `404` | montagem / pedido / consignação / cliente / mostruário inexistente, ou item não vinculado ao desvincular |
 | `409` | excluir montagem com vínculos; item já vinculado a outra montagem |
