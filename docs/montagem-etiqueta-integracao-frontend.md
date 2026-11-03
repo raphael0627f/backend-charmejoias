@@ -4,10 +4,11 @@ Gera em PDF a etiqueta (283x425, **uma etiqueta por PDF**) de uma montagem de mo
 
 ## Endpoint
 
-`GET /montagens/{id}/etiqueta`
+`GET /montagens/{id}/etiqueta?dataAcerto=yyyy-MM-dd`
 
 - **Permissão:** `MONTAGEM_GERENCIAR` (sem ela, `403`).
-- **Sem corpo e sem query params.**
+- **Query param obrigatório `dataAcerto`** (`yyyy-MM-dd`, ex.: `2026-12-05`): a data do acerto impressa na etiqueta ("Data da troca"). Quem escolhe é o usuário; o backend não lê mais a data da consignação.
+- **Sem corpo.**
 - **Resposta `200`:** o PDF em bytes.
   - `Content-Type: application/pdf`
   - `Content-Disposition: inline; filename=etiqueta-montagem-{id}.pdf`
@@ -18,8 +19,8 @@ Como o endpoint exige o token JWT, não dá para abrir a URL direto com `window.
 
 | Situação | Resposta |
 |---|---|
-| Status `ABERTA`, `EM_MONTAGEM` ou `CONCLUIDA`, com ao menos uma consignação vinculada | `200` + PDF |
-| Montagem sem nenhuma consignação vinculada | `400` |
+| Status `ABERTA`, `EM_MONTAGEM` ou `CONCLUIDA` e `dataAcerto` válida (**com ou sem** consignação vinculada) | `200` + PDF |
+| `dataAcerto` ausente, vazia ou em formato inválido | `400` |
 | Montagem `CANCELADA` | `400` |
 | Montagem inexistente | `404` |
 | Usuário sem `MONTAGEM_GERENCIAR` | `403` |
@@ -28,7 +29,11 @@ Como o endpoint exige o token JWT, não dá para abrir a URL direto com `window.
 Os erros vêm em JSON no formato padrão (`RestErrorMenssage`, campo **`menssage`** com dois s). Atenção: quando o erro acontece o corpo é JSON, não PDF — confira o `status`/`Content-Type` antes de criar o blob.
 
 ```json
-{ "timestamp": "2026-10-28T00:16:16.684Z", "status": "400 BAD_REQUEST", "menssage": "Para imprimir a etiqueta é necessário ao menos uma consignação vinculada", "path": "uri=/montagens/16/etiqueta" }
+{ "timestamp": "...", "status": "400 BAD_REQUEST", "menssage": "Informe a data do acerto (dataAcerto=yyyy-MM-dd) para imprimir a etiqueta", "path": "uri=/montagens/16/etiqueta" }
+```
+
+```json
+{ "timestamp": "...", "status": "400 BAD_REQUEST", "menssage": "Data do acerto inválida: '05/12/2026'. Use o formato yyyy-MM-dd", "path": "uri=/montagens/16/etiqueta" }
 ```
 
 ```json
@@ -49,7 +54,7 @@ Datas em `dd/MM/yyyy`. Cliente = cliente da montagem.
 
 - **Código / referência:** `codigo` e `referencia` do cliente.
 - **Mostruário:** descrição do mostruário da montagem.
-- **Data da visita:** `dataEntrega` da montagem. **Data da troca:** `dataAcertoConsignacao` da **primeira** consignação vinculada (vazia se nula).
+- **Data da visita:** `dataEntrega` da montagem. **Data da troca:** o `dataAcerto` informado na chamada.
 - **Nome:** `nome - celular / telefone` (partes vazias são omitidas).
 - **Endereços:** todos, um por linha, principal primeiro: `descricao: logradouro - numero - bairro - municipio - complemento - pontoReferencia (latitude, longitude)` (partes vazias omitidas).
 - **Nome / Bairro / Cidade:** nome completo, bairro e município do endereço principal (ou o primeiro, se nenhum for principal).

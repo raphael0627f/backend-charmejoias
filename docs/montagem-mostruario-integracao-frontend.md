@@ -134,6 +134,10 @@ Particularidades:
 - A regra é a mesma do vínculo: um pedido só pode estar em uma montagem, e **o vínculo não some ao cancelar ou concluir a montagem** (só ao desvincular). Por isso um pedido de montagem `CANCELADA`/`CONCLUIDA` também fica fora de `semMontagem=true` — e de fato o backend não permitiria vinculá-lo a outra montagem (`409`).
 - Pedidos `ENVIADO` não são filtrados por este parâmetro; para escondê-los use o filtro de `status` com os demais valores.
 
+### Etiqueta da montagem
+
+`GET /montagens/{id}/etiqueta?dataAcerto=yyyy-MM-dd` gera o PDF da etiqueta. `dataAcerto` é **obrigatória** (sem ela ou em formato inválido: `400` com `menssage`), a montagem **não precisa** ter consignação vinculada, e só `CANCELADA` é barrada (`400`). Contrato completo em `docs/montagem-etiqueta-integracao-frontend.md`.
+
 ## 4. Erros
 
 | Código | Quando |
