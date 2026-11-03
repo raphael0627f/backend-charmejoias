@@ -41,6 +41,7 @@ public class MontagemMostruarioController {
     private final PedidoMapper pedidoMapper;
     private final ConsignacaoMapper consignacaoMapper;
     private final MontagemEtiquetaService etiquetaService;
+    private final MontagemValidation validation;
 
     @GetMapping
     public ResponseEntity<Page<MontagemResumoDTO>> findAll(
@@ -168,10 +169,11 @@ public class MontagemMostruarioController {
 
     @GetMapping(value = "/{id}/etiqueta")
     @PreAuthorize("hasAuthority('MONTAGEM_GERENCIAR')")
-    public ResponseEntity<byte[]> etiqueta(@PathVariable Long id){
+    public ResponseEntity<byte[]> etiqueta(@PathVariable Long id, @RequestParam(required = false) String dataAcerto){
+        LocalDate acerto = validation.validarDataAcertoEtiqueta(dataAcerto);
         return ResponseEntity.ok()
                 .header("Content-Disposition", "inline; filename=etiqueta-montagem-" + id + ".pdf")
                 .contentType(MediaType.APPLICATION_PDF)
-                .body(etiquetaService.gerarEtiqueta(id));
+                .body(etiquetaService.gerarEtiqueta(id, acerto));
     }
 }

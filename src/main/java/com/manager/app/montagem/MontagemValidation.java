@@ -9,6 +9,8 @@ import com.manager.app.shared.exception.ObjetoEmUsoException;
 import com.manager.app.montagem.dto.MontagemConferenciaDTO;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,13 +30,22 @@ public class MontagemValidation {
         }
     }
 
-    // imprime em ABERTA, EM_MONTAGEM e CONCLUIDA; a etiqueta usa a data de acerto da primeira consignação vinculada
+    // imprime em ABERTA, EM_MONTAGEM e CONCLUIDA, com ou sem consignação vinculada (a data do acerto vem do usuário)
     public void validarEtiqueta(MontagemMostruario montagem){
         if (montagem.getStatus() == StatusMontagem.CANCELADA) {
             throw new ItemInvalidoException("Montagem " + montagem.getId() + " está CANCELADA e não pode ter a etiqueta impressa");
         }
-        if (montagem.getConsignacoes().isEmpty()) {
-            throw new ItemInvalidoException("Para imprimir a etiqueta é necessário ao menos uma consignação vinculada");
+    }
+
+    // dataAcerto da etiqueta: obrigatória, yyyy-MM-dd; chega como texto para o erro sair no padrão do projeto (menssage)
+    public LocalDate validarDataAcertoEtiqueta(String dataAcerto){
+        if (dataAcerto == null || dataAcerto.isBlank()) {
+            throw new ItemInvalidoException("Informe a data do acerto (dataAcerto=yyyy-MM-dd) para imprimir a etiqueta");
+        }
+        try {
+            return LocalDate.parse(dataAcerto.trim());
+        } catch (DateTimeParseException e) {
+            throw new ItemInvalidoException("Data do acerto inválida: '" + dataAcerto + "'. Use o formato yyyy-MM-dd");
         }
     }
 

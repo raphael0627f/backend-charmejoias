@@ -1,7 +1,6 @@
 package com.manager.app.montagem;
 
 import com.manager.app.cliente.Cliente;
-import com.manager.app.consignacao.Consignacao;
 import com.manager.app.endereco.Endereco;
 import com.manager.app.montagem.dto.MontagemEtiquetaDTO;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
@@ -44,11 +43,11 @@ public class MontagemEtiquetaService {
     private String relatorioPath;
 
     @Transactional(readOnly = true)
-    public byte[] gerarEtiqueta(Long montagemId){
+    public byte[] gerarEtiqueta(Long montagemId, LocalDate dataAcerto){
         MontagemMostruario montagem = repository.findById(montagemId)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Montagem não encontrada. id: " + montagemId));
         validation.validarEtiqueta(montagem);
-        MontagemEtiquetaDTO dados = montarDados(montagem);
+        MontagemEtiquetaDTO dados = montarDados(montagem, dataAcerto);
 
         Path cabecalho = Path.of(relatorioPath, CABECALHO);
         try (InputStream jasperStream = getClass().getResourceAsStream(RELATORIO);
@@ -64,19 +63,18 @@ public class MontagemEtiquetaService {
         }
     }
 
-    MontagemEtiquetaDTO montarDados(MontagemMostruario montagem){
+    MontagemEtiquetaDTO montarDados(MontagemMostruario montagem, LocalDate dataAcerto){
         Cliente cliente = montagem.getCliente();
         List<Endereco> enderecos = cliente != null ? cliente.getEnderecos() : List.of();
         Endereco principal = enderecoPrincipal(enderecos);
         String nome = cliente != null ? cliente.getNome() : null;
-        Consignacao primeira = montagem.getConsignacoes().get(0);
 
         return MontagemEtiquetaDTO.builder()
                 .codCliente(vazioSeNulo(cliente != null ? cliente.getCodigo() : null))
                 .nomeContatoCliente(nomeContato(nome, cliente != null ? cliente.getCelular() : null, cliente != null ? cliente.getTelefone() : null))
                 .mostruario(montagem.getMostruario() != null ? vazioSeNulo(montagem.getMostruario().getDescricao()) : "")
                 .dataEntrega(formatarData(montagem.getDataEntrega()))
-                .dataAcerto(formatarData(primeira.getDataAcertoConsignacao()))
+                .dataAcerto(formatarData(dataAcerto))
                 .refCliente(vazioSeNulo(cliente != null ? cliente.getReferencia() : null))
                 .enderecos(enderecosEmLinhas(enderecos))
                 .nomeBairroCidadeCliente(nomeBairroCidade(nome, principal))
