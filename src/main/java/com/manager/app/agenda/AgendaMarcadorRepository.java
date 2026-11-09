@@ -9,12 +9,19 @@ import java.util.List;
 
 public interface AgendaMarcadorRepository extends JpaRepository<AgendaMarcador, Long> {
 
+    long countByRota_Id(Long rotaId);
+
+    List<AgendaMarcador> findByRota_Id(Long rotaId);
+
     boolean existsByData(LocalDate data);
 
     boolean existsByDataAndIdNot(LocalDate data, Long id);
 
     @Query("""
             select m from AgendaMarcador m
+            left join fetch m.rota
+            left join fetch m.createdBy
+            left join fetch m.updatedBy
             where (m.data between :inicio and :fim)
                or (m.dataPreAcerto between :inicio and :fim)
                or (m.dataAcerto between :inicio and :fim)

@@ -1,4 +1,4 @@
-package com.manager.app.rota.dto;
+package com.manager.app.planejadorrota.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class RotaConsignacaoItemRequestDTO {
+public class PlanejadorRotaConsignacaoItemRequestDTO {
 
     @NotNull(message = "consignacaoId é obrigatório")
     private Long consignacaoId;

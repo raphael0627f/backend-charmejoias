@@ -9,7 +9,10 @@ import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import com.manager.app.cidade.Cidade;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.LocalDateTime;
 
 @Entity
@@ -27,10 +30,23 @@ public class AgendaMarcador {
 
     private LocalDate data;
 
+    // só NAO_TRABALHA; no TRABALHA o nome é o da rota (derivado, não armazenado)
     private String nome;
 
     @Enumerated(EnumType.STRING)
     private AgendaMarcadorTipo tipo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rota_id")
+    private AgendaRota rota;
+
+    // cidades do dia que não fazem parte da rota (só TRABALHA)
+    @ManyToMany
+    @JoinTable(name = "agenda_marcador_cidades_extras",
+            joinColumns = @JoinColumn(name = "marcador_id"),
+            inverseJoinColumns = @JoinColumn(name = "cidade_id"))
+    @OrderColumn(name = "ordem")
+    private List<Cidade> cidadesExtras = new ArrayList<>();
 
     private LocalDate dataPreAcerto;
 

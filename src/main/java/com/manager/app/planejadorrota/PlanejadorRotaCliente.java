@@ -1,4 +1,4 @@
-package com.manager.app.rota;
+package com.manager.app.planejadorrota;
 
 import com.manager.app.cliente.Cliente;
 import com.manager.app.endereco.Endereco;
@@ -10,20 +10,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "rota_clientes")
+@Table(name = "planejador_rota_clientes")
 @EqualsAndHashCode(of = "id")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RotaCliente {
+public class PlanejadorRotaCliente {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rota_id", nullable = false)
-    private Rota rota;
+    @JoinColumn(name = "planejador_rota_id", nullable = false)
+    private PlanejadorRota rota;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cliente_id", nullable = false)
@@ -47,30 +47,30 @@ public class RotaCliente {
     private BigDecimal valorAPagar;
 
     // pode ter mais de uma consignação a deixar/trazer por cliente - a confirmação de
-    // entrega/coleta é registrada por consignação (RotaConsignacaoDeixar/Trazer.confirmada),
+    // entrega/coleta é registrada por consignação (PlanejadorRotaConsignacaoDeixar/Trazer.confirmada),
     // não agregada aqui, senão perde-se qual item especifico nao foi entregue/recolhido
     @OneToMany(mappedBy = "rotaCliente", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<RotaConsignacaoDeixar> consignacoesDeixar = new ArrayList<>();
+    private List<PlanejadorRotaConsignacaoDeixar> consignacoesDeixar = new ArrayList<>();
 
     @OneToMany(mappedBy = "rotaCliente", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<RotaConsignacaoTrazer> consignacoesTrazer = new ArrayList<>();
+    private List<PlanejadorRotaConsignacaoTrazer> consignacoesTrazer = new ArrayList<>();
 
-    public void adicionarConsignacaoDeixar(RotaConsignacaoDeixar item) {
+    public void adicionarConsignacaoDeixar(PlanejadorRotaConsignacaoDeixar item) {
         item.setRotaCliente(this);
         this.consignacoesDeixar.add(item);
     }
 
-    public void removerConsignacaoDeixar(RotaConsignacaoDeixar item) {
+    public void removerConsignacaoDeixar(PlanejadorRotaConsignacaoDeixar item) {
         item.setRotaCliente(null);
         this.consignacoesDeixar.remove(item);
     }
 
-    public void adicionarConsignacaoTrazer(RotaConsignacaoTrazer item) {
+    public void adicionarConsignacaoTrazer(PlanejadorRotaConsignacaoTrazer item) {
         item.setRotaCliente(this);
         this.consignacoesTrazer.add(item);
     }
 
-    public void removerConsignacaoTrazer(RotaConsignacaoTrazer item) {
+    public void removerConsignacaoTrazer(PlanejadorRotaConsignacaoTrazer item) {
         item.setRotaCliente(null);
         this.consignacoesTrazer.remove(item);
     }

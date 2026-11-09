@@ -1,10 +1,13 @@
 # Agenda — guia de integração frontend (contrato, etapa 1A)
 
+> **Atualização (V58):** o marcador `TRABALHA` agora aponta para uma rota cadastrada (`rotaId`) e aceita cidades extras do dia; o campo `nome` só vale para `NAO_TRABALHA`. Veja `docs/agenda-rotas-integracao-frontend.md` (contrato atual).
+
+
 > **Renomeação (V55):** o antigo campo `dataConferencia` passou a se chamar **`dataPreAcerto`** (JSON e coluna `data_pre_acerto`). Regras inalteradas; só os nomes e as mensagens de erro mudaram. Backend e frontend sobem juntos no mesmo deploy.
 
 > Status: **implementado e testado** (migration V54, backend dev na porta 8080).
 
-Módulo novo e independente de Rota e Consignação. O usuário cria **marcadores** em dias do calendário, com nome livre. Cada marcador é de um de dois tipos:
+Módulo novo e independente do Planejador de rotas e de Consignação. O usuário cria **marcadores** em dias do calendário, com nome livre. Cada marcador é de um de dois tipos:
 
 - `TRABALHA`: dia de trabalho, com data do **pré-acerto** e data do **acerto** obrigatórias.
 - `NAO_TRABALHA`: férias, feriado, carnaval, emenda etc. Sem datas de pré-acerto/acerto.
@@ -28,7 +31,7 @@ Sábado e domingo **não são gravados**: o frontend calcula e sombreia. Um marc
 
 ## 2. Formato de dados
 
-- Datas: **`yyyy-MM-dd`** (ISO), no JSON e nos query params (`?inicio=2026-03-01&fim=2026-03-31`). Atenção: diferente de `/rotas`, que usa `dd/MM/yyyy` nos filtros.
+- Datas: **`yyyy-MM-dd`** (ISO), no JSON e nos query params (`?inicio=2026-03-01&fim=2026-03-31`). Atenção: diferente de `/planejador-rotas`, que usa `dd/MM/yyyy` nos filtros.
 - `createdAt` / `updatedAt`: datetime ISO, ex.: `2026-10-25T16:01:27.905`.
 - `createdBy` / `updatedBy`: objeto `{ id, usuario, primeiroNome, sobrenome }` ou `null`.
 - Erros: corpo `RestErrorMenssage`, campo da mensagem é **`menssage`** (com dois s, proposital).
@@ -67,7 +70,7 @@ Sábado e domingo **não são gravados**: o frontend calcula e sombreia. Um marc
 | `dataPreAcerto` | string `yyyy-MM-dd` \| null | só `TRABALHA` | nulo em `NAO_TRABALHA` |
 | `dataAcerto` | string `yyyy-MM-dd` \| null | só `TRABALHA` | nulo em `NAO_TRABALHA` |
 
-No `PUT`, o `id` do marcador vai **no corpo** (campo `id`, obrigatório, mesmo padrão de `/rotas` e `/mostruarios`); no `POST` ele é ignorado. `createdAt`, `updatedAt`, `createdBy` e `updatedBy` são somente leitura e ignorados se enviados.
+No `PUT`, o `id` do marcador vai **no corpo** (campo `id`, obrigatório, mesmo padrão de `/planejador-rotas` e `/mostruarios`); no `POST` ele é ignorado. `createdAt`, `updatedAt`, `createdBy` e `updatedBy` são somente leitura e ignorados se enviados.
 
 ### Response (`AgendaMarcadorResponseDTO`)
 

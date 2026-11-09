@@ -1,8 +1,8 @@
-package com.manager.app.rota;
+package com.manager.app.planejadorrota;
 
-import com.manager.app.rota.dto.RotaRequestDTO;
-import com.manager.app.rota.dto.RotaResponseDTO;
-import com.manager.app.rota.dto.RotaResumoDTO;
+import com.manager.app.planejadorrota.dto.PlanejadorRotaRequestDTO;
+import com.manager.app.planejadorrota.dto.PlanejadorRotaResponseDTO;
+import com.manager.app.planejadorrota.dto.PlanejadorRotaResumoDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,15 +20,15 @@ import java.time.LocalDate;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(value = "/rotas")
-public class RotaController {
+@RequestMapping(value = "/planejador-rotas")
+public class PlanejadorRotaController {
 
-    private final RotaService service;
-    private final RotaMapper mapper;
-    private final RotaXlsxService xlsxService;
+    private final PlanejadorRotaService service;
+    private final PlanejadorRotaMapper mapper;
+    private final PlanejadorRotaXlsxService xlsxService;
 
     @GetMapping
-    public ResponseEntity<Page<RotaResumoDTO>> findAll(
+    public ResponseEntity<Page<PlanejadorRotaResumoDTO>> findAll(
             @RequestParam(required = false) String busca,
             @RequestParam(required = false) com.manager.app.shared.ModoBusca modoBusca,
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataInicio,
@@ -38,27 +38,27 @@ public class RotaController {
     }
 
     @GetMapping(value = "/{id}")
-    public ResponseEntity<RotaResponseDTO> findById(@PathVariable Long id){
+    public ResponseEntity<PlanejadorRotaResponseDTO> findById(@PathVariable Long id){
         return ResponseEntity.ok(mapper.toResponseDTO(service.findById(id)));
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ROTA_GERENCIAR')")
-    public ResponseEntity<RotaResponseDTO> create(@RequestBody @Valid RotaRequestDTO request){
-        Rota rota = service.create(request);
+    @PreAuthorize("hasAuthority('PLANEJADOR_ROTA_GERENCIAR')")
+    public ResponseEntity<PlanejadorRotaResponseDTO> create(@RequestBody @Valid PlanejadorRotaRequestDTO request){
+        PlanejadorRota rota = service.create(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(rota.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponseDTO(rota));
     }
 
     @PutMapping
-    @PreAuthorize("hasAuthority('ROTA_GERENCIAR')")
-    public ResponseEntity<RotaResponseDTO> update(@RequestBody @Valid RotaRequestDTO request){
-        Rota rota = service.update(request);
+    @PreAuthorize("hasAuthority('PLANEJADOR_ROTA_GERENCIAR')")
+    public ResponseEntity<PlanejadorRotaResponseDTO> update(@RequestBody @Valid PlanejadorRotaRequestDTO request){
+        PlanejadorRota rota = service.update(request);
         return ResponseEntity.ok(mapper.toResponseDTO(rota));
     }
 
     @DeleteMapping(value = "/{id}")
-    @PreAuthorize("hasAuthority('ROTA_GERENCIAR')")
+    @PreAuthorize("hasAuthority('PLANEJADOR_ROTA_GERENCIAR')")
     public ResponseEntity<Void> delete(@PathVariable Long id){
         service.delete(id);
         return ResponseEntity.noContent().build();
@@ -66,9 +66,9 @@ public class RotaController {
 
     @GetMapping(value = "/{id}/xlsx")
     public ResponseEntity<byte[]> gerarXlsx(@PathVariable Long id){
-        Rota rota = service.findById(id);
+        PlanejadorRota rota = service.findById(id);
         byte[] arquivo = xlsxService.gerarXlsx(rota);
-        String nomeArquivo = "rota-" + (rota.getNome() != null ? rota.getNome() : rota.getId()) + ".xlsx";
+        String nomeArquivo = "planejador-rota-" + (rota.getNome() != null ? rota.getNome() : rota.getId()) + ".xlsx";
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=\"" + nomeArquivo + "\"")
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))

@@ -1,4 +1,4 @@
-package com.manager.app.rota.dto;
+package com.manager.app.planejadorrota.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -13,7 +13,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-public class RotaRequestDTO {
+public class PlanejadorRotaRequestDTO {
 
     private Long id;
 
@@ -23,7 +23,7 @@ public class RotaRequestDTO {
     @NotNull(message = "Data da rota é obrigatória")
     private LocalDate dataRota;
 
-    @NotNull(message = "Esta Rota precisa ter um ou mais Clientes")
+    @NotNull(message = "Esta rota do planejador precisa ter um ou mais Clientes")
     @Valid
-    private List<RotaClienteRequestDTO> itens;
+    private List<PlanejadorRotaClienteRequestDTO> itens;
 }

@@ -1,4 +1,4 @@
-package com.manager.app.rota.dto;
+package com.manager.app.planejadorrota.dto;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.manager.app.consignacao.dto.ClienteResumoDTO;
@@ -23,13 +23,13 @@ import java.util.List;
         "consignacoesTrazer",
         "valorAPagar"
 })
-public class RotaClienteResponseDTO {
+public class PlanejadorRotaClienteResponseDTO {
     private Long id;
     private ClienteResumoDTO cliente;
     private EnderecoDTO endereco;
     private Integer ordem;
     private String observacao;
-    private List<RotaConsignacaoResumoDTO> consignacoesDeixar;
-    private List<RotaConsignacaoResumoDTO> consignacoesTrazer;
+    private List<PlanejadorRotaConsignacaoResumoDTO> consignacoesDeixar;
+    private List<PlanejadorRotaConsignacaoResumoDTO> consignacoesTrazer;
     private BigDecimal valorAPagar;
 }
