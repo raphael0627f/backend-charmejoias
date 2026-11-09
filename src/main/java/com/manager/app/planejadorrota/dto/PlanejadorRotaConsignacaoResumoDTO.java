@@ -1,4 +1,4 @@
-package com.manager.app.rota.dto;
+package com.manager.app.planejadorrota.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,14 +7,14 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
-// versao enxuta da consignacao pra exibir dentro de um item de Rota (deixar/trazer) - so o
+// versao enxuta da consignacao pra exibir dentro de um item de PlanejadorRota (deixar/trazer) - so o
 // suficiente pra identificar a consignacao na tela, sem os produtos completos, mais a
 // confirmacao de que essa consignacao especifica foi realmente deixada/trazida
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RotaConsignacaoResumoDTO {
+public class PlanejadorRotaConsignacaoResumoDTO {
     private Long id;
     private String descricao;
     private Integer quantidadeTotal;

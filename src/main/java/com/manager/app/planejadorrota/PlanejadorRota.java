@@ -1,4 +1,4 @@
-package com.manager.app.rota;
+package com.manager.app.planejadorrota;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -16,13 +16,13 @@ import java.util.List;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "rotas")
+@Table(name = "planejador_rotas")
 @EqualsAndHashCode(of = "id")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Rota {
+public class PlanejadorRota {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -32,7 +32,7 @@ public class Rota {
     private LocalDate dataRota;
 
     @OneToMany(mappedBy = "rota", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<RotaCliente> itens = new ArrayList<>();
+    private List<PlanejadorRotaCliente> itens = new ArrayList<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -50,12 +50,12 @@ public class Rota {
     @JoinColumn(name = "updated_by_id")
     private Usuario updatedBy;
 
-    public void adicionarItem(RotaCliente item) {
+    public void adicionarItem(PlanejadorRotaCliente item) {
         item.setRota(this);
         this.itens.add(item);
     }
 
-    public void removerItem(RotaCliente item) {
+    public void removerItem(PlanejadorRotaCliente item) {
         item.setRota(null);
         this.itens.remove(item);
     }

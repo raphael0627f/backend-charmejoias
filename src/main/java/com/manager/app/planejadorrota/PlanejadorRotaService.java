@@ -1,4 +1,4 @@
-package com.manager.app.rota;
+package com.manager.app.planejadorrota;
 
 import com.manager.app.cliente.Cliente;
 import com.manager.app.cliente.ClienteRepository;
@@ -6,10 +6,10 @@ import com.manager.app.consignacao.Consignacao;
 import com.manager.app.consignacao.ConsignacaoRepository;
 import com.manager.app.endereco.Endereco;
 import com.manager.app.endereco.EnderecoRepository;
-import com.manager.app.rota.dto.RotaClienteRequestDTO;
-import com.manager.app.rota.dto.RotaConsignacaoItemRequestDTO;
-import com.manager.app.rota.dto.RotaRequestDTO;
-import com.manager.app.rota.dto.RotaResumoDTO;
+import com.manager.app.planejadorrota.dto.PlanejadorRotaClienteRequestDTO;
+import com.manager.app.planejadorrota.dto.PlanejadorRotaConsignacaoItemRequestDTO;
+import com.manager.app.planejadorrota.dto.PlanejadorRotaRequestDTO;
+import com.manager.app.planejadorrota.dto.PlanejadorRotaResumoDTO;
 import com.manager.app.shared.ModoBusca;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoExistenteException;
@@ -32,18 +32,18 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class RotaService {
+public class PlanejadorRotaService {
 
-    private final RotaRepository repository;
+    private final PlanejadorRotaRepository repository;
     private final ClienteRepository clienteRepository;
     private final EnderecoRepository enderecoRepository;
     private final ConsignacaoRepository consignacaoRepository;
-    private final RotaValidation validation;
+    private final PlanejadorRotaValidation validation;
     private final UsuarioResumoMapper usuarioResumoMapper;
     private final UsuarioAuditorAware usuarioAuditorAware;
 
-    public Page<Rota> findAll(String busca, ModoBusca modoBusca, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
-        Specification<Rota> spec = comBusca(busca, modoBusca);
+    public Page<PlanejadorRota> findAll(String busca, ModoBusca modoBusca, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
+        Specification<PlanejadorRota> spec = comBusca(busca, modoBusca);
 
         if (dataInicio != null) {
             spec = SpecificationUtils.and(spec, (root, query, cb) -> SpecificationUtils.apartirDe(cb, root.get("dataRota"), dataInicio));
@@ -55,12 +55,12 @@ public class RotaService {
         return repository.findAll(spec, pageable);
     }
 
-    public Page<RotaResumoDTO> findAllResumo(String busca, ModoBusca modoBusca, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
+    public Page<PlanejadorRotaResumoDTO> findAllResumo(String busca, ModoBusca modoBusca, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
         return findAll(busca, modoBusca, dataInicio, dataFim, pageable).map(this::toResumoDTO);
     }
 
-    private RotaResumoDTO toResumoDTO(Rota rota){
-        RotaResumoDTO dto = new RotaResumoDTO();
+    private PlanejadorRotaResumoDTO toResumoDTO(PlanejadorRota rota){
+        PlanejadorRotaResumoDTO dto = new PlanejadorRotaResumoDTO();
         dto.setId(rota.getId());
         dto.setNome(rota.getNome());
         dto.setDataRota(rota.getDataRota());
@@ -72,13 +72,13 @@ public class RotaService {
         return dto;
     }
 
-    private Specification<Rota> comBusca(String busca, ModoBusca modoBusca){
+    private Specification<PlanejadorRota> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
         return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca, modoBusca);
     }
 
-    public Rota findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Rota não encontrada. id: " + id));
+    public PlanejadorRota findById(Long id){
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("PlanejadorRota do planejador não encontrada. id: " + id));
     }
 
     private Cliente resolverCliente(UUID clienteId){
@@ -97,19 +97,19 @@ public class RotaService {
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. id: " + consignacaoId));
     }
 
-    private void validarClienteUnico(List<RotaClienteRequestDTO> itens){
-        long clientesDistintos = itens.stream().map(RotaClienteRequestDTO::getClienteId).distinct().count();
+    private void validarClienteUnico(List<PlanejadorRotaClienteRequestDTO> itens){
+        long clientesDistintos = itens.stream().map(PlanejadorRotaClienteRequestDTO::getClienteId).distinct().count();
         if (clientesDistintos != itens.size()) {
-            throw new ObjetoExistenteException("Um mesmo Cliente não pode aparecer mais de uma vez na mesma Rota.");
+            throw new ObjetoExistenteException("Um mesmo Cliente não pode aparecer mais de uma vez na mesma rota do planejador.");
         }
     }
 
     // resolve e valida (pertence ao cliente, sem duplicata) a lista de consignacaoId dos requests -
     // usado tanto pra deixar quanto pra trazer, cada lado resolve e valida sozinho depois
-    private List<Consignacao> resolverEValidarConsignacoes(Cliente cliente, List<RotaConsignacaoItemRequestDTO> requests){
+    private List<Consignacao> resolverEValidarConsignacoes(Cliente cliente, List<PlanejadorRotaConsignacaoItemRequestDTO> requests){
         if (requests == null) return new ArrayList<>();
         List<Consignacao> consignacoes = new ArrayList<>();
-        for (RotaConsignacaoItemRequestDTO request : requests) {
+        for (PlanejadorRotaConsignacaoItemRequestDTO request : requests) {
             Consignacao consignacao = consignacaoRepository.findById(request.getConsignacaoId())
                     .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. id: " + request.getConsignacaoId()));
             consignacoes.add(consignacao);
@@ -118,12 +118,12 @@ public class RotaService {
         return consignacoes;
     }
 
-    private void atualizarConsignacoesDeixar(RotaCliente item, List<RotaConsignacaoItemRequestDTO> requests){
-        List<RotaConsignacaoDeixar> atuais = new ArrayList<>(item.getConsignacoesDeixar());
-        List<RotaConsignacaoItemRequestDTO> pendentes = requests != null ? requests : new ArrayList<>();
+    private void atualizarConsignacoesDeixar(PlanejadorRotaCliente item, List<PlanejadorRotaConsignacaoItemRequestDTO> requests){
+        List<PlanejadorRotaConsignacaoDeixar> atuais = new ArrayList<>(item.getConsignacoesDeixar());
+        List<PlanejadorRotaConsignacaoItemRequestDTO> pendentes = requests != null ? requests : new ArrayList<>();
 
-        for (RotaConsignacaoItemRequestDTO request : pendentes) {
-            RotaConsignacaoDeixar existente = atuais.stream()
+        for (PlanejadorRotaConsignacaoItemRequestDTO request : pendentes) {
+            PlanejadorRotaConsignacaoDeixar existente = atuais.stream()
                     .filter(c -> c.getConsignacao().getId().equals(request.getConsignacaoId()))
                     .findFirst().orElse(null);
 
@@ -131,24 +131,24 @@ public class RotaService {
                 existente.setConfirmada(Boolean.TRUE.equals(request.getConfirmada()));
                 atuais.remove(existente);
             } else {
-                RotaConsignacaoDeixar novo = new RotaConsignacaoDeixar();
+                PlanejadorRotaConsignacaoDeixar novo = new PlanejadorRotaConsignacaoDeixar();
                 novo.setConsignacao(resolverConsignacao(request.getConsignacaoId()));
                 novo.setConfirmada(Boolean.TRUE.equals(request.getConfirmada()));
                 item.adicionarConsignacaoDeixar(novo);
             }
         }
 
-        for (RotaConsignacaoDeixar remover : atuais) {
+        for (PlanejadorRotaConsignacaoDeixar remover : atuais) {
             item.removerConsignacaoDeixar(remover);
         }
     }
 
-    private void atualizarConsignacoesTrazer(RotaCliente item, List<RotaConsignacaoItemRequestDTO> requests){
-        List<RotaConsignacaoTrazer> atuais = new ArrayList<>(item.getConsignacoesTrazer());
-        List<RotaConsignacaoItemRequestDTO> pendentes = requests != null ? requests : new ArrayList<>();
+    private void atualizarConsignacoesTrazer(PlanejadorRotaCliente item, List<PlanejadorRotaConsignacaoItemRequestDTO> requests){
+        List<PlanejadorRotaConsignacaoTrazer> atuais = new ArrayList<>(item.getConsignacoesTrazer());
+        List<PlanejadorRotaConsignacaoItemRequestDTO> pendentes = requests != null ? requests : new ArrayList<>();
 
-        for (RotaConsignacaoItemRequestDTO request : pendentes) {
-            RotaConsignacaoTrazer existente = atuais.stream()
+        for (PlanejadorRotaConsignacaoItemRequestDTO request : pendentes) {
+            PlanejadorRotaConsignacaoTrazer existente = atuais.stream()
                     .filter(c -> c.getConsignacao().getId().equals(request.getConsignacaoId()))
                     .findFirst().orElse(null);
 
@@ -156,19 +156,19 @@ public class RotaService {
                 existente.setConfirmada(Boolean.TRUE.equals(request.getConfirmada()));
                 atuais.remove(existente);
             } else {
-                RotaConsignacaoTrazer novo = new RotaConsignacaoTrazer();
+                PlanejadorRotaConsignacaoTrazer novo = new PlanejadorRotaConsignacaoTrazer();
                 novo.setConsignacao(resolverConsignacao(request.getConsignacaoId()));
                 novo.setConfirmada(Boolean.TRUE.equals(request.getConfirmada()));
                 item.adicionarConsignacaoTrazer(novo);
             }
         }
 
-        for (RotaConsignacaoTrazer remover : atuais) {
+        for (PlanejadorRotaConsignacaoTrazer remover : atuais) {
             item.removerConsignacaoTrazer(remover);
         }
     }
 
-    private void preencherItem(RotaCliente item, RotaClienteRequestDTO itemRequest){
+    private void preencherItem(PlanejadorRotaCliente item, PlanejadorRotaClienteRequestDTO itemRequest){
         Cliente cliente = resolverCliente(itemRequest.getClienteId());
         Endereco endereco = resolverEndereco(itemRequest.getEnderecoId());
         validation.validarEndereco(cliente, endereco);
@@ -189,16 +189,16 @@ public class RotaService {
     }
 
     @Transactional
-    public Rota create(RotaRequestDTO request){
+    public PlanejadorRota create(PlanejadorRotaRequestDTO request){
         validarClienteUnico(request.getItens());
 
-        Rota rota = new Rota();
+        PlanejadorRota rota = new PlanejadorRota();
         rota.setNome(request.getNome());
         rota.setDataRota(request.getDataRota());
 
         int ordemAutomatica = 1;
-        for (RotaClienteRequestDTO itemRequest : request.getItens()) {
-            RotaCliente item = new RotaCliente();
+        for (PlanejadorRotaClienteRequestDTO itemRequest : request.getItens()) {
+            PlanejadorRotaCliente item = new PlanejadorRotaCliente();
             if (itemRequest.getOrdem() == null) {
                 itemRequest.setOrdem(ordemAutomatica);
             }
@@ -211,22 +211,22 @@ public class RotaService {
     }
 
     @Transactional
-    public Rota update(RotaRequestDTO request){
-        Rota rotaUpdate = this.findById(request.getId());
+    public PlanejadorRota update(PlanejadorRotaRequestDTO request){
+        PlanejadorRota rotaUpdate = this.findById(request.getId());
         validarClienteUnico(request.getItens());
 
         rotaUpdate.setNome(request.getNome());
         rotaUpdate.setDataRota(request.getDataRota());
 
-        List<RotaCliente> itensAtuais = new ArrayList<>(rotaUpdate.getItens());
+        List<PlanejadorRotaCliente> itensAtuais = new ArrayList<>(rotaUpdate.getItens());
 
         int ordemAutomatica = 1;
-        for (RotaClienteRequestDTO itemRequest : request.getItens()) {
+        for (PlanejadorRotaClienteRequestDTO itemRequest : request.getItens()) {
             if (itemRequest.getOrdem() == null) {
                 itemRequest.setOrdem(ordemAutomatica);
             }
 
-            RotaCliente itemExistente = itemRequest.getId() != null
+            PlanejadorRotaCliente itemExistente = itemRequest.getId() != null
                     ? itensAtuais.stream().filter(i -> i.getId().equals(itemRequest.getId())).findFirst().orElse(null)
                     : null;
 
@@ -234,14 +234,14 @@ public class RotaService {
                 preencherItem(itemExistente, itemRequest);
                 itensAtuais.remove(itemExistente);
             } else {
-                RotaCliente novoItem = new RotaCliente();
+                PlanejadorRotaCliente novoItem = new PlanejadorRotaCliente();
                 preencherItem(novoItem, itemRequest);
                 rotaUpdate.adicionarItem(novoItem);
             }
             ordemAutomatica++;
         }
 
-        for (RotaCliente itemRemover : itensAtuais) {
+        for (PlanejadorRotaCliente itemRemover : itensAtuais) {
             rotaUpdate.removerItem(itemRemover);
         }
 
@@ -256,7 +256,7 @@ public class RotaService {
 
     @Transactional
     public void delete(Long id){
-        Rota rota = this.findById(id);
+        PlanejadorRota rota = this.findById(id);
         repository.delete(rota);
     }
 }

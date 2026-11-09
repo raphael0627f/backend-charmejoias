@@ -1,4 +1,4 @@
-package com.manager.app.rota;
+package com.manager.app.planejadorrota;
 
 import com.manager.app.cliente.Cliente;
 import com.manager.app.consignacao.Consignacao;
@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class RotaValidation {
+public class PlanejadorRotaValidation {
 
     public void validarEndereco(Cliente cliente, Endereco endereco){
         boolean pertenceAoCliente = cliente.getEnderecos().stream()

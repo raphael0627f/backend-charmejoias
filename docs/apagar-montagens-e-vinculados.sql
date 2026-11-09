@@ -11,7 +11,7 @@ CREATE TEMP TABLE _pedidos_apagar ON COMMIT DROP AS
 CREATE TEMP TABLE _consignacoes_apagar ON COMMIT DROP AS
     SELECT DISTINCT consignacao_id AS id FROM montagens_mostruario_consignacoes;
 
--- 2) trava: cancela tudo se algo mais depender dessas consignações (pré-acerto, acerto, rota)
+-- 2) trava: cancela tudo se algo mais depender dessas consignações (pré-acerto, acerto, planejador de rotas)
 DO $$
 DECLARE
     n integer;
@@ -25,11 +25,11 @@ BEGIN
     SELECT count(*) INTO n FROM acertos_joia_consignacoes WHERE consignacao_id IN (SELECT id FROM _consignacoes_apagar);
     IF n > 0 THEN RAISE EXCEPTION 'Existem % acerto(s) de joia ligados a essas consignações; apague-os antes', n; END IF;
 
-    SELECT count(*) INTO n FROM rota_consignacoes_deixar WHERE consignacao_id IN (SELECT id FROM _consignacoes_apagar);
-    IF n > 0 THEN RAISE EXCEPTION 'Existem % consignação(ões) em rotas (deixar); retire-as da rota antes', n; END IF;
+    SELECT count(*) INTO n FROM planejador_rota_consignacoes_deixar WHERE consignacao_id IN (SELECT id FROM _consignacoes_apagar);
+    IF n > 0 THEN RAISE EXCEPTION 'Existem % consignação(ões) em rotas do planejador (deixar); retire-as da rota antes', n; END IF;
 
-    SELECT count(*) INTO n FROM rota_consignacoes_trazer WHERE consignacao_id IN (SELECT id FROM _consignacoes_apagar);
-    IF n > 0 THEN RAISE EXCEPTION 'Existem % consignação(ões) em rotas (trazer); retire-as da rota antes', n; END IF;
+    SELECT count(*) INTO n FROM planejador_rota_consignacoes_trazer WHERE consignacao_id IN (SELECT id FROM _consignacoes_apagar);
+    IF n > 0 THEN RAISE EXCEPTION 'Existem % consignação(ões) em rotas do planejador (trazer); retire-as da rota antes', n; END IF;
 END $$;
 
 -- 3) exclusão

@@ -1,4 +1,4 @@
-package com.manager.app.rota;
+package com.manager.app.planejadorrota;
 
 import com.manager.app.cliente.Cliente;
 import com.manager.app.endereco.Endereco;
@@ -15,9 +15,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-// monta o .xlsx de uma Rota no mesmo layout usado hoje manualmente pela equipe de campo
+// monta o .xlsx de uma PlanejadorRota no mesmo layout usado hoje manualmente pela equipe de campo
 @Service
-public class RotaXlsxService {
+public class PlanejadorRotaXlsxService {
 
     private static final DateTimeFormatter FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -27,7 +27,7 @@ public class RotaXlsxService {
             "Valor a pagar"
     };
 
-    public byte[] gerarXlsx(Rota rota){
+    public byte[] gerarXlsx(PlanejadorRota rota){
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet(rota.getNome() != null ? rota.getNome() : "Rota");
 
@@ -41,12 +41,12 @@ public class RotaXlsxService {
                 cell.setCellStyle(cabecalhoStyle);
             }
 
-            List<RotaCliente> itens = rota.getItens().stream()
-                    .sorted(Comparator.comparing(RotaCliente::getOrdem, Comparator.nullsLast(Comparator.naturalOrder())))
+            List<PlanejadorRotaCliente> itens = rota.getItens().stream()
+                    .sorted(Comparator.comparing(PlanejadorRotaCliente::getOrdem, Comparator.nullsLast(Comparator.naturalOrder())))
                     .toList();
 
             int linhaIndex = 1;
-            for (RotaCliente item : itens) {
+            for (PlanejadorRotaCliente item : itens) {
                 Row row = sheet.createRow(linhaIndex++);
                 preencherLinha(row, rota, item, enderecoStyle);
             }
@@ -59,11 +59,11 @@ public class RotaXlsxService {
             workbook.write(out);
             return out.toByteArray();
         } catch (IOException e) {
-            throw new UncheckedIOException("Falha ao gerar o .xlsx da Rota. id: " + rota.getId(), e);
+            throw new UncheckedIOException("Falha ao gerar o .xlsx da rota do planejador. id: " + rota.getId(), e);
         }
     }
 
-    private void preencherLinha(Row row, Rota rota, RotaCliente item, CellStyle enderecoStyle){
+    private void preencherLinha(Row row, PlanejadorRota rota, PlanejadorRotaCliente item, CellStyle enderecoStyle){
         Cliente cliente = item.getCliente();
         Endereco enderecoSelecionado = item.getEndereco();
         // IDA/VOLTA = previsto (quantidade de consignacoes planejadas pra deixar/trazer); DEIXOU/TROUXE =

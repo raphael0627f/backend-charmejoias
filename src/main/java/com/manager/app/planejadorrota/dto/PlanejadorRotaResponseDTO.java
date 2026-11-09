@@ -1,4 +1,4 @@
-package com.manager.app.rota.dto;
+package com.manager.app.planejadorrota.dto;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.manager.app.usuario.dto.UsuarioResumoDTO;
@@ -23,11 +23,11 @@ import java.util.List;
         "createdBy",
         "updatedBy"
 })
-public class RotaResponseDTO {
+public class PlanejadorRotaResponseDTO {
     private Long id;
     private String nome;
     private LocalDate dataRota;
-    private List<RotaClienteResponseDTO> itens;
+    private List<PlanejadorRotaClienteResponseDTO> itens;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private UsuarioResumoDTO createdBy;

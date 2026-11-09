@@ -1,4 +1,4 @@
-package com.manager.app.rota.dto;
+package com.manager.app.planejadorrota.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -13,7 +13,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-public class RotaClienteRequestDTO {
+public class PlanejadorRotaClienteRequestDTO {
 
     private Long id;
 
@@ -30,8 +30,8 @@ public class RotaClienteRequestDTO {
     private BigDecimal valorAPagar;
 
     @Valid
-    private List<RotaConsignacaoItemRequestDTO> consignacoesDeixar;
+    private List<PlanejadorRotaConsignacaoItemRequestDTO> consignacoesDeixar;
 
     @Valid
-    private List<RotaConsignacaoItemRequestDTO> consignacoesTrazer;
+    private List<PlanejadorRotaConsignacaoItemRequestDTO> consignacoesTrazer;
 }
