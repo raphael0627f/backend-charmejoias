@@ -37,7 +37,7 @@ public class AgendaMarcadorController {
     @PostMapping
     @PreAuthorize("hasAuthority('AGENDA_GERENCIAR')")
     public ResponseEntity<AgendaMarcadorResponseDTO> create(@RequestBody @Valid AgendaMarcadorRequestDTO request){
-        AgendaMarcador marcador = service.create(mapper.toEntity(request));
+        AgendaMarcador marcador = service.create(mapper.toEntity(request), request.getRotaId(), request.getCidadeExtraIds());
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(marcador.getId()).toUri();
         return ResponseEntity.created(location).body(mapper.toResponseDTO(marcador));
     }
@@ -45,7 +45,7 @@ public class AgendaMarcadorController {
     @PutMapping
     @PreAuthorize("hasAuthority('AGENDA_GERENCIAR')")
     public ResponseEntity<AgendaMarcadorResponseDTO> update(@RequestBody @Valid AgendaMarcadorRequestDTO request){
-        return ResponseEntity.ok(mapper.toResponseDTO(service.update(mapper.toEntity(request))));
+        return ResponseEntity.ok(mapper.toResponseDTO(service.update(mapper.toEntity(request), request.getRotaId(), request.getCidadeExtraIds())));
     }
 
     @DeleteMapping(value = "/{id}")

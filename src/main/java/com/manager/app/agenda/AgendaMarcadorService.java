@@ -6,7 +6,10 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import com.manager.app.cidade.Cidade;
+import com.manager.app.cidade.CidadeService;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -15,6 +18,8 @@ public class AgendaMarcadorService {
 
     private final AgendaMarcadorRepository repository;
     private final AgendaMarcadorValidation validation;
+    private final AgendaRotaService rotaService;
+    private final CidadeService cidadeService;
 
     public List<AgendaMarcador> findByPeriodo(LocalDate inicio, LocalDate fim){
         validation.periodo(inicio, fim);
@@ -26,26 +31,35 @@ public class AgendaMarcadorService {
     }
 
     @Transactional
-    public AgendaMarcador create(AgendaMarcador marcador){
+    public AgendaMarcador create(AgendaMarcador marcador, Long rotaId, List<Long> cidadeExtraIds){
         marcador.setId(null);
         normalizar(marcador);
+        validation.camposPorTipo(marcador, rotaId, cidadeExtraIds);
         validation.datasPorTipo(marcador);
         validation.dataExistenteCreate(marcador.getData());
+        aplicarRotaECidades(marcador, rotaId, cidadeExtraIds);
         return repository.save(marcador);
     }
 
     @Transactional
-    public AgendaMarcador update(AgendaMarcador marcador){
+    public AgendaMarcador update(AgendaMarcador marcador, Long rotaId, List<Long> cidadeExtraIds){
         if (marcador.getId() == null) {
             throw new ItemInvalidoException("Id do marcador é obrigatório");
         }
         AgendaMarcador marcadorUpdate = this.findById(marcador.getId());
         normalizar(marcador);
+        validation.camposPorTipo(marcador, rotaId, cidadeExtraIds);
         validation.datasPorTipo(marcador);
         validation.dataExistenteUpdate(marcador.getData(), marcadorUpdate.getId());
+        // resolve rota e extras antes de mexer na entidade gerenciada (erro de validação não deixa alteração pela metade)
+        aplicarRotaECidades(marcador, rotaId, cidadeExtraIds);
+        marcadorUpdate.getCidadesExtras().clear();
+        repository.flush();
         marcadorUpdate.setData(marcador.getData());
         marcadorUpdate.setNome(marcador.getNome());
         marcadorUpdate.setTipo(marcador.getTipo());
+        marcadorUpdate.setRota(marcador.getRota());
+        marcadorUpdate.getCidadesExtras().addAll(marcador.getCidadesExtras());
         marcadorUpdate.setDataPreAcerto(marcador.getDataPreAcerto());
         marcadorUpdate.setDataAcerto(marcador.getDataAcerto());
         return marcadorUpdate;
@@ -54,6 +68,21 @@ public class AgendaMarcadorService {
     @Transactional
     public void delete(Long id){
         repository.delete(this.findById(id));
+    }
+
+    // TRABALHA: carrega a rota e as cidades extras (uma consulta); NAO_TRABALHA: sem rota nem extras
+    private void aplicarRotaECidades(AgendaMarcador marcador, Long rotaId, List<Long> cidadeExtraIds){
+        if (marcador.getTipo() == AgendaMarcadorTipo.TRABALHA) {
+            AgendaRota rota = rotaService.findById(rotaId);
+            List<Cidade> extras = cidadeService.findAllOrdenado(cidadeExtraIds);
+            validation.extrasForaDaRota(rota, extras);
+            marcador.setRota(rota);
+            marcador.setCidadesExtras(extras);
+            marcador.setNome(null);
+        } else {
+            marcador.setRota(null);
+            marcador.setCidadesExtras(new ArrayList<>());
+        }
     }
 
     private void normalizar(AgendaMarcador marcador){
