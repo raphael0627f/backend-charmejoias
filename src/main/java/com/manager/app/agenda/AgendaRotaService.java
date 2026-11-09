@@ -3,6 +3,10 @@ package com.manager.app.agenda;
 import com.manager.app.cidade.Cidade;
 import com.manager.app.cidade.CidadeService;
 import com.manager.app.shared.exception.ItemInvalidoException;
+import com.manager.app.shared.exception.ObjetoEmUsoException;
+import com.manager.app.shared.exception.ObjetoExistenteException;
+import com.manager.app.shared.exception.SqlErros;
+import org.springframework.dao.DataIntegrityViolationException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
 import com.manager.app.shared.specification.SpecificationUtils;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +47,7 @@ public class AgendaRotaService {
         validation.nomeExistenteCreate(rota.getNome());
         validation.cidadesObrigatorias(cidadeIds);
         rota.setCidades(cidadeService.findAllOrdenado(cidadeIds));
-        return repository.save(rota);
+        return gravar(() -> repository.saveAndFlush(rota), rota.getNome());
     }
 
     @Transactional
@@ -58,8 +63,9 @@ public class AgendaRotaService {
         rotaUpdate.setNome(rota.getNome());
         // limpa e grava antes de repor: a ordem muda e (rota_id, cidade_id) é único
         rotaUpdate.getCidades().clear();
-        repository.flush();
+        gravar(() -> { repository.flush(); return null; }, rota.getNome());
         rotaUpdate.getCidades().addAll(novas);
+        gravar(() -> { repository.flush(); return null; }, rota.getNome());
         return rotaUpdate;
     }
 
@@ -67,7 +73,28 @@ public class AgendaRotaService {
     public void delete(Long id){
         AgendaRota rota = this.findById(id);
         validation.podeExcluir(id);
-        repository.delete(rota);
+        try {
+            repository.delete(rota);
+            repository.flush();
+        } catch (DataIntegrityViolationException e) {
+            // marcador criado em paralelo entre a checagem e a exclusão
+            if (SqlErros.FOREIGN_KEY.equals(SqlErros.sqlState(e))) {
+                throw new ObjetoEmUsoException("Não é possível excluir a rota: ela está em uso em marcador da agenda");
+            }
+            throw e;
+        }
+    }
+
+    // corrida: a checagem de nome repetido passa para duas requisições ao mesmo tempo e o índice único barra a segunda
+    private <T> T gravar(Supplier<T> gravacao, String nome){
+        try {
+            return gravacao.get();
+        } catch (DataIntegrityViolationException e) {
+            if (SqlErros.UNIQUE.equals(SqlErros.sqlState(e))) {
+                throw new ObjetoExistenteException("Já existe uma rota com o nome \"" + nome + "\"");
+            }
+            throw e;
+        }
     }
 
     private void normalizar(AgendaRota rota){

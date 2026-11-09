@@ -5,10 +5,12 @@ import com.manager.app.notafiscal.DanfeApiException;
 import com.manager.app.notafiscal.client.ContoraApiException;
 import com.manager.app.spc.client.SpcApiException;
 import com.manager.app.shared.exception.ItemInvalidoException;
+import com.manager.app.shared.exception.SqlErros;
 import com.manager.app.shared.exception.ObjetoEmUsoException;
 import com.manager.app.shared.exception.ObjetoExistenteException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -28,6 +30,29 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
         RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Banco de dados indisponível",request.getDescription(false));
         return ResponseEntity.status(status).body(response);
+    }
+
+    // violação de integridade: o Spring escolhe o handler mais específico, então este vale antes do de DataAccessException.
+    // unique/FK -> 409, valor maior que a coluna -> 400; o resto continua 503
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<RestErrorMenssage> integridade(DataIntegrityViolationException exception, WebRequest request) {
+        String sqlState = SqlErros.sqlState(exception);
+        HttpStatus status;
+        String mensagem;
+        if ("23505".equals(sqlState)) {
+            status = HttpStatus.CONFLICT;
+            mensagem = "Já existe um registro com esses dados";
+        } else if ("23503".equals(sqlState)) {
+            status = HttpStatus.CONFLICT;
+            mensagem = "Operação não permitida: o registro está em uso ou faz referência a outro que não existe";
+        } else if ("22001".equals(sqlState)) {
+            status = HttpStatus.BAD_REQUEST;
+            mensagem = "Um dos campos de texto excede o tamanho máximo permitido";
+        } else {
+            status = HttpStatus.SERVICE_UNAVAILABLE;
+            mensagem = "Banco de dados indisponível";
+        }
+        return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, mensagem, request.getDescription(false)));
     }
 
     @ExceptionHandler(ObjetoNaoEncontradoException.class)

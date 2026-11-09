@@ -8,8 +8,12 @@ import org.springframework.stereotype.Service;
 
 import com.manager.app.cidade.Cidade;
 import com.manager.app.cidade.CidadeService;
+import com.manager.app.shared.exception.ObjetoExistenteException;
+import com.manager.app.shared.exception.SqlErros;
+import org.springframework.dao.DataIntegrityViolationException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.function.Supplier;
 import java.util.List;
 
 @Service
@@ -38,7 +42,7 @@ public class AgendaMarcadorService {
         validation.datasPorTipo(marcador);
         validation.dataExistenteCreate(marcador.getData());
         aplicarRotaECidades(marcador, rotaId, cidadeExtraIds);
-        return repository.save(marcador);
+        return gravar(() -> repository.saveAndFlush(marcador), marcador.getData());
     }
 
     @Transactional
@@ -54,7 +58,7 @@ public class AgendaMarcadorService {
         // resolve rota e extras antes de mexer na entidade gerenciada (erro de validação não deixa alteração pela metade)
         aplicarRotaECidades(marcador, rotaId, cidadeExtraIds);
         marcadorUpdate.getCidadesExtras().clear();
-        repository.flush();
+        gravar(() -> { repository.flush(); return null; }, marcador.getData());
         marcadorUpdate.setData(marcador.getData());
         marcadorUpdate.setNome(marcador.getNome());
         marcadorUpdate.setTipo(marcador.getTipo());
@@ -62,12 +66,30 @@ public class AgendaMarcadorService {
         marcadorUpdate.getCidadesExtras().addAll(marcador.getCidadesExtras());
         marcadorUpdate.setDataPreAcerto(marcador.getDataPreAcerto());
         marcadorUpdate.setDataAcerto(marcador.getDataAcerto());
+        gravar(() -> { repository.flush(); return null; }, marcador.getData());
         return marcadorUpdate;
     }
 
     @Transactional
     public void delete(Long id){
         repository.delete(this.findById(id));
+    }
+
+    // corrida: a checagem de data repetida passa para duas requisições ao mesmo tempo e o índice único barra a segunda;
+    // FK: a rota foi excluída entre a leitura e a gravação
+    private <T> T gravar(Supplier<T> gravacao, LocalDate data){
+        try {
+            return gravacao.get();
+        } catch (DataIntegrityViolationException e) {
+            String sqlState = SqlErros.sqlState(e);
+            if (SqlErros.UNIQUE.equals(sqlState)) {
+                throw new ObjetoExistenteException("Já existe um marcador na data " + data);
+            }
+            if (SqlErros.FOREIGN_KEY.equals(sqlState)) {
+                throw new ObjetoNaoEncontradoException("Rota ou cidade do marcador não encontrada (removida durante a operação)");
+            }
+            throw e;
+        }
     }
 
     // TRABALHA: carrega a rota e as cidades extras (uma consulta); NAO_TRABALHA: sem rota nem extras
