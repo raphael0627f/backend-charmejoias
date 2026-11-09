@@ -30,4 +30,7 @@ public class Cidade {
 
     // nome (+ município, no distrito) em minúsculo e sem acento, para a busca
     private String nomeBusca;
+
+    // só o nome, minúsculo e sem acento (ordenação por relevância da busca)
+    private String nomeNormalizado;
 }

@@ -11,6 +11,7 @@ Contrato real (testado por curl). Complementa `docs/agenda-integracao-frontend.m
 `GET /cidades?busca=&uf=&tipo=&page=&size=` → página Spring (`content`, `totalElements`, `number`, `size`...). Default `size=20`, ordenado por nome (sem acento) e UF.
 
 - `busca`: sem acento e sem diferenciar maiúscula; cada palavra precisa aparecer no nome (ou no município pai, no caso de distrito). `busca=sao paulo` acha "São Paulo" e também distritos de São Paulo.
+- **Ordem com `busca`** (por relevância; o `sort` recebido é ignorado): (1) nome igual à busca, (2) nome que começa com a busca, (3) demais; em cada grupo, MUNICIPIO antes de DISTRITO, depois nome e UF. Ex.: `busca=sao paulo` traz "São Paulo - SP" primeiro. Sem `busca`, ordena por nome/UF.
 - `uf`: sigla (`SP`). `tipo`: `MUNICIPIO` | `DISTRITO`.
 - `GET /cidades/{id}` → 404 `"Cidade não encontrada. id: N"`.
 
