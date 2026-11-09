@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import com.manager.app.cidade.Cidade;
+import com.manager.app.shared.TextoUtils;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -40,6 +41,7 @@ public class AgendaMarcadorValidation {
             if (marcador.getNome() == null || marcador.getNome().isBlank()) {
                 throw new ItemInvalidoException("Nome do marcador é obrigatório para o tipo NAO_TRABALHA");
             }
+            TextoUtils.validarTexto(marcador.getNome(), "Nome do marcador", 255);
             if (rotaId != null) {
                 throw new ItemInvalidoException("Marcador do tipo NAO_TRABALHA não pode ter rota");
             }

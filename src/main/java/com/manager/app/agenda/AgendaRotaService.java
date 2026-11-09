@@ -44,6 +44,7 @@ public class AgendaRotaService {
     public AgendaRota create(AgendaRota rota, List<Long> cidadeIds){
         rota.setId(null);
         normalizar(rota);
+        validation.nome(rota.getNome());
         validation.nomeExistenteCreate(rota.getNome());
         validation.cidadesObrigatorias(cidadeIds);
         rota.setCidades(cidadeService.findAllOrdenado(cidadeIds));
@@ -57,6 +58,7 @@ public class AgendaRotaService {
         }
         AgendaRota rotaUpdate = this.findById(rota.getId());
         normalizar(rota);
+        validation.nome(rota.getNome());
         validation.nomeExistenteUpdate(rota.getNome(), rotaUpdate.getId());
         validation.cidadesObrigatorias(cidadeIds);
         List<Cidade> novas = cidadeService.findAllOrdenado(cidadeIds);

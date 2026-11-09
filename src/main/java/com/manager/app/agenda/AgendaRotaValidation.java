@@ -1,5 +1,6 @@
 package com.manager.app.agenda;
 
+import com.manager.app.shared.TextoUtils;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoEmUsoException;
 import com.manager.app.shared.exception.ObjetoExistenteException;
@@ -25,6 +26,10 @@ public class AgendaRotaValidation {
         if (repository.existsByNomeIgnoreCaseAndIdNot(nome, id)) {
             throw new ObjetoExistenteException("Já existe uma rota com o nome \"" + nome + "\"");
         }
+    }
+
+    public void nome(String nome){
+        TextoUtils.validarTexto(nome, "Nome da rota", 255);
     }
 
     public void cidadesObrigatorias(List<Long> cidadeIds){

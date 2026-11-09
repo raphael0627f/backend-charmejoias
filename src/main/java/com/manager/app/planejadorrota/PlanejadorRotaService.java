@@ -78,7 +78,7 @@ public class PlanejadorRotaService {
     }
 
     public PlanejadorRota findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("PlanejadorRota do planejador não encontrada. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Rota do planejador não encontrada. id: " + id));
     }
 
     private Cliente resolverCliente(UUID clienteId){
@@ -182,6 +182,7 @@ public class PlanejadorRotaService {
         item.setCliente(cliente);
         item.setEndereco(endereco);
         item.setOrdem(itemRequest.getOrdem());
+        validation.validarObservacao(itemRequest.getObservacao());
         item.setObservacao(itemRequest.getObservacao());
         item.setValorAPagar(itemRequest.getValorAPagar());
         atualizarConsignacoesDeixar(item, itemRequest.getConsignacoesDeixar());
@@ -193,6 +194,7 @@ public class PlanejadorRotaService {
         validarClienteUnico(request.getItens());
 
         PlanejadorRota rota = new PlanejadorRota();
+        validation.validarNome(request.getNome());
         rota.setNome(request.getNome());
         rota.setDataRota(request.getDataRota());
 
@@ -215,6 +217,7 @@ public class PlanejadorRotaService {
         PlanejadorRota rotaUpdate = this.findById(request.getId());
         validarClienteUnico(request.getItens());
 
+        validation.validarNome(request.getNome());
         rotaUpdate.setNome(request.getNome());
         rotaUpdate.setDataRota(request.getDataRota());
 

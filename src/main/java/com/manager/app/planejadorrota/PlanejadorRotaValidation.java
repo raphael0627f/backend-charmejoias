@@ -3,6 +3,7 @@ package com.manager.app.planejadorrota;
 import com.manager.app.cliente.Cliente;
 import com.manager.app.consignacao.Consignacao;
 import com.manager.app.endereco.Endereco;
+import com.manager.app.shared.TextoUtils;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,14 @@ import java.util.List;
 
 @Component
 public class PlanejadorRotaValidation {
+
+    public void validarNome(String nome){
+        TextoUtils.validarTexto(nome, "Nome da rota do planejador", 255);
+    }
+
+    public void validarObservacao(String observacao){
+        TextoUtils.validarTexto(observacao, "Observação do cliente na rota", 255);
+    }
 
     public void validarEndereco(Cliente cliente, Endereco endereco){
         boolean pertenceAoCliente = cliente.getEnderecos().stream()
