@@ -11,6 +11,8 @@ public interface AgendaMarcadorRepository extends JpaRepository<AgendaMarcador, 
 
     long countByRota_Id(Long rotaId);
 
+    List<AgendaMarcador> findByRota_Id(Long rotaId);
+
     boolean existsByData(LocalDate data);
 
     boolean existsByDataAndIdNot(LocalDate data, Long id);

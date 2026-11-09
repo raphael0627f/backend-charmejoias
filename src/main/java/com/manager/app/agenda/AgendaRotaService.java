@@ -2,6 +2,7 @@ package com.manager.app.agenda;
 
 import com.manager.app.cidade.Cidade;
 import com.manager.app.cidade.CidadeService;
+import com.manager.app.shared.OrdenacaoUtils;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoEmUsoException;
 import com.manager.app.shared.exception.ObjetoExistenteException;
@@ -17,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.function.Supplier;
 
 @Service
@@ -26,8 +29,12 @@ public class AgendaRotaService {
     private final AgendaRotaRepository repository;
     private final AgendaRotaValidation validation;
     private final CidadeService cidadeService;
+    private final AgendaMarcadorRepository marcadorRepository;
+
+    private static final Set<String> CAMPOS_ORDENACAO = Set.of("id", "nome", "createdAt", "updatedAt");
 
     public Page<AgendaRota> findAll(String nome, Pageable pageable){
+        OrdenacaoUtils.validar(pageable, CAMPOS_ORDENACAO, Set.of());
         Specification<AgendaRota> spec = null;
         if (nome != null && !nome.isBlank()) {
             String termo = nome.trim();
@@ -68,7 +75,24 @@ public class AgendaRotaService {
         gravar(() -> { repository.flush(); return null; }, rota.getNome());
         rotaUpdate.getCidades().addAll(novas);
         gravar(() -> { repository.flush(); return null; }, rota.getNome());
+        tirarDosExtrasAsCidadesDaRota(rotaUpdate.getId(), novas);
         return rotaUpdate;
+    }
+
+    // uma cidade não pode ser da rota e extra do mesmo marcador: ao salvar a rota, as cidades que passaram a pertencer
+    // a ela saem dos extras dos marcadores dessa rota (mesma transação)
+    private void tirarDosExtrasAsCidadesDaRota(Long rotaId, List<Cidade> cidadesDaRota){
+        Set<Long> idsDaRota = cidadesDaRota.stream().map(Cidade::getId).collect(Collectors.toSet());
+        for (AgendaMarcador marcador : marcadorRepository.findByRota_Id(rotaId)) {
+            List<Cidade> extras = marcador.getCidadesExtras();
+            if (extras.stream().noneMatch(c -> idsDaRota.contains(c.getId()))) continue;
+            List<Cidade> restantes = extras.stream().filter(c -> !idsDaRota.contains(c.getId())).toList();
+            // limpa e grava antes de repor: o índice da ordem muda e (marcador_id, cidade_id) é único
+            extras.clear();
+            marcadorRepository.flush();
+            extras.addAll(restantes);
+        }
+        marcadorRepository.flush();
     }
 
     @Transactional

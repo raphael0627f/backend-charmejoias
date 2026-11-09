@@ -82,3 +82,12 @@ Erros novos (400, exceto onde indicado):
 - **V56** renomeia tabelas do antigo módulo Rotas (dados preservados) e a permissão `ROTA_GERENCIAR` → `PLANEJADOR_ROTA_GERENCIAR`.
 - **V57** cria e popula `cidades`.
 - **V58** **apaga todos os marcadores existentes** (`DELETE FROM agenda_marcadores`), cria `agenda_rotas`, `agenda_rota_cidades`, `agenda_marcador_cidades_extras` e a coluna `rota_id`.
+
+## 5. Ajustes pós-QA
+
+- Corrida (criar a mesma rota ou 2 marcadores no mesmo dia em paralelo): 1x 201 e o resto **409** com a mesma mensagem de domínio (antes podia vir 503). Em geral, violação de unicidade/FK em qualquer módulo agora é 409 e texto maior que a coluna é 400.
+- Limite de **255 caracteres** (400 com `menssage`): nome da rota, nome da folga, nome da rota do planejador e observação do cliente na rota. Caractere NUL também dá 400.
+- `?nome=` de `/agenda/rotas` trata `%`, `_` e `\` como texto literal.
+- `?sort=` inválido em `/cidades` e `/agenda/rotas` → 400 com os campos permitidos (cidades: id, nome, uf, ibge, tipo, municipioNome; rotas: id, nome, createdAt, updatedAt). `uf` fora de 2 letras → 400.
+- Busca de cidades trata hífen, apóstrofo e pontuação como espaço ("Mogi-Guaçu" acha "Mogi Guaçu").
+- Ao salvar uma rota, as cidades que passaram a pertencer a ela saem dos extras dos marcadores dessa rota.
