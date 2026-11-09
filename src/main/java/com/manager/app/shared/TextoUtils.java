@@ -21,10 +21,11 @@ public final class TextoUtils {
         }
     }
 
-    // minúsculo, sem acento e com espaços colapsados - mesma normalização gravada em cidades.nome_busca
+    // minúsculo, sem acento, pontuação/hífen/apóstrofo viram espaço e espaços colapsados - mesma normalização
+    // gravada em cidades.nome_busca / nome_normalizado (V60)
     public static String normalizarBusca(String texto){
         if (texto == null) return "";
         String semAcento = Normalizer.normalize(texto, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
-        return semAcento.toLowerCase(Locale.ROOT).trim().replaceAll("\\s+", " ");
+        return semAcento.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").trim();
     }
 }

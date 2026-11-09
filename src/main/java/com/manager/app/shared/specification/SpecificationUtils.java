@@ -20,14 +20,16 @@ public final class SpecificationUtils {
     }
 
     public static Predicate likeIgnoreCase(CriteriaBuilder cb, Expression<String> path, String termo, ModoBusca modo){
-        String termoLower = termo.toLowerCase();
+        // NUL o Postgres rejeita; %, _ e a barra do termo valem como texto literal, não como curinga
+        String termoLower = termo.replace("\u0000", "").toLowerCase()
+                .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
         String padrao = switch (modo == null ? ModoBusca.MEIO : modo) {
             case INICIO -> termoLower + "%";
             case FIM -> "%" + termoLower;
             case EXATA -> termoLower;
             case MEIO -> "%" + termoLower + "%";
         };
-        return cb.like(cb.lower(path), padrao);
+        return cb.like(cb.lower(path), padrao, '\\');
     }
 
     public static Predicate criadoAPartirDe(CriteriaBuilder cb, Expression<LocalDateTime> path, LocalDate data){

@@ -1,5 +1,6 @@
 package com.manager.app.cidade;
 
+import com.manager.app.shared.OrdenacaoUtils;
 import com.manager.app.shared.TextoUtils;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
@@ -26,7 +27,11 @@ public class CidadeService {
 
     private final CidadeRepository repository;
 
+    private static final Set<String> CAMPOS_ORDENACAO = Set.of("id", "nome", "uf", "ibge", "tipo", "municipioNome");
+    private static final Set<String> CAMPOS_INTERNOS = Set.of("nomeBusca", "nomeNormalizado");
+
     public Page<Cidade> findAll(String busca, String uf, CidadeTipo tipo, Pageable pageable){
+        OrdenacaoUtils.validar(pageable, CAMPOS_ORDENACAO, CAMPOS_INTERNOS);
         Specification<Cidade> spec = null;
         String normalizada = TextoUtils.normalizarBusca(busca);
         if (!normalizada.isEmpty()) {
@@ -37,6 +42,9 @@ public class CidadeService {
             }
         }
         if (uf != null && !uf.isBlank()) {
+            if (!uf.trim().matches("[A-Za-z]{2}")) {
+                throw new ItemInvalidoException("UF inválida: informe a sigla com 2 letras");
+            }
             String ufUpper = uf.trim().toUpperCase();
             spec = SpecificationUtils.and(spec, (root, query, cb) -> cb.equal(root.get("uf"), ufUpper));
         }
