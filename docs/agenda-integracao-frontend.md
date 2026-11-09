@@ -1,5 +1,8 @@
 # Agenda — guia de integração frontend (contrato, etapa 1A)
 
+> **Atualização (V58):** o marcador `TRABALHA` agora aponta para uma rota cadastrada (`rotaId`) e aceita cidades extras do dia; o campo `nome` só vale para `NAO_TRABALHA`. Veja `docs/agenda-rotas-integracao-frontend.md` (contrato atual).
+
+
 > **Renomeação (V55):** o antigo campo `dataConferencia` passou a se chamar **`dataPreAcerto`** (JSON e coluna `data_pre_acerto`). Regras inalteradas; só os nomes e as mensagens de erro mudaram. Backend e frontend sobem juntos no mesmo deploy.
 
 > Status: **implementado e testado** (migration V54, backend dev na porta 8080).
