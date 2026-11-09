@@ -34,9 +34,11 @@ Catálogo IBGE: 5571 municípios + 5181 distritos. O distrito "sede" (mesmo nome
 
 Request: `{ "id": 1, "nome": "Rota Sul", "cidadeIds": [4970, 1892] }` (`id` só no PUT). A ordem de `cidadeIds` é preservada na resposta.
 
-Response:
+Response (na listagem e no GET por id; `createdBy`/`updatedBy` no mesmo formato resumido do marcador, gravados pela auditoria; podem ser `null` em dados antigos):
 ```json
-{ "id": 1, "nome": "Rota Sul", "cidades": [ { "...CidadeResponseDTO" } ], "createdAt": "...", "updatedAt": "..." }
+{ "id": 1, "nome": "Rota Sul", "cidades": [ { "...CidadeResponseDTO" } ], "createdAt": "...", "updatedAt": "...",
+  "createdBy": { "id": "uuid", "usuario": "admin", "primeiroNome": "Raphael", "sobrenome": null },
+  "updatedBy": { "id": "uuid", "usuario": "maria", "primeiroNome": "Maria", "sobrenome": "Silva" } }
 ```
 
 Erros:
