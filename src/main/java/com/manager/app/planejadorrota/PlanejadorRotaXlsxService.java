@@ -23,7 +23,7 @@ public class PlanejadorRotaXlsxService {
 
     private static final String[] CABECALHO = {
             "ITEM", "codigo", "VISITA", "ROTA", "IDA", "VOLTA", "DEIXOU", "TROUXE",
-            "nome do cliente", "Endereço", "Latitude", "Longitude", "Referência", "Cliente Móvel", "COR", "observação",
+            "nome do cliente", "Endereço", "Latitude", "Longitude", "Notas", "Cliente Móvel", "Referência", "observação",
             "Valor a pagar"
     };
 
@@ -89,10 +89,10 @@ public class PlanejadorRotaXlsxService {
 
         row.createCell(10).setCellValue(enderecoSelecionado.getLatitude() != null ? enderecoSelecionado.getLatitude().toPlainString() : "");
         row.createCell(11).setCellValue(enderecoSelecionado.getLongitude() != null ? enderecoSelecionado.getLongitude().toPlainString() : "");
-        // referência do cliente (a descrição do endereço agora vai como prefixo na coluna Endereço)
-        row.createCell(12).setCellValue(cliente.getReferencia() != null ? cliente.getReferencia() : "");
+        row.createCell(12).setCellValue(enderecoSelecionado.getDescricao() != null ? enderecoSelecionado.getDescricao() : "");
         row.createCell(13).setCellValue(cliente.getCelular() != null ? cliente.getCelular() : "");
-        row.createCell(14).setCellValue("");
+        // coluna antes chamada COR: agora traz a referência do cliente
+        row.createCell(14).setCellValue(cliente.getReferencia() != null ? cliente.getReferencia() : "");
         row.createCell(15).setCellValue(item.getObservacao() != null ? item.getObservacao() : "");
         row.createCell(16).setCellValue(item.getValorAPagar() != null ? item.getValorAPagar().doubleValue() : 0);
     }

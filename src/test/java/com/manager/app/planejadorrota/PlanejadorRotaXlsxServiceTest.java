@@ -57,10 +57,11 @@ class PlanejadorRotaXlsxServiceTest {
     }
 
     @Test
-    void cabecalhoTemReferenciaNaPosicaoDaAntigaColuna() throws Exception {
+    void cabecalhoReferenciaNoIndice14ENotasInalterada() throws Exception {
         Endereco e = endereco(1L, "CASA", "Rua X");
         Row cab = gerar(cliente("perto da praça", e), e).getRow(0);
-        assertThat(cab.getCell(12).getStringCellValue()).isEqualTo("Referência");
+        assertThat(cab.getCell(14).getStringCellValue()).isEqualTo("Referência");
+        assertThat(cab.getCell(12).getStringCellValue()).isEqualTo("Notas");
         assertThat(cab.getCell(9).getStringCellValue()).isEqualTo("Endereço");
         assertThat(cab.getLastCellNum()).isEqualTo((short) 17);
     }
@@ -69,14 +70,16 @@ class PlanejadorRotaXlsxServiceTest {
     void referenciaDoClienteVaiNaColuna() throws Exception {
         Endereco e = endereco(1L, "CASA", "Rua X");
         Row linha = gerar(cliente("perto da praça", e), e).getRow(1);
-        assertThat(linha.getCell(12).getStringCellValue()).isEqualTo("perto da praça");
+        assertThat(linha.getCell(14).getStringCellValue()).isEqualTo("perto da praça");
+        // Notas segue com a descrição do endereço selecionado
+        assertThat(linha.getCell(12).getStringCellValue()).isEqualTo("CASA");
     }
 
     @Test
     void referenciaNulaFicaVazia() throws Exception {
         Endereco e = endereco(1L, "CASA", "Rua X");
         Row linha = gerar(cliente(null, e), e).getRow(1);
-        assertThat(linha.getCell(12).getStringCellValue()).isEmpty();
+        assertThat(linha.getCell(14).getStringCellValue()).isEmpty();
     }
 
     @Test
