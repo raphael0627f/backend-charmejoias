@@ -23,7 +23,7 @@ public class PlanejadorRotaXlsxService {
 
     private static final String[] CABECALHO = {
             "ITEM", "codigo", "VISITA", "ROTA", "IDA", "VOLTA", "DEIXOU", "TROUXE",
-            "nome do cliente", "Endereço", "Latitude", "Longitude", "Notas", "Cliente Móvel", "COR", "observação",
+            "nome do cliente", "Endereço", "Latitude", "Longitude", "Notas", "Cliente Móvel", "Referência", "observação",
             "Valor a pagar"
     };
 
@@ -91,7 +91,8 @@ public class PlanejadorRotaXlsxService {
         row.createCell(11).setCellValue(enderecoSelecionado.getLongitude() != null ? enderecoSelecionado.getLongitude().toPlainString() : "");
         row.createCell(12).setCellValue(enderecoSelecionado.getDescricao() != null ? enderecoSelecionado.getDescricao() : "");
         row.createCell(13).setCellValue(cliente.getCelular() != null ? cliente.getCelular() : "");
-        row.createCell(14).setCellValue("");
+        // coluna antes chamada COR: agora traz a referência do cliente
+        row.createCell(14).setCellValue(cliente.getReferencia() != null ? cliente.getReferencia() : "");
         row.createCell(15).setCellValue(item.getObservacao() != null ? item.getObservacao() : "");
         row.createCell(16).setCellValue(item.getValorAPagar() != null ? item.getValorAPagar().doubleValue() : 0);
     }
@@ -101,12 +102,16 @@ public class PlanejadorRotaXlsxService {
         return Stream.concat(
                         Stream.of(selecionado),
                         cliente.getEnderecos().stream().filter(e -> !e.getId().equals(selecionado.getId())))
-                .map(this::formatarEndereco)
+                .map(PlanejadorRotaXlsxService::formatarEndereco)
                 .collect(Collectors.joining("\n"));
     }
 
-    private String formatarEndereco(Endereco endereco){
+    // "DESCRIÇÃO: logradouro, número - ..." (sem descrição, sem prefixo nem dois-pontos)
+    static String formatarEndereco(Endereco endereco){
         StringBuilder sb = new StringBuilder();
+        if (endereco.getDescricao() != null && !endereco.getDescricao().isBlank()) {
+            sb.append(endereco.getDescricao().trim()).append(": ");
+        }
         sb.append(endereco.getLogradouro() != null ? endereco.getLogradouro() : "");
         if (endereco.getNumero() != null && !endereco.getNumero().isBlank()) {
             sb.append(", ").append(endereco.getNumero());
