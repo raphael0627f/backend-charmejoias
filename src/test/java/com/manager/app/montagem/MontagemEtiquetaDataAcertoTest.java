@@ -48,7 +48,7 @@ class MontagemEtiquetaDataAcertoTest {
     void montagemCanceladaContinuaBarrada() {
         assertThatThrownBy(() -> validation.validarEtiqueta(montagem(StatusMontagem.CANCELADA)))
                 .isInstanceOf(ItemInvalidoException.class)
-                .hasMessage("Montagem 5 está CANCELADA e não pode ter a etiqueta impressa");
+                .hasMessage("A montagem 5 está CANCELADA e não pode ter a etiqueta impressa.");
     }
 
     @Test
@@ -72,7 +72,7 @@ class MontagemEtiquetaDataAcertoTest {
         for (String invalida : new String[]{"05/12/2026", "2026-13-40", "amanha", "20261205"}) {
             assertThatThrownBy(() -> validation.validarDataAcertoEtiqueta(invalida))
                     .isInstanceOf(ItemInvalidoException.class)
-                    .hasMessage("Data do acerto inválida: '" + invalida + "'. Use o formato yyyy-MM-dd");
+                    .hasMessage("Data do acerto inválida: '" + invalida + "'. Informe a data no formato aaaa-mm-dd.");
         }
     }
 

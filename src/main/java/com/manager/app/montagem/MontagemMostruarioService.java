@@ -160,7 +160,7 @@ public class MontagemMostruarioService {
     }
 
     public MontagemMostruario findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Montagem não encontrada. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Montagem não encontrada. Id: " + id));
     }
 
     private Mostruario resolverMostruario(Long mostruarioId){
@@ -180,7 +180,7 @@ public class MontagemMostruarioService {
             if (dto.getId() != null) {
                 instrucao = atuais.get(dto.getId());
                 if (instrucao == null) {
-                    throw new ObjetoNaoEncontradoException("Instrução " + dto.getId() + " não pertence à montagem " + montagem.getId());
+                    throw new ObjetoNaoEncontradoException("A instrução " + dto.getId() + " não pertence à montagem " + montagem.getId());
                 }
             }
             if (instrucao == null) {
@@ -221,7 +221,7 @@ public class MontagemMostruarioService {
         MontagemInstrucao instrucao = montagem.getInstrucoes().stream()
                 .filter(i -> i.getId().equals(instrucaoId))
                 .findFirst()
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Instrução " + instrucaoId + " não pertence à montagem " + montagemId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("A instrução " + instrucaoId + " não pertence à montagem " + montagemId));
         instrucao.setConcluida(concluida);
         instrucao.setConcluidaEm(concluida ? LocalDateTime.now() : null);
         instrucao.setConcluidaPor(concluida ? auditorAware.getCurrentAuditor().orElse(null) : null);
@@ -295,7 +295,7 @@ public class MontagemMostruarioService {
         MontagemMostruario montagem = this.findById(montagemId);
         validation.validarEditavel(montagem);
         if (!montagem.getConsignacoes().removeIf(c -> c.getId().equals(consignacaoId))) {
-            throw new ObjetoNaoEncontradoException("Consignação " + consignacaoId + " não está vinculada à montagem " + montagemId);
+            throw new ObjetoNaoEncontradoException("A consignação " + consignacaoId + " não está vinculada à montagem " + montagemId);
         }
         return montagem;
     }
@@ -314,7 +314,7 @@ public class MontagemMostruarioService {
         MontagemMostruario montagem = this.findById(montagemId);
         validation.validarEditavel(montagem);
         if (!montagem.getPedidos().removeIf(p -> p.getId().equals(pedidoId))) {
-            throw new ObjetoNaoEncontradoException("Pedido " + pedidoId + " não está vinculado à montagem " + montagemId);
+            throw new ObjetoNaoEncontradoException("O pedido " + pedidoId + " não está vinculado à montagem " + montagemId);
         }
         return montagem;
     }
@@ -377,7 +377,7 @@ public class MontagemMostruarioService {
         montagem.getConsignacoes().stream()
                 .filter(c -> c.getId().equals(consignacaoId))
                 .findFirst()
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação " + consignacaoId + " não está vinculada à montagem " + montagemId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("A consignação " + consignacaoId + " não está vinculada à montagem " + montagemId));
 
         // só entram produtos de pedidos já separados
         var pendentes = conferencia.itensPendentes(montagem).stream()

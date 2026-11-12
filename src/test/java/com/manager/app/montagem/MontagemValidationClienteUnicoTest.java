@@ -42,7 +42,7 @@ class MontagemValidationClienteUnicoTest {
         Optional<MontagemMostruario> existente = Optional.of(montagem(42L, UUID.randomUUID(), StatusMontagem.ABERTA));
         assertThatThrownBy(() -> validation.validarSemMontagemEmAndamento(existente))
                 .isInstanceOf(ItemInvalidoException.class)
-                .hasMessage("O cliente já possui a montagem 42 com status ABERTA. Conclua ou cancele antes de criar outra");
+                .hasMessage("O cliente já possui a montagem 42 com status ABERTA. Conclua ou cancele essa montagem antes de criar outra.");
     }
 
     @Test
