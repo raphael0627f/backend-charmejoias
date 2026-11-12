@@ -15,11 +15,11 @@ import java.math.BigDecimal;
 @JsonPropertyOrder({ "codigo", "descricao", "ativo", "aliquotaAproximadaTributos" })
 public class NcmDTO {
 
-    @NotBlank(message = "Código é obrigatório")
-    @Pattern(regexp = "\\d{8}", message = "Código NCM deve ter 8 dígitos")
+    @NotBlank(message = "O campo Código é obrigatório.")
+    @Pattern(regexp = "\\d{8}", message = "O código NCM deve ter 8 dígitos.")
     private String codigo;
 
-    @NotBlank(message = "Descrição é obrigatória")
+    @NotBlank(message = "O campo Descrição é obrigatório.")
     private String descricao;
 
     private boolean ativo;

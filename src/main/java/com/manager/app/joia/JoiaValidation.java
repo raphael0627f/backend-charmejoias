@@ -14,12 +14,12 @@ public class JoiaValidation {
 
     public void codigoExistenteCreate(String codigo){
         if(repository.existsByCodigo(codigo)){
-            throw new ObjetoExistenteException("Joia existente com este código: " + codigo);
+            throw new ObjetoExistenteException("Já existe uma joia cadastrada com este código: " + codigo);
         }
     }
     public void codigoExistenteUpdate(String codigo, UUID id){
         if(repository.existsByCodigoAndIdNot(codigo, id)){
-            throw new ObjetoExistenteException("Joia existente com este código: " + codigo);
+            throw new ObjetoExistenteException("Já existe uma joia cadastrada com este código: " + codigo);
         }
     }
 }

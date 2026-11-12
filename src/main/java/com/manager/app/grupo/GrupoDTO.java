@@ -15,10 +15,10 @@ public class GrupoDTO {
 
     private Long id;
 
-    @NotBlank(message = "Nome é obrigatório")
+    @NotBlank(message = "O campo Nome é obrigatório.")
     private String nome;
 
-    @NotNull(message = "Tipo é obrigatório")
+    @NotNull(message = "O campo Tipo é obrigatório.")
     private TipoGrupo tipo;
 
     private boolean ativo;

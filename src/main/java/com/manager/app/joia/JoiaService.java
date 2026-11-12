@@ -56,15 +56,15 @@ public class JoiaService {
     }
 
     public Joia findById(UUID id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Joia não encontrada. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Joia não encontrada. Id: " + id));
     }
 
     public Joia findByIdAndAtivo(UUID id){
-        return repository.findByIdAndAtivoTrue(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Joia não encontrada ou inativa. id: " + id));
+        return repository.findByIdAndAtivoTrue(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Joia não encontrada ou inativa. Id: " + id));
     }
 
     public Joia findByCodigo(String codigo){
-        return repository.findByCodigoAndAtivoTrue(codigo).orElseThrow(() -> new ObjetoNaoEncontradoException("Joia não encontrada. codigo: " + codigo));
+        return repository.findByCodigoAndAtivoTrue(codigo).orElseThrow(() -> new ObjetoNaoEncontradoException("Joia não encontrada. Código: " + codigo));
     }
 
     // busca exata pra bipagem de código de barras: tenta por codigo primeiro, só cai pra referência
@@ -89,7 +89,7 @@ public class JoiaService {
     @Transactional
     public Joia update(Joia joia, JoiaRelacoesDTO relacoes){
         validation.codigoExistenteUpdate(joia.getCodigo(), joia.getId());
-        Joia joiaUpdate = repository.findById(joia.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Joia não encontrada. id: " + joia.getId()));
+        Joia joiaUpdate = repository.findById(joia.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Joia não encontrada. Id: " + joia.getId()));
 
         joiaUpdate.setCodigo(joia.getCodigo());
         joiaUpdate.setReferencia(joia.getReferencia());
@@ -111,7 +111,7 @@ public class JoiaService {
         }
         List<Grupo> grupos = grupoRepository.findAllById(gruposIds);
         if (grupos.size() != gruposIds.size()) {
-            throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
+            throw new ObjetoNaoEncontradoException("Um ou mais grupos informados não foram encontrados.");
         }
         grupoValidation.validarTipo(grupos, TipoGrupo.PRODUTO);
         return grupos;

@@ -33,13 +33,13 @@ public class NcmService {
     }
 
     public Ncm findById(String codigo){
-        return repository.findById(codigo).orElseThrow(() -> new ObjetoNaoEncontradoException("NCM não encontrado. codigo: " + codigo));
+        return repository.findById(codigo).orElseThrow(() -> new ObjetoNaoEncontradoException("NCM não encontrado. Código: " + codigo));
     }
 
     @Transactional
     public Ncm create(Ncm ncm){
         if (repository.existsById(ncm.getCodigo())) {
-            throw new ObjetoExistenteException("NCM já cadastrado. codigo: " + ncm.getCodigo());
+            throw new ObjetoExistenteException("Já existe um NCM cadastrado com este código: " + ncm.getCodigo());
         }
         return repository.save(ncm);
     }
@@ -64,7 +64,7 @@ public class NcmService {
     public void deactivate(String codigo){
         Ncm ncm = this.findById(codigo);
         if (produtoRepository.existsByNcm(ncm)) {
-            throw new ObjetoEmUsoException("NCM está em uso e não pode ser desativado");
+            throw new ObjetoEmUsoException("Não é possível desativar o NCM, pois ele está em uso.");
         }
         ncm.setAtivo(false);
     }

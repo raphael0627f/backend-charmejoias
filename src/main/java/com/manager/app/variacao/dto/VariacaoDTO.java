@@ -18,12 +18,12 @@ public class VariacaoDTO {
 
     private Long id;
 
-    @NotBlank(message = "Nome é obrigatório")
+    @NotBlank(message = "O campo Nome é obrigatório.")
     private String nome;
 
     private boolean ativo;
 
-    @NotEmpty(message = "Ao menos um item é obrigatório")
+    @NotEmpty(message = "Informe ao menos um item.")
     @Valid
     private List<ItemVariacaoDTO> itens;
 }

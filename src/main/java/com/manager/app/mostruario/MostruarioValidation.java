@@ -12,13 +12,13 @@ public class MostruarioValidation {
 
     public void descricaoExistenteCreate(String descricao){
         if (repository.existsByDescricao(descricao)) {
-            throw new ObjetoExistenteException("Mostruário existente com esta descrição: " + descricao);
+            throw new ObjetoExistenteException("Já existe um mostruário cadastrado com esta descrição: " + descricao);
         }
     }
 
     public void descricaoExistenteUpdate(String descricao, Long id){
         if (repository.existsByDescricaoAndIdNot(descricao, id)) {
-            throw new ObjetoExistenteException("Mostruário existente com esta descrição: " + descricao);
+            throw new ObjetoExistenteException("Já existe um mostruário cadastrado com esta descrição: " + descricao);
         }
     }
 }
