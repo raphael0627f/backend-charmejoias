@@ -20,13 +20,13 @@ public class AgendaMarcadorValidation {
 
     public void dataExistenteCreate(LocalDate data){
         if (repository.existsByData(data)) {
-            throw new ObjetoExistenteException("Já existe um marcador na data " + data);
+            throw new ObjetoExistenteException("Já existe um marcador na data " + data + ".");
         }
     }
 
     public void dataExistenteUpdate(LocalDate data, Long id){
         if (repository.existsByDataAndIdNot(data, id)) {
-            throw new ObjetoExistenteException("Já existe um marcador na data " + data);
+            throw new ObjetoExistenteException("Já existe um marcador na data " + data + ".");
         }
     }
 
@@ -35,18 +35,18 @@ public class AgendaMarcadorValidation {
         boolean temExtras = cidadeExtraIds != null && !cidadeExtraIds.isEmpty();
         if (marcador.getTipo() == AgendaMarcadorTipo.TRABALHA) {
             if (rotaId == null) {
-                throw new ItemInvalidoException("Marcador do tipo TRABALHA exige uma rota (rotaId)");
+                throw new ItemInvalidoException("Marcador do tipo TRABALHA exige uma rota.");
             }
         } else {
             if (marcador.getNome() == null || marcador.getNome().isBlank()) {
-                throw new ItemInvalidoException("Nome do marcador é obrigatório para o tipo NAO_TRABALHA");
+                throw new ItemInvalidoException("Nome do marcador é obrigatório para o tipo NAO_TRABALHA.");
             }
             TextoUtils.validarTexto(marcador.getNome(), "Nome do marcador", 255);
             if (rotaId != null) {
-                throw new ItemInvalidoException("Marcador do tipo NAO_TRABALHA não pode ter rota");
+                throw new ItemInvalidoException("Marcador do tipo NAO_TRABALHA não pode ter rota.");
             }
             if (temExtras) {
-                throw new ItemInvalidoException("Marcador do tipo NAO_TRABALHA não pode ter cidades extras");
+                throw new ItemInvalidoException("Marcador do tipo NAO_TRABALHA não pode ter cidades extras.");
             }
         }
     }
@@ -55,7 +55,7 @@ public class AgendaMarcadorValidation {
         Set<Long> idsDaRota = rota.getCidades().stream().map(Cidade::getId).collect(Collectors.toSet());
         for (Cidade extra : extras) {
             if (idsDaRota.contains(extra.getId())) {
-                throw new ItemInvalidoException("A cidade " + extra.getNome() + " - " + extra.getUf() + " já pertence à rota; não pode ser cidade extra");
+                throw new ItemInvalidoException("A cidade " + extra.getNome() + " - " + extra.getUf() + " já pertence à rota e não pode ser informada como cidade extra.");
             }
         }
     }
@@ -63,25 +63,25 @@ public class AgendaMarcadorValidation {
     public void datasPorTipo(AgendaMarcador marcador){
         if (marcador.getTipo() == AgendaMarcadorTipo.TRABALHA) {
             if (marcador.getDataPreAcerto() == null || marcador.getDataAcerto() == null) {
-                throw new ItemInvalidoException("Marcador do tipo TRABALHA exige data do pré-acerto e data do acerto");
+                throw new ItemInvalidoException("Marcador do tipo TRABALHA exige data do pré-acerto e data do acerto.");
             }
             if (marcador.getDataPreAcerto().isBefore(marcador.getData())) {
-                throw new ItemInvalidoException("A data do pré-acerto não pode ser anterior à data do marcador");
+                throw new ItemInvalidoException("A data do pré-acerto não pode ser anterior à data do marcador.");
             }
             if (marcador.getDataAcerto().isBefore(marcador.getDataPreAcerto())) {
-                throw new ItemInvalidoException("A data do acerto não pode ser anterior à data do pré-acerto");
+                throw new ItemInvalidoException("A data do acerto não pode ser anterior à data do pré-acerto.");
             }
         } else if (marcador.getDataPreAcerto() != null || marcador.getDataAcerto() != null) {
-            throw new ItemInvalidoException("Marcador do tipo NAO_TRABALHA não pode ter data do pré-acerto nem data do acerto");
+            throw new ItemInvalidoException("Marcador do tipo NAO_TRABALHA não pode ter data do pré-acerto nem data do acerto.");
         }
     }
 
     public void periodo(LocalDate inicio, LocalDate fim){
         if (inicio == null || fim == null) {
-            throw new ItemInvalidoException("Período obrigatório: informe inicio e fim (yyyy-MM-dd)");
+            throw new ItemInvalidoException("O período é obrigatório. Informe as datas inicial e final no formato aaaa-mm-dd.");
         }
         if (fim.isBefore(inicio)) {
-            throw new ItemInvalidoException("Data final não pode ser anterior à data inicial");
+            throw new ItemInvalidoException("A data final não pode ser anterior à data inicial.");
         }
     }
 }

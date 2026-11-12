@@ -44,7 +44,7 @@ public class AgendaRotaService {
     }
 
     public AgendaRota findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Rota da agenda não encontrada. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Rota da agenda não encontrada. Id: " + id));
     }
 
     @Transactional
@@ -61,7 +61,7 @@ public class AgendaRotaService {
     @Transactional
     public AgendaRota update(AgendaRota rota, List<Long> cidadeIds){
         if (rota.getId() == null) {
-            throw new ItemInvalidoException("Id da rota é obrigatório");
+            throw new ItemInvalidoException("O Id da rota é obrigatório.");
         }
         AgendaRota rotaUpdate = this.findById(rota.getId());
         normalizar(rota);
@@ -105,7 +105,7 @@ public class AgendaRotaService {
         } catch (DataIntegrityViolationException e) {
             // marcador criado em paralelo entre a checagem e a exclusão
             if (SqlErros.FOREIGN_KEY.equals(SqlErros.sqlState(e))) {
-                throw new ObjetoEmUsoException("Não é possível excluir a rota: ela está em uso em marcador da agenda");
+                throw new ObjetoEmUsoException("Não é possível excluir a rota, pois ela está vinculada a um marcador da agenda.");
             }
             throw e;
         }
@@ -117,7 +117,7 @@ public class AgendaRotaService {
             return gravacao.get();
         } catch (DataIntegrityViolationException e) {
             if (SqlErros.UNIQUE.equals(SqlErros.sqlState(e))) {
-                throw new ObjetoExistenteException("Já existe uma rota com o nome \"" + nome + "\"");
+                throw new ObjetoExistenteException("Já existe uma rota com o nome \"" + nome + "\".");
             }
             throw e;
         }

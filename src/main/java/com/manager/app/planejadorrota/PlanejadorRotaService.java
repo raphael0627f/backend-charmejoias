@@ -78,29 +78,29 @@ public class PlanejadorRotaService {
     }
 
     public PlanejadorRota findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Rota do planejador não encontrada. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Rota do planejador não encontrada. Id: " + id));
     }
 
     private Cliente resolverCliente(UUID clienteId){
         return clienteRepository.findById(clienteId)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. id: " + clienteId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. Id: " + clienteId));
     }
 
     private Endereco resolverEndereco(Long enderecoId){
         return enderecoRepository.findById(enderecoId)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Endereço não encontrado. id: " + enderecoId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Endereço não encontrado. Id: " + enderecoId));
     }
 
     private Consignacao resolverConsignacao(Long consignacaoId){
         if (consignacaoId == null) return null;
         return consignacaoRepository.findById(consignacaoId)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. id: " + consignacaoId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. Id: " + consignacaoId));
     }
 
     private void validarClienteUnico(List<PlanejadorRotaClienteRequestDTO> itens){
         long clientesDistintos = itens.stream().map(PlanejadorRotaClienteRequestDTO::getClienteId).distinct().count();
         if (clientesDistintos != itens.size()) {
-            throw new ObjetoExistenteException("Um mesmo Cliente não pode aparecer mais de uma vez na mesma rota do planejador.");
+            throw new ObjetoExistenteException("O mesmo cliente não pode constar mais de uma vez na rota do planejador.");
         }
     }
 
@@ -111,7 +111,7 @@ public class PlanejadorRotaService {
         List<Consignacao> consignacoes = new ArrayList<>();
         for (PlanejadorRotaConsignacaoItemRequestDTO request : requests) {
             Consignacao consignacao = consignacaoRepository.findById(request.getConsignacaoId())
-                    .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. id: " + request.getConsignacaoId()));
+                    .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. Id: " + request.getConsignacaoId()));
             consignacoes.add(consignacao);
         }
         validation.validarConsignacoesDoCliente(cliente, consignacoes);

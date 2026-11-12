@@ -59,7 +59,7 @@ public class PlanejadorRotaXlsxService {
             workbook.write(out);
             return out.toByteArray();
         } catch (IOException e) {
-            throw new UncheckedIOException("Falha ao gerar o .xlsx da rota do planejador. id: " + rota.getId(), e);
+            throw new UncheckedIOException("Falha ao gerar o .xlsx da rota do planejador. Id: " + rota.getId(), e);
         }
     }
 

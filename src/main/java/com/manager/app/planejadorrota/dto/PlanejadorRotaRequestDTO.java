@@ -17,13 +17,13 @@ public class PlanejadorRotaRequestDTO {
 
     private Long id;
 
-    @NotBlank(message = "Nome da rota é obrigatório")
+    @NotBlank(message = "O campo Nome da rota é obrigatório.")
     private String nome;
 
-    @NotNull(message = "Data da rota é obrigatória")
+    @NotNull(message = "O campo Data da rota é obrigatório.")
     private LocalDate dataRota;
 
-    @NotNull(message = "Esta rota do planejador precisa ter um ou mais Clientes")
+    @NotNull(message = "Informe ao menos um cliente na rota do planejador.")
     @Valid
     private List<PlanejadorRotaClienteRequestDTO> itens;
 }
