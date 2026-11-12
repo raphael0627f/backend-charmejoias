@@ -64,15 +64,15 @@ public class ClienteService {
     }
 
     public Cliente findById(UUID id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. Id: " + id));
     }
 
     public Cliente findByIdAndAtivo(UUID id){
-        return repository.findByIdAndAtivoTrue(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado ou inativo. id: " + id));
+        return repository.findByIdAndAtivoTrue(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado ou inativo. Id: " + id));
     }
 
     public Cliente findByCodigo(String codigo){
-        return repository.findByCodigo(codigo).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. codigo: " + codigo));
+        return repository.findByCodigo(codigo).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. Código: " + codigo));
     }
 
     @Transactional
@@ -89,7 +89,7 @@ public class ClienteService {
     public Cliente update(Cliente cliente, List<Long> gruposIds){
         validation.codigoExistenteUpdate(cliente.getCodigo(), cliente.getId());
         validarEnderecos(cliente.getEnderecos());
-        Cliente clienteUpdate = repository.findById(cliente.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. id: " + cliente.getId()));
+        Cliente clienteUpdate = repository.findById(cliente.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. Id: " + cliente.getId()));
         sincronizarEnderecos(clienteUpdate, cliente.getEnderecos());
 
         clienteUpdate.setCodigo(cliente.getCodigo());
@@ -120,7 +120,7 @@ public class ClienteService {
         }
         List<Grupo> grupos = grupoRepository.findAllById(gruposIds);
         if (grupos.size() != gruposIds.size()) {
-            throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
+            throw new ObjetoNaoEncontradoException("Um ou mais grupos informados não foram encontrados.");
         }
         grupoValidation.validarTipo(grupos, tipoEsperado);
         return grupos;
@@ -130,11 +130,11 @@ public class ClienteService {
     // principal que Cliente.getEnderecoPrincipal() devolve pros relatórios/NFe/SPC usarem
     private void validarEnderecos(List<Endereco> enderecos){
         if (enderecos == null || enderecos.isEmpty()) {
-            throw new ItemInvalidoException("Cliente precisa ter ao menos um endereço");
+            throw new ItemInvalidoException("O cliente deve ter ao menos um endereço.");
         }
         long principais = enderecos.stream().filter(Endereco::isPrincipal).count();
         if (principais != 1) {
-            throw new ItemInvalidoException("Cliente precisa ter exatamente um endereço marcado como principal");
+            throw new ItemInvalidoException("O cliente deve ter exatamente um endereço principal.");
         }
     }
 
@@ -177,14 +177,14 @@ public class ClienteService {
 
     @Transactional
     public Cliente activate(UUID id){
-        Cliente cliente = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. id: " + id));
+        Cliente cliente = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. Id: " + id));
         cliente.setAtivo(true);
         return cliente;
     }
 
     @Transactional
     public void deactivate(UUID id){
-        Cliente cliente = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. id: " + id));
+        Cliente cliente = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Cliente não encontrado. Id: " + id));
         cliente.setAtivo(false);
     }
 }

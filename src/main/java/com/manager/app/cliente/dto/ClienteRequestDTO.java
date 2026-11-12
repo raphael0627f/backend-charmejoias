@@ -17,19 +17,19 @@ import java.util.List;
 public class ClienteRequestDTO {
     private String id;
 
-    @NotBlank(message = "Código é obrigatório")
+    @NotBlank(message = "O campo Código é obrigatório.")
     private String codigo;
 
     private String referencia;
 
-    @NotBlank(message = "Nome é obrigatório")
+    @NotBlank(message = "O campo Nome é obrigatório.")
     private String nome;
 
     private String filiacao;
     private String cpf;
     private String documento;
 
-    @NotBlank(message = "Gênero é obrigatório")
+    @NotBlank(message = "O campo Gênero é obrigatório.")
     private String genero;
 
     private String telefone;
@@ -37,10 +37,10 @@ public class ClienteRequestDTO {
     private String email;
     private String observacao;
 
-    @NotNull(message = "Data de nascimento é obrigatória")
+    @NotNull(message = "O campo Data de nascimento é obrigatório.")
     private LocalDate dataNascimento;
 
-    @NotNull(message = "Ativo é obrigatório")
+    @NotNull(message = "O campo Ativo é obrigatório.")
     private boolean ativo;
 
     private List<EnderecoDTO> enderecos;

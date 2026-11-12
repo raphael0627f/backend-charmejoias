@@ -13,22 +13,22 @@ import java.math.BigDecimal;
 public class EnderecoDTO {
 
     private Long id;
-    @NotBlank(message = "Logradouro é obrigatório")
+    @NotBlank(message = "O campo Logradouro é obrigatório.")
     private String logradouro;
 
     private String numero;
     private String complemento;
 
-    @NotBlank(message = "Logradouro é obrigatório")
+    @NotBlank(message = "O campo Logradouro é obrigatório.")
     private String bairro;
 
-    @NotBlank(message = "Município é obrigatório")
+    @NotBlank(message = "O campo Município é obrigatório.")
     private String municipio;
 
-    @NotBlank(message = "UF é obrigatório")
+    @NotBlank(message = "O campo UF é obrigatório.")
     private String uf;
 
-    @NotBlank(message = "CEP é obrigatório")
+    @NotBlank(message = "O campo CEP é obrigatório.")
     private String cep;
 
     private String ibge;

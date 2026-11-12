@@ -15,12 +15,12 @@ public class ClienteValidation {
 
     public void codigoExistenteCreate(String codigo){
         if(repository.existsByCodigo(codigo)){
-            throw new ObjetoExistenteException("Cliente existente com este código: " + codigo);
+            throw new ObjetoExistenteException("Já existe um cliente cadastrado com este código: " + codigo);
         }
     }
     public void codigoExistenteUpdate(String codigo, UUID id){
         if(repository.existsByCodigoAndIdNot(codigo, id)){
-            throw new ObjetoExistenteException("Cliente existente com este código: " + codigo);
+            throw new ObjetoExistenteException("Já existe um cliente cadastrado com este código: " + codigo);
         }
     }
 }

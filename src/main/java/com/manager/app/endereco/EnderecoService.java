@@ -21,7 +21,7 @@ public class EnderecoService {
 
     @Transactional
     public Endereco update(Endereco endereco){
-        Endereco enderecoUpdate = repository.findById(endereco.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Endereço não encontrado. id: " + endereco.getId()));
+        Endereco enderecoUpdate = repository.findById(endereco.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Endereço não encontrado. Id: " + endereco.getId()));
         enderecoUpdate.setLogradouro(endereco.getLogradouro());
         enderecoUpdate.setNumero(endereco.getNumero());
         enderecoUpdate.setComplemento(endereco.getComplemento());
