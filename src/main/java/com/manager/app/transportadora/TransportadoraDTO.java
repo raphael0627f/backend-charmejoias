@@ -26,7 +26,7 @@ public class TransportadoraDTO {
 
     private Long id;
 
-    @NotBlank(message = "Razão social é obrigatória")
+    @NotBlank(message = "O campo Razão social é obrigatório.")
     private String razaoSocial;
 
     private String documento;

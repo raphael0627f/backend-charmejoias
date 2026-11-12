@@ -14,7 +14,7 @@ public class FornecedorDTO {
 
     private Long id;
 
-    @NotBlank(message = "Nome é obrigatório")
+    @NotBlank(message = "O campo Nome é obrigatório.")
     private String nome;
     private boolean ativo;
 }
