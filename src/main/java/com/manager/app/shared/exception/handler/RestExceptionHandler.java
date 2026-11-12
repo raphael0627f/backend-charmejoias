@@ -28,7 +28,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<?> databaseError(DataAccessException exception, WebRequest request) {
         HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
-        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Banco de dados indisponível",request.getDescription(false));
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Banco de dados indisponível. Tente novamente em instantes.",request.getDescription(false));
         return ResponseEntity.status(status).body(response);
     }
 
@@ -41,16 +41,16 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         String mensagem;
         if ("23505".equals(sqlState)) {
             status = HttpStatus.CONFLICT;
-            mensagem = "Já existe um registro com esses dados";
+            mensagem = "Já existe um registro com os dados informados.";
         } else if ("23503".equals(sqlState)) {
             status = HttpStatus.CONFLICT;
-            mensagem = "Operação não permitida: o registro está em uso ou faz referência a outro que não existe";
+            mensagem = "Operação não permitida. O registro está em uso ou faz referência a outro registro inexistente.";
         } else if ("22001".equals(sqlState)) {
             status = HttpStatus.BAD_REQUEST;
-            mensagem = "Um dos campos de texto excede o tamanho máximo permitido";
+            mensagem = "Um dos campos de texto excede o tamanho máximo permitido.";
         } else {
             status = HttpStatus.SERVICE_UNAVAILABLE;
-            mensagem = "Banco de dados indisponível";
+            mensagem = "Banco de dados indisponível. Tente novamente em instantes.";
         }
         return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, mensagem, request.getDescription(false)));
     }
@@ -118,7 +118,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     private ResponseEntity<RestErrorMenssage> authenticationError(AuthenticationException exception, WebRequest request){
         HttpStatus status = HttpStatus.UNAUTHORIZED;
-        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Credenciais inválidas", request.getDescription(false));
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Credenciais inválidas.", request.getDescription(false));
         return ResponseEntity.status(status).body(response);
     }
 
@@ -128,7 +128,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     private ResponseEntity<RestErrorMenssage> accessDeniedError(AccessDeniedException exception, WebRequest request){
         HttpStatus status = HttpStatus.FORBIDDEN;
-        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Acesso negado", request.getDescription(false));
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Acesso negado.", request.getDescription(false));
         return ResponseEntity.status(status).body(response);
     }
 }

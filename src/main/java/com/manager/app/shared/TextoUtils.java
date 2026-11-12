@@ -14,10 +14,10 @@ public final class TextoUtils {
     public static void validarTexto(String valor, String campo, int maximo){
         if (valor == null) return;
         if (valor.indexOf('\u0000') >= 0) {
-            throw new ItemInvalidoException(campo + " contém caracteres inválidos");
+            throw new ItemInvalidoException(campo + " contém caracteres inválidos.");
         }
         if (valor.length() > maximo) {
-            throw new ItemInvalidoException(campo + " deve ter no máximo " + maximo + " caracteres");
+            throw new ItemInvalidoException(campo + " deve ter no máximo " + maximo + " caracteres.");
         }
     }
 

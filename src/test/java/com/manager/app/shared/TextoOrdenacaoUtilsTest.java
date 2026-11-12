@@ -25,7 +25,7 @@ class TextoOrdenacaoUtilsTest {
     @Test
     void textoComNulOuMuitoLongoEhRecusado() {
         assertThatThrownBy(() -> TextoUtils.validarTexto("a".repeat(256), "Nome", 255))
-                .isInstanceOf(ItemInvalidoException.class).hasMessage("Nome deve ter no máximo 255 caracteres");
+                .isInstanceOf(ItemInvalidoException.class).hasMessage("Nome deve ter no máximo 255 caracteres.");
         assertThatThrownBy(() -> TextoUtils.validarTexto("a\u0000b", "Nome", 255))
                 .isInstanceOf(ItemInvalidoException.class).hasMessageContaining("caracteres inválidos");
         assertThatCode(() -> TextoUtils.validarTexto("a".repeat(255), "Nome", 255)).doesNotThrowAnyException();
