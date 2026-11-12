@@ -14,13 +14,13 @@ public class UsuarioValidation {
 
     public void usuarioExistenteCreate(String usuario){
         if (repository.existsByUsuario(usuario)) {
-            throw new ObjetoExistenteException("Usuário existente com este nome de usuário: " + usuario);
+            throw new ObjetoExistenteException("Já existe um usuário cadastrado com este nome de usuário: " + usuario);
         }
     }
 
     public void usuarioExistenteUpdate(String usuario, UUID id){
         if (repository.existsByUsuarioAndIdNot(usuario, id)) {
-            throw new ObjetoExistenteException("Usuário existente com este nome de usuário: " + usuario);
+            throw new ObjetoExistenteException("Já existe um usuário cadastrado com este nome de usuário: " + usuario);
         }
     }
 }

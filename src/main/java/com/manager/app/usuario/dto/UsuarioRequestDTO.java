@@ -14,7 +14,7 @@ public class UsuarioRequestDTO {
 
     private String id;
 
-    @NotBlank(message = "Usuário é obrigatório")
+    @NotBlank(message = "O campo Usuário é obrigatório.")
     private String usuario;
 
     // obrigatório no create; no update, em branco/nulo significa "não trocar a senha" (tratado no

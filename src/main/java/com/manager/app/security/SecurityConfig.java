@@ -40,9 +40,9 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .exceptionHandling(eh -> eh
                         .authenticationEntryPoint((request, response, ex) ->
-                                escreverErro(response, HttpStatus.UNAUTHORIZED, "Credenciais inválidas ou ausentes", request.getRequestURI()))
+                                escreverErro(response, HttpStatus.UNAUTHORIZED, "Credenciais inválidas ou ausentes.", request.getRequestURI()))
                         .accessDeniedHandler((request, response, ex) ->
-                                escreverErro(response, HttpStatus.FORBIDDEN, "Acesso negado", request.getRequestURI())))
+                                escreverErro(response, HttpStatus.FORBIDDEN, "Acesso negado.", request.getRequestURI())))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

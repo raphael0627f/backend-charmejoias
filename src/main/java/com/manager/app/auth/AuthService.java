@@ -50,10 +50,10 @@ public class AuthService {
     @Transactional
     public LoginResponseDTO refresh(String refreshTokenValue){
         RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
-                .orElseThrow(() -> new ItemInvalidoException("Refresh token inválido"));
+                .orElseThrow(() -> new ItemInvalidoException("Token de atualização inválido."));
 
         if (refreshToken.isRevoked() || refreshToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new ItemInvalidoException("Refresh token inválido ou expirado");
+            throw new ItemInvalidoException("Token de atualização inválido ou expirado.");
         }
 
         // rotação: o refresh token usado nunca pode ser reaproveitado (single-use)

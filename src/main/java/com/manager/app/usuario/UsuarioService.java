@@ -48,20 +48,20 @@ public class UsuarioService {
     }
 
     public Usuario findById(UUID id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Usuário não encontrado. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Usuário não encontrado. Id: " + id));
     }
 
     private Perfil resolverPerfil(Long perfilId){
         if (perfilId == null) return null;
         return perfilRepository.findById(perfilId)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Perfil não encontrado. id: " + perfilId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Perfil não encontrado. Id: " + perfilId));
     }
 
     @Transactional
     public Usuario create(Usuario usuario, String senha, Long perfilId){
         validation.usuarioExistenteCreate(usuario.getUsuario());
         if (senha == null || senha.isBlank()) {
-            throw new ItemInvalidoException("Senha é obrigatória");
+            throw new ItemInvalidoException("O campo Senha é obrigatório.");
         }
 
         usuario.setSenha(passwordEncoder.encode(senha));
