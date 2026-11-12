@@ -2,6 +2,7 @@ package com.manager.app.planejadorrota.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,7 +24,7 @@ public class PlanejadorRotaRequestDTO {
     @NotNull(message = "O campo Data da rota é obrigatório.")
     private LocalDate dataRota;
 
-    @NotNull(message = "Informe ao menos um cliente na rota do planejador.")
+    @NotEmpty(message = "Informe ao menos um cliente na rota do planejador.")
     @Valid
     private List<PlanejadorRotaClienteRequestDTO> itens;
 }
