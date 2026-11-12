@@ -11,14 +11,18 @@ Aplica-se às mensagens de erro, validação, conflito e acesso negado devolvida
 4. Mesmo termo para a mesma coisa: Cliente, Produto, Consignação, Pré-acerto, Acerto, Montagem, Planejador de rotas, Mostruário.
    No meio da frase, em minúsculas (exceto siglas: SKU, NCM, CNPJ, CFOP, UF, DANFE).
 5. Nomes técnicos de campo (`clienteId`, `refreshToken`, `yyyy-MM-dd`) não aparecem para o usuário.
-6. Identificadores ao final da frase usam rótulo capitalizado: `Id: 5`, `Ids: 1, 2`, `Código: X`, `SKU: X`.
-7. Mantêm-se os mesmos parâmetros e a mesma exceção/status HTTP; só o texto muda.
+6. Datas nas mensagens: `dd/MM/aaaa` (ex.: `Já existe um marcador na data 04/02/2031.`), via `TextoUtils.data(...)`.
+   Ao pedir uma data ao usuário, orientar o formato `aaaa-mm-dd` (formato aceito pela API).
+7. Identificadores técnicos não aparecem para o usuário final: nos 404 e em "em uso" o `Id: N`/`Código: X` fica só no log
+   (o `RestExceptionHandler` o remove da resposta; a exceção continua com o detalhe completo para o suporte).
+   Nos demais erros de negócio o rótulo, quando existir, é capitalizado: `Id: 5`, `Código: X`, `SKU: X`.
+8. Mantêm-se os mesmos parâmetros e a mesma exceção/status HTTP; só o texto muda.
 
 ## Modelos
 
 | Situação | Modelo |
 |---|---|
-| Não encontrado (404) | `Cliente não encontrado. Id: 5` |
+| Não encontrado (404) | `Cliente não encontrado.` |
 | Já existe (409) | `Já existe um cliente cadastrado com este código: X.` |
 | Em uso (409) | `Não é possível desativar a categoria, pois ela está em uso.` |
 | Campo obrigatório | `O campo Nome é obrigatório.` |
@@ -29,7 +33,7 @@ Aplica-se às mensagens de erro, validação, conflito e acesso negado devolvida
 
 | Antes | Depois |
 |---|---|
-| `Pedido não encontrada. id: 5` | `Pedido não encontrado. Id: 5` |
+| `Pedido não encontrada. id: 5` | `Pedido não encontrado.` |
 | `Cliente existente com este código: X` | `Já existe um cliente cadastrado com este código: X` |
 | `Categoria está em uso e não pode ser desativada` | `Não é possível desativar a categoria, pois ela está em uso.` |
 | `Código é obrigatório` | `O campo Código é obrigatório.` |
@@ -37,3 +41,19 @@ Aplica-se às mensagens de erro, validação, conflito e acesso negado devolvida
 | `Marcador do tipo TRABALHA exige uma rota (rotaId)` | `Marcador do tipo TRABALHA exige uma rota.` |
 | `Período obrigatório: informe inicio e fim (yyyy-MM-dd)` | `O período é obrigatório. Informe as datas inicial e final no formato aaaa-mm-dd.` |
 | `Acesso negado` | `Acesso negado.` |
+
+## Erros do Spring MVC (handlers em `RestExceptionHandler`)
+
+Todos devolvem `RestErrorMenssage` (`menssage`, `status`, `path`, `timestamp`). Validação de corpo/parâmetros inclui também
+`errors: [{ "field": "...", "defaultMessage": "..." }]` (formato consumido pelo frontend em `parseApiError`).
+
+| Situação | Status | `menssage` |
+|---|---|---|
+| Bean validation (`@Valid`) | 400 | primeira mensagem da lista (`O campo Nome é obrigatório.`) + `errors[]` |
+| JSON inválido / corpo ausente | 400 | `O corpo da requisição está ausente ou mal formatado. Revise os dados informados.` |
+| Tipo de parâmetro/path inválido | 400 | `O valor informado para id é inválido.` |
+| Parâmetro obrigatório ausente | 400 | `O parâmetro x é obrigatório.` |
+| Rota inexistente | 404 | `Recurso não encontrado.` |
+| Método HTTP não permitido | 405 | `Método não permitido para este recurso.` |
+
+Toda anotação `@NotNull/@NotBlank/@NotEmpty/@Size` de DTO deve ter `message` em português.
