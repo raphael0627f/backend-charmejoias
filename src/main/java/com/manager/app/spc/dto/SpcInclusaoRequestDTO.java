@@ -14,27 +14,27 @@ import java.util.UUID;
 @Setter
 public class SpcInclusaoRequestDTO {
 
-    @NotNull
+    @NotNull(message = "O campo Cliente é obrigatório.")
     private UUID clienteId;
 
-    @NotNull
+    @NotNull(message = "O campo Tipo de pessoa é obrigatório.")
     private TipoPessoaSpc tipoPessoa;
 
-    @NotNull
+    @NotNull(message = "O campo Número do contrato é obrigatório.")
     private String numeroContrato;
 
-    @NotNull
+    @NotNull(message = "O campo Data da compra é obrigatório.")
     private LocalDate dataCompra;
 
-    @NotNull
+    @NotNull(message = "O campo Data de vencimento é obrigatório.")
     private LocalDate dataVencimento;
 
-    @NotNull
+    @NotNull(message = "O campo Código do tipo de devedor é obrigatório.")
     private TipoDevedorSpc codigoTipoDevedor;
 
-    @NotNull
+    @NotNull(message = "O campo Valor do débito é obrigatório.")
     private BigDecimal valorDebito;
 
-    @NotNull
+    @NotNull(message = "O campo Natureza da inclusão é obrigatório.")
     private Integer naturezaInclusaoId;
 }
