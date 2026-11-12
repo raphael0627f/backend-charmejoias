@@ -30,7 +30,7 @@ public class MostruarioService {
     }
 
     public Mostruario findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Mostruário não encontrado. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Mostruário não encontrado. Id: " + id));
     }
 
     @Transactional
@@ -51,7 +51,7 @@ public class MostruarioService {
     public void delete(Long id){
         Mostruario mostruario = this.findById(id);
         if (consignacaoRepository.existsByMostruario(mostruario)) {
-            throw new ObjetoEmUsoException("Mostruário está em uso por uma ou mais Consignações e não pode ser excluído. id: " + id);
+            throw new ObjetoEmUsoException("Não é possível excluir o mostruário, pois ele está vinculado a uma ou mais consignações. Id: " + id);
         }
         repository.delete(mostruario);
     }

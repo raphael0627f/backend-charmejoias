@@ -10,9 +10,9 @@ import lombok.Setter;
 @NoArgsConstructor
 public class LoginRequestDTO {
 
-    @NotBlank(message = "Usuário é obrigatório")
+    @NotBlank(message = "O campo Usuário é obrigatório.")
     private String usuario;
 
-    @NotBlank(message = "Senha é obrigatória")
+    @NotBlank(message = "O campo Senha é obrigatório.")
     private String senha;
 }

@@ -24,14 +24,14 @@ public class PlanejadorRotaValidation {
         boolean pertenceAoCliente = cliente.getEnderecos().stream()
                 .anyMatch(e -> e.getId().equals(endereco.getId()));
         if (!pertenceAoCliente) {
-            throw new ItemInvalidoException("Endereço informado não pertence ao cliente selecionado. clienteId: " + cliente.getId());
+            throw new ItemInvalidoException("O endereço informado não pertence ao cliente selecionado. Cliente: " + cliente.getId());
         }
     }
 
     public void validarConsignacoesDoCliente(Cliente cliente, List<Consignacao> consignacoes){
         for (Consignacao consignacao : consignacoes) {
             if (consignacao.getCliente() == null || !consignacao.getCliente().getId().equals(cliente.getId())) {
-                throw new ItemInvalidoException("Consignação " + consignacao.getId() + " não pertence ao cliente selecionado. clienteId: " + cliente.getId());
+                throw new ItemInvalidoException("A consignação " + consignacao.getId() + " não pertence ao cliente selecionado. Cliente: " + cliente.getId());
             }
         }
     }

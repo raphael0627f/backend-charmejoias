@@ -21,6 +21,8 @@ import java.time.LocalDate;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "/planejador-rotas")
+// leitura e escrita exigem a mesma permissão (inclui lista, detalhe e download do xlsx)
+@PreAuthorize("hasAuthority('PLANEJADOR_ROTA_GERENCIAR')")
 public class PlanejadorRotaController {
 
     private final PlanejadorRotaService service;

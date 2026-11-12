@@ -17,13 +17,13 @@ public class VariacaoValidation {
 
     public void nomeExistenteCreate(String nome){
         if(repository.existsByNomeIgnoreCase(nome)){
-            throw new ObjetoExistenteException("Variação existente com este nome: " + nome);
+            throw new ObjetoExistenteException("Já existe uma variação cadastrada com este nome: " + nome);
         }
     }
 
     public void nomeExistenteUpdate(String nome, Long id){
         if(repository.existsByNomeIgnoreCaseAndIdNot(nome, id)){
-            throw new ObjetoExistenteException("Variação existente com este nome: " + nome);
+            throw new ObjetoExistenteException("Já existe uma variação cadastrada com este nome: " + nome);
         }
     }
 
@@ -31,7 +31,7 @@ public class VariacaoValidation {
         Set<String> nomes = new HashSet<>();
         for (ItemVariacao item : itens) {
             if (!nomes.add(item.getNome().toLowerCase())) {
-                throw new ItemInvalidoException("Nome de item duplicado nesta variação: " + item.getNome());
+                throw new ItemInvalidoException("O nome do item está duplicado nesta variação: " + item.getNome());
             }
         }
     }

@@ -31,7 +31,7 @@ public class AgendaMarcadorService {
     }
 
     public AgendaMarcador findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Marcador de agenda não encontrado. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Marcador de agenda não encontrado. Id: " + id));
     }
 
     @Transactional
@@ -48,7 +48,7 @@ public class AgendaMarcadorService {
     @Transactional
     public AgendaMarcador update(AgendaMarcador marcador, Long rotaId, List<Long> cidadeExtraIds){
         if (marcador.getId() == null) {
-            throw new ItemInvalidoException("Id do marcador é obrigatório");
+            throw new ItemInvalidoException("O Id do marcador é obrigatório.");
         }
         AgendaMarcador marcadorUpdate = this.findById(marcador.getId());
         normalizar(marcador);
@@ -83,10 +83,10 @@ public class AgendaMarcadorService {
         } catch (DataIntegrityViolationException e) {
             String sqlState = SqlErros.sqlState(e);
             if (SqlErros.UNIQUE.equals(sqlState)) {
-                throw new ObjetoExistenteException("Já existe um marcador na data " + data);
+                throw new ObjetoExistenteException("Já existe um marcador na data " + com.manager.app.shared.TextoUtils.data(data) + ".");
             }
             if (SqlErros.FOREIGN_KEY.equals(sqlState)) {
-                throw new ObjetoNaoEncontradoException("Rota ou cidade do marcador não encontrada (removida durante a operação)");
+                throw new ObjetoNaoEncontradoException("Rota ou cidade do marcador não encontrada. O registro foi removido durante a operação.");
             }
             throw e;
         }

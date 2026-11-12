@@ -15,17 +15,17 @@ import java.util.UUID;
 @NoArgsConstructor
 public class NotaFiscalItemRequestDTO {
 
-    @NotNull(message = "Produto é obrigatório")
+    @NotNull(message = "O campo Produto é obrigatório.")
     private UUID produtoId;
 
-    @NotNull(message = "Quantidade é obrigatória")
+    @NotNull(message = "O campo Quantidade é obrigatório.")
     private BigDecimal quantidade;
 
-    @NotNull(message = "Valor unitário é obrigatório")
+    @NotNull(message = "O campo Valor unitário é obrigatório.")
     private BigDecimal valorUnitario;
 
     private BigDecimal desconto;
 
-    @NotBlank(message = "CFOP é obrigatório")
+    @NotBlank(message = "O campo CFOP é obrigatório.")
     private String cfop;
 }

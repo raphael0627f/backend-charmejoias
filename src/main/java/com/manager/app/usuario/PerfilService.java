@@ -29,7 +29,7 @@ public class PerfilService {
     }
 
     public Perfil findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Perfil não encontrado. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Perfil não encontrado. Id: " + id));
     }
 
     @Transactional
@@ -51,7 +51,7 @@ public class PerfilService {
     public void delete(Long id){
         Perfil perfil = this.findById(id);
         if (usuarioRepository.existsByPerfil(perfil)) {
-            throw new ObjetoEmUsoException("Perfil está em uso por um ou mais usuários e não pode ser excluído. id: " + id);
+            throw new ObjetoEmUsoException("Não é possível excluir o perfil, pois ele está vinculado a um ou mais usuários. Id: " + id);
         }
         repository.delete(perfil);
     }

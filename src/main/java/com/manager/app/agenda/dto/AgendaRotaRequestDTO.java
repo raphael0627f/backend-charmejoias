@@ -14,7 +14,7 @@ public class AgendaRotaRequestDTO {
 
     private Long id;
 
-    @NotBlank(message = "Nome da rota é obrigatório")
+    @NotBlank(message = "O campo Nome da rota é obrigatório.")
     private String nome;
 
     // mínimo 1, sem repetidas e todas existentes: validado no service (erro com o campo menssage)

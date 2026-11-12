@@ -20,6 +20,6 @@ public class PreAcertoConsignacaoRequestDTO {
     private String observacoes;
     private BigDecimal desconto;
 
-    @NotNull(message = "Este Pré-acerto precisa ter um ou mais Produtos")
+    @NotNull(message = "Informe ao menos um produto no pré-acerto.")
     private List<PreAcertoConsignacaoProdutoRequestDTO> produtos;
 }

@@ -45,7 +45,7 @@ public class MontagemEtiquetaService {
     @Transactional(readOnly = true)
     public byte[] gerarEtiqueta(Long montagemId, LocalDate dataAcerto){
         MontagemMostruario montagem = repository.findById(montagemId)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Montagem não encontrada. id: " + montagemId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Montagem não encontrada. Id: " + montagemId));
         validation.validarEtiqueta(montagem);
         MontagemEtiquetaDTO dados = montarDados(montagem, dataAcerto);
 

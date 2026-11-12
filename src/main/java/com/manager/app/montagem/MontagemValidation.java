@@ -26,26 +26,26 @@ public class MontagemValidation {
     // só ABERTA e EM_MONTAGEM aceitam alteração; CONCLUIDA e CANCELADA são somente leitura
     public void validarEditavel(MontagemMostruario montagem){
         if (montagem.getStatus() == StatusMontagem.CONCLUIDA || montagem.getStatus() == StatusMontagem.CANCELADA) {
-            throw new ItemInvalidoException("Montagem " + montagem.getId() + " está " + montagem.getStatus() + " e não pode ser alterada");
+            throw new ItemInvalidoException("A montagem " + montagem.getId() + " está " + montagem.getStatus() + " e não pode ser alterada.");
         }
     }
 
     // imprime em ABERTA, EM_MONTAGEM e CONCLUIDA, com ou sem consignação vinculada (a data do acerto vem do usuário)
     public void validarEtiqueta(MontagemMostruario montagem){
         if (montagem.getStatus() == StatusMontagem.CANCELADA) {
-            throw new ItemInvalidoException("Montagem " + montagem.getId() + " está CANCELADA e não pode ter a etiqueta impressa");
+            throw new ItemInvalidoException("A montagem " + montagem.getId() + " está CANCELADA e não pode ter a etiqueta impressa.");
         }
     }
 
     // dataAcerto da etiqueta: obrigatória, yyyy-MM-dd; chega como texto para o erro sair no padrão do projeto (menssage)
     public LocalDate validarDataAcertoEtiqueta(String dataAcerto){
         if (dataAcerto == null || dataAcerto.isBlank()) {
-            throw new ItemInvalidoException("Informe a data do acerto (dataAcerto=yyyy-MM-dd) para imprimir a etiqueta");
+            throw new ItemInvalidoException("Informe a data do acerto para imprimir a etiqueta.");
         }
         try {
             return LocalDate.parse(dataAcerto.trim());
         } catch (DateTimeParseException e) {
-            throw new ItemInvalidoException("Data do acerto inválida: '" + dataAcerto + "'. Use o formato yyyy-MM-dd");
+            throw new ItemInvalidoException("Data do acerto inválida: '" + dataAcerto + "'. Informe a data no formato aaaa-mm-dd.");
         }
     }
 
@@ -58,27 +58,27 @@ public class MontagemValidation {
     public void validarSemMontagemEmAndamento(Optional<MontagemMostruario> existente){
         existente.ifPresent(m -> {
             throw new ItemInvalidoException("O cliente já possui a montagem " + m.getId() + " com status " + m.getStatus()
-                    + ". Conclua ou cancele antes de criar outra");
+                    + ". Conclua ou cancele essa montagem antes de criar outra.");
         });
     }
 
     public void validarTrocaCliente(MontagemMostruario montagem, UUID novoClienteId, Optional<MontagemMostruario> outraDoNovoCliente){
         if (montagem.getCliente().getId().equals(novoClienteId)) return;
         if (montagem.getStatus() != StatusMontagem.ABERTA) {
-            throw new ItemInvalidoException("O cliente só pode ser alterado enquanto a montagem está ABERTA. id: " + montagem.getId());
+            throw new ItemInvalidoException("O cliente só pode ser alterado enquanto a montagem está ABERTA. Id: " + montagem.getId());
         }
         if (temVinculos(montagem)) {
-            throw new ItemInvalidoException("Remova os pedidos e consignações vinculados antes de trocar o cliente da montagem. id: " + montagem.getId());
+            throw new ItemInvalidoException("Remova os pedidos e consignações vinculados antes de trocar o cliente da montagem. Id: " + montagem.getId());
         }
         validarSemMontagemEmAndamento(outraDoNovoCliente);
     }
 
     public void validarExclusao(MontagemMostruario montagem){
         if (montagem.getStatus() != StatusMontagem.ABERTA) {
-            throw new ItemInvalidoException("Só é possível excluir uma montagem ABERTA; use o cancelamento. id: " + montagem.getId());
+            throw new ItemInvalidoException("Só é possível excluir uma montagem ABERTA. Utilize o cancelamento. Id: " + montagem.getId());
         }
         if (temVinculos(montagem)) {
-            throw new ObjetoEmUsoException("Montagem possui pedidos ou consignações vinculados e não pode ser excluída. id: " + montagem.getId());
+            throw new ObjetoEmUsoException("Não é possível excluir a montagem, pois ela possui pedidos ou consignações vinculados. Id: " + montagem.getId());
         }
     }
 
@@ -105,7 +105,7 @@ public class MontagemValidation {
         boolean temOrdemServico = ativos.stream().anyMatch(p -> p.getCategoria() == CategoriaPedido.ORDEM_SERVICO);
         boolean temOutroTipo = ativos.stream().anyMatch(p -> p.getCategoria() != CategoriaPedido.ORDEM_SERVICO);
         if (temOutroTipo) {
-            throw new ItemInvalidoException("Esta montagem tem pedidos que não são O.S.: é necessário ao menos uma consignação vinculada para concluí-la");
+            throw new ItemInvalidoException("Esta montagem possui pedidos que não são O.S. É necessário vincular ao menos uma consignação para concluí-la.");
         }
         if (!temOrdemServico) {
             throw new ItemInvalidoException("Para concluir a montagem é necessário ao menos uma consignação ou um pedido do tipo O.S.");
@@ -135,12 +135,12 @@ public class MontagemValidation {
         if (!faltantes.isEmpty()) {
             motivos.add("produtos dos pedidos que não estão nas consignações: " + String.join(", ", faltantes));
         }
-        throw new ItemInvalidoException("Não é possível concluir a montagem - " + String.join("; ", motivos));
+        throw new ItemInvalidoException("Não é possível concluir a montagem: " + String.join("; ", motivos));
     }
 
     public void validarCancelar(MontagemMostruario montagem, String motivo){
         if (motivo == null || motivo.trim().length() < MOTIVO_CANCELAMENTO_TAMANHO_MINIMO) {
-            throw new ItemInvalidoException("O motivo do cancelamento deve ter ao menos " + MOTIVO_CANCELAMENTO_TAMANHO_MINIMO + " caracteres");
+            throw new ItemInvalidoException("O motivo do cancelamento deve ter ao menos " + MOTIVO_CANCELAMENTO_TAMANHO_MINIMO + " caracteres.");
         }
         if (montagem.getStatus() != StatusMontagem.ABERTA && montagem.getStatus() != StatusMontagem.EM_MONTAGEM) {
             throw new ItemInvalidoException("Só é possível cancelar uma montagem ABERTA ou EM_MONTAGEM. Status atual: " + montagem.getStatus());
@@ -150,8 +150,9 @@ public class MontagemValidation {
     // item (consignação/pedido) a vincular: do mesmo cliente da montagem e ainda livre
     public void validarVinculoConsignacao(MontagemMostruario montagem, Consignacao consignacao, Optional<MontagemMostruario> vinculoAtual){
         validarEditavel(montagem);
+        com.manager.app.consignacao.ConsignacaoValidation.exigirNaoCancelada(consignacao);
         if (consignacao.getCliente() == null || !consignacao.getCliente().getId().equals(montagem.getCliente().getId())) {
-            throw new ItemInvalidoException("A consignação " + consignacao.getId() + " não pertence ao cliente da montagem");
+            throw new ItemInvalidoException("A consignação " + consignacao.getId() + " não pertence ao cliente da montagem.");
         }
         validarSemOutraMontagem(montagem, "Consignação " + consignacao.getId(), vinculoAtual);
     }
@@ -160,10 +161,10 @@ public class MontagemValidation {
         validarEditavel(montagem);
         // pedido sem cliente pode ser vinculado: recebe o cliente (e a data de entrega) da montagem ao concluí-la
         if (pedido.getCliente() != null && !pedido.getCliente().getId().equals(montagem.getCliente().getId())) {
-            throw new ItemInvalidoException("O pedido " + pedido.getId() + " não pertence ao cliente da montagem");
+            throw new ItemInvalidoException("O pedido " + pedido.getId() + " não pertence ao cliente da montagem.");
         }
         if (pedido.getStatus() == StatusPedido.CANCELADO) {
-            throw new ItemInvalidoException("O pedido " + pedido.getId() + " está cancelado e não pode ser vinculado à montagem");
+            throw new ItemInvalidoException("O pedido " + pedido.getId() + " está cancelado e não pode ser vinculado à montagem.");
         }
         validarSemOutraMontagem(montagem, "Pedido " + pedido.getId(), vinculoAtual);
     }
@@ -171,7 +172,7 @@ public class MontagemValidation {
     private void validarSemOutraMontagem(MontagemMostruario montagem, String item, Optional<MontagemMostruario> vinculoAtual){
         vinculoAtual.ifPresent(outra -> {
             if (outra.getId().equals(montagem.getId())) {
-                throw new ItemInvalidoException(item + " já está vinculado(a) a esta montagem");
+                throw new ItemInvalidoException(item + " já está vinculado(a) a esta montagem.");
             }
             throw new ObjetoEmUsoException(item + " já está vinculado(a) à montagem " + outra.getId());
         });

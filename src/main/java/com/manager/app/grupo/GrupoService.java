@@ -41,14 +41,14 @@ public class GrupoService {
     }
 
     public Grupo findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Grupo não encontrado. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Grupo não encontrado. Id: " + id));
     }
 
     @Transactional
     public Grupo create(Grupo grupo){
         normalizarNome(grupo);
         if (repository.existsByNomeIgnoreCaseAndTipo(grupo.getNome(), grupo.getTipo())) {
-            throw new ObjetoExistenteException("Grupo existente com este nome para o tipo " + grupo.getTipo() + ": " + grupo.getNome());
+            throw new ObjetoExistenteException("Já existe um grupo cadastrado com este nome para o tipo " + grupo.getTipo() + ": " + grupo.getNome());
         }
         return repository.save(grupo);
     }
@@ -63,12 +63,12 @@ public class GrupoService {
     public Grupo update(Grupo grupo){
         normalizarNome(grupo);
         if (repository.existsByNomeIgnoreCaseAndTipoAndIdNot(grupo.getNome(), grupo.getTipo(), grupo.getId())) {
-            throw new ObjetoExistenteException("Grupo existente com este nome para o tipo " + grupo.getTipo() + ": " + grupo.getNome());
+            throw new ObjetoExistenteException("Já existe um grupo cadastrado com este nome para o tipo " + grupo.getTipo() + ": " + grupo.getNome());
         }
-        Grupo grupoUpdate = repository.findById(grupo.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Grupo não encontrado. id: " + grupo.getId()));
+        Grupo grupoUpdate = repository.findById(grupo.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Grupo não encontrado. Id: " + grupo.getId()));
 
         if (grupoUpdate.getTipo() != grupo.getTipo() && emUso(grupoUpdate)) {
-            throw new ObjetoEmUsoException("Grupo está em uso e não pode mudar de tipo");
+            throw new ObjetoEmUsoException("Não é possível alterar o tipo do grupo, pois ele está em uso.");
         }
 
         grupoUpdate.setNome(grupo.getNome());
@@ -84,16 +84,16 @@ public class GrupoService {
 
     @Transactional
     public Grupo activate(Long id){
-        Grupo grupo = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Grupo não encontrado. id: " + id));
+        Grupo grupo = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Grupo não encontrado. Id: " + id));
         grupo.setAtivo(true);
         return grupo;
     }
 
     @Transactional
     public void deactivate(Long id){
-        Grupo grupo = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Grupo não encontrado. id: " + id));
+        Grupo grupo = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Grupo não encontrado. Id: " + id));
         if (emUso(grupo)) {
-            throw new ObjetoEmUsoException("Grupo está em uso e não pode ser desativado");
+            throw new ObjetoEmUsoException("Não é possível desativar o grupo, pois ele está em uso.");
         }
         grupo.setAtivo(false);
     }

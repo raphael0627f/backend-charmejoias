@@ -11,7 +11,17 @@ import com.manager.app.shared.exception.ObjetoExistenteException;
 import com.manager.app.shared.exception.ObjetoNaoEncontradoException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.TypeMismatchException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -21,14 +31,16 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.Date;
+import java.util.List;
 
+@Slf4j
 @ControllerAdvice
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<?> databaseError(DataAccessException exception, WebRequest request) {
         HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
-        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Banco de dados indisponível",request.getDescription(false));
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Banco de dados indisponível. Tente novamente em instantes.",request.getDescription(false));
         return ResponseEntity.status(status).body(response);
     }
 
@@ -41,16 +53,16 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         String mensagem;
         if ("23505".equals(sqlState)) {
             status = HttpStatus.CONFLICT;
-            mensagem = "Já existe um registro com esses dados";
+            mensagem = "Já existe um registro com os dados informados.";
         } else if ("23503".equals(sqlState)) {
             status = HttpStatus.CONFLICT;
-            mensagem = "Operação não permitida: o registro está em uso ou faz referência a outro que não existe";
+            mensagem = "Operação não permitida. O registro está em uso ou faz referência a outro registro inexistente.";
         } else if ("22001".equals(sqlState)) {
             status = HttpStatus.BAD_REQUEST;
-            mensagem = "Um dos campos de texto excede o tamanho máximo permitido";
+            mensagem = "Um dos campos de texto excede o tamanho máximo permitido.";
         } else {
             status = HttpStatus.SERVICE_UNAVAILABLE;
-            mensagem = "Banco de dados indisponível";
+            mensagem = "Banco de dados indisponível. Tente novamente em instantes.";
         }
         return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, mensagem, request.getDescription(false)));
     }
@@ -58,7 +70,8 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ObjetoNaoEncontradoException.class)
     private ResponseEntity<RestErrorMenssage> objetoNaoEncontradoHandler(ObjetoNaoEncontradoException exception, WebRequest request){
         HttpStatus status = HttpStatus.NOT_FOUND;
-        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
+        log.info("{}: {}", exception.getClass().getSimpleName(), exception.getMessage());
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, semIdentificador(exception.getMessage()), request.getDescription(false));
         return ResponseEntity.status(status).body(response);
     }
 
@@ -72,7 +85,8 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ObjetoEmUsoException.class)
     private ResponseEntity<RestErrorMenssage> objetoEmUso(ObjetoEmUsoException exception, WebRequest request){
         HttpStatus status = HttpStatus.CONFLICT;
-        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
+        log.info("{}: {}", exception.getClass().getSimpleName(), exception.getMessage());
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, semIdentificador(exception.getMessage()), request.getDescription(false));
         return ResponseEntity.status(status).body(response);
     }
 
@@ -118,7 +132,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     private ResponseEntity<RestErrorMenssage> authenticationError(AuthenticationException exception, WebRequest request){
         HttpStatus status = HttpStatus.UNAUTHORIZED;
-        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Credenciais inválidas", request.getDescription(false));
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Credenciais inválidas.", request.getDescription(false));
         return ResponseEntity.status(status).body(response);
     }
 
@@ -128,7 +142,81 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     private ResponseEntity<RestErrorMenssage> accessDeniedError(AccessDeniedException exception, WebRequest request){
         HttpStatus status = HttpStatus.FORBIDDEN;
-        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Acesso negado", request.getDescription(false));
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Acesso negado.", request.getDescription(false));
         return ResponseEntity.status(status).body(response);
+    }
+
+    // ---- erros do próprio Spring MVC (corpo/parâmetros inválidos, rota inexistente): mesmo padrão, em português ----
+
+    private ResponseEntity<Object> erro(HttpStatusCode status, String mensagem, WebRequest request, List<RestErrorMenssage.CampoInvalido> campos) {
+        HttpStatus http = HttpStatus.valueOf(status.value());
+        return ResponseEntity.status(http).body(new RestErrorMenssage(new Date(), http, mensagem, request.getDescription(false), campos));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        List<RestErrorMenssage.CampoInvalido> campos = ex.getBindingResult().getFieldErrors().stream()
+                .map(this::campo)
+                .sorted(java.util.Comparator.comparing(RestErrorMenssage.CampoInvalido::field))
+                .toList();
+        String mensagem = campos.isEmpty() ? "Os dados informados são inválidos." : campos.get(0).defaultMessage();
+        return erro(HttpStatus.BAD_REQUEST, mensagem, request, campos);
+    }
+
+    private RestErrorMenssage.CampoInvalido campo(FieldError e) {
+        String msg = e.getDefaultMessage() != null ? e.getDefaultMessage() : "Valor inválido.";
+        return new RestErrorMenssage.CampoInvalido(e.getField(), msg);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(HandlerMethodValidationException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        List<RestErrorMenssage.CampoInvalido> campos = ex.getParameterValidationResults().stream()
+                .flatMap(r -> r.getResolvableErrors().stream().map(e -> new RestErrorMenssage.CampoInvalido(
+                        r.getMethodParameter().getParameterName() != null ? r.getMethodParameter().getParameterName() : "parametro",
+                        e.getDefaultMessage() != null ? e.getDefaultMessage() : "Valor inválido.")))
+                .toList();
+        String mensagem = campos.isEmpty() ? "Os dados informados são inválidos." : campos.get(0).defaultMessage();
+        return erro(HttpStatus.BAD_REQUEST, mensagem, request, campos);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return erro(HttpStatus.BAD_REQUEST, "O corpo da requisição está ausente ou mal formatado. Revise os dados informados.", request, null);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        String campo = ex.getPropertyName() != null ? ex.getPropertyName() : "parâmetro";
+        return erro(HttpStatus.BAD_REQUEST, "O valor informado para " + campo + " é inválido.", request, null);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMissingServletRequestParameter(MissingServletRequestParameterException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return erro(HttpStatus.BAD_REQUEST, "O parâmetro " + ex.getParameterName() + " é obrigatório.", request, null);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleNoResourceFoundException(NoResourceFoundException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return erro(HttpStatus.NOT_FOUND, "Recurso não encontrado.", request, null);
+    }
+
+    // demais erros do MVC (método não permitido, tipo de mídia etc.): mensagem genérica em português pelo status
+    @Override
+    protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
+        String mensagem = switch (statusCode.value()) {
+            case 405 -> "Método não permitido para este recurso.";
+            case 406, 415 -> "Formato de conteúdo não suportado.";
+            case 404 -> "Recurso não encontrado.";
+            case 400 -> "Requisição inválida.";
+            default -> statusCode.is5xxServerError() ? "Erro interno. Tente novamente em instantes." : "Não foi possível processar a requisição.";
+        };
+        return erro(statusCode, mensagem, request, null);
+    }
+
+    // 404/"em uso": o identificador técnico (Id: N, Ids: ..., Código: X) fica só no log; a mensagem ao usuário não o exibe
+    public static String semIdentificador(String mensagem) {
+        if (mensagem == null) return null;
+        String limpa = mensagem.replaceAll("\\s*\\b(?:Id|Ids|Código|SKU):\\s.*$", "").trim();
+        return limpa.isEmpty() ? mensagem : limpa;
     }
 }

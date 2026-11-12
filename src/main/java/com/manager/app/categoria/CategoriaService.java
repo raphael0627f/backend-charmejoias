@@ -30,14 +30,14 @@ public class CategoriaService {
     }
 
     public Categoria findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Categoria não encontrada. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Categoria não encontrada. Id: " + id));
     }
 
     @Transactional
     public Categoria create(Categoria categoria){
         normalizarNome(categoria);
         if (repository.existsByNomeIgnoreCase(categoria.getNome())) {
-            throw new ObjetoExistenteException("Categoria existente com este nome: " + categoria.getNome());
+            throw new ObjetoExistenteException("Já existe uma categoria cadastrada com este nome: " + categoria.getNome());
         }
         return repository.save(categoria);
     }
@@ -46,9 +46,9 @@ public class CategoriaService {
     public Categoria update(Categoria categoria){
         normalizarNome(categoria);
         if (repository.existsByNomeIgnoreCaseAndIdNot(categoria.getNome(), categoria.getId())) {
-            throw new ObjetoExistenteException("Categoria existente com este nome: " + categoria.getNome());
+            throw new ObjetoExistenteException("Já existe uma categoria cadastrada com este nome: " + categoria.getNome());
         }
-        Categoria categoriaUpdate = repository.findById(categoria.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Categoria não encontrada. id: " + categoria.getId()));
+        Categoria categoriaUpdate = repository.findById(categoria.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Categoria não encontrada. Id: " + categoria.getId()));
         categoriaUpdate.setNome(categoria.getNome());
         categoriaUpdate.setAtivo(categoria.isAtivo());
         return categoriaUpdate;
@@ -61,16 +61,16 @@ public class CategoriaService {
 
     @Transactional
     public Categoria activate(Long id){
-        Categoria categoria = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Categoria não encontrada. id: " + id));
+        Categoria categoria = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Categoria não encontrada. Id: " + id));
         categoria.setAtivo(true);
         return categoria;
     }
 
     @Transactional
     public void deactivate(Long id){
-        Categoria categoria = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Categoria não encontrada. id: " + id));
+        Categoria categoria = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Categoria não encontrada. Id: " + id));
         if (produtoRepository.existsByCategoria(categoria)) {
-            throw new ObjetoEmUsoException("Categoria está em uso e não pode ser desativada");
+            throw new ObjetoEmUsoException("Não é possível desativar a categoria, pois ela está em uso.");
         }
         categoria.setAtivo(false);
     }

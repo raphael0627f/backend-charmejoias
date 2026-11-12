@@ -19,13 +19,13 @@ public class ConsignacaoRequestDTO {
     private UUID clienteId;
     private String descricao;
 
-    @NotNull(message = "Mostruário é obrigatório")
+    @NotNull(message = "O campo Mostruário é obrigatório.")
     private Long mostruarioId;
 
-    @NotNull(message = "Tipo é obrigatório")
+    @NotNull(message = "O campo Tipo é obrigatório.")
     private TipoItem tipo;
 
-    @NotNull(message = "Esta Consignação precisa ter um ou mais Produtos")
+    @NotNull(message = "Informe ao menos um produto na consignação.")
     private List<ConsignacaoProdutoRequestDTO> produtos;
 
     private LocalDate dataEntrega;

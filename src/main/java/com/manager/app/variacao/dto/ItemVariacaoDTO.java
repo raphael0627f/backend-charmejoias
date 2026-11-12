@@ -14,10 +14,10 @@ public class ItemVariacaoDTO {
 
     private Long id;
 
-    @NotBlank(message = "Nome do item é obrigatório")
+    @NotBlank(message = "O campo Nome do item é obrigatório.")
     private String nome;
 
-    @NotBlank(message = "Valor do item é obrigatório")
+    @NotBlank(message = "O campo Valor do item é obrigatório.")
     private String valor;
 
     private boolean ativo;

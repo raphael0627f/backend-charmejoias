@@ -11,7 +11,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class MontagemCancelamentoRequestDTO {
 
-    @NotBlank(message = "Motivo é obrigatório")
-    @Size(min = 5, message = "Motivo deve ter ao menos 5 caracteres")
+    @NotBlank(message = "O campo Motivo é obrigatório.")
+    @Size(min = 5, message = "O motivo deve ter ao menos 5 caracteres.")
     private String motivo;
 }

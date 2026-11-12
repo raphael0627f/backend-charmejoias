@@ -20,9 +20,9 @@ public class NotaFiscalTentativaEnvioService {
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public int iniciarNovaTentativa(Long id){
         NotaFiscal notaFiscal = repository.findByIdForUpdate(id)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Nota fiscal não encontrada. id: " + id));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Nota fiscal não encontrada. Id: " + id));
         if (notaFiscal.getStatus() != StatusNotaFiscal.RASCUNHO) {
-            throw new ItemInvalidoException("Nota fiscal já foi enviada. id: " + id + ", status atual: " + notaFiscal.getStatus());
+            throw new ItemInvalidoException("A nota fiscal já foi enviada. Id: " + id + ", status atual: " + notaFiscal.getStatus());
         }
         notaFiscal.setStatus(StatusNotaFiscal.ENVIADA);
         int tentativa = notaFiscal.getNumeroTentativaEnvio() + 1;

@@ -78,7 +78,7 @@ public class PedidoRelatorioService {
             linhas.addAll(montarLinhasIndividual(porId.get(id)));
         }
         if (linhas.isEmpty()) {
-            throw new ItemInvalidoException("Os pedidos selecionados não têm itens disponíveis para imprimir");
+            throw new ItemInvalidoException("Os pedidos selecionados não têm itens disponíveis para imprimir.");
         }
 
         byte[] pdf = exportar(List.of(preencher("/reports/pedido/relPedidoIndividual.jasper", linhas)));
@@ -256,14 +256,14 @@ public class PedidoRelatorioService {
 
     private List<Pedido> carregar(List<Long> ids){
         if (ids == null || ids.isEmpty()) {
-            throw new ItemInvalidoException("Informe ao menos um pedido");
+            throw new ItemInvalidoException("Informe ao menos um pedido.");
         }
         List<Long> distintos = ids.stream().distinct().toList();
         List<Pedido> pedidos = new ArrayList<>(repository.findAllById(distintos));
         if (pedidos.size() != distintos.size()) {
             List<Long> encontrados = pedidos.stream().map(Pedido::getId).toList();
             List<Long> faltando = distintos.stream().filter(id -> !encontrados.contains(id)).toList();
-            throw new ObjetoNaoEncontradoException("Pedido(s) não encontrado(s). ids: " + faltando);
+            throw new ObjetoNaoEncontradoException("Pedido(s) não encontrado(s). Ids: " + faltando);
         }
         return pedidos;
     }

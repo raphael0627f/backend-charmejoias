@@ -19,12 +19,12 @@ public class ComissaoService {
     }
 
     public Comissao findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Comissão não encontrada. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Comissão não encontrada. Id: " + id));
     }
 
     private void validarRange(Comissao comissao){
         if (comissao.getValorMaximo().compareTo(comissao.getValorMinimo()) <= 0) {
-            throw new ItemInvalidoException("Valor máximo do range deve ser maior que o valor mínimo");
+            throw new ItemInvalidoException("O valor máximo da faixa deve ser maior que o valor mínimo.");
         }
     }
 

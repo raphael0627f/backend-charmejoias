@@ -14,10 +14,10 @@ import java.util.List;
 @NoArgsConstructor
 public class PedidoStatusLoteRequestDTO {
 
-    @NotEmpty(message = "Informe ao menos um pedido")
+    @NotEmpty(message = "Informe ao menos um pedido.")
     private List<Long> ids;
 
-    @NotNull(message = "Status é obrigatório")
+    @NotNull(message = "O campo Status é obrigatório.")
     private StatusPedido status;
 
     // marca como impresso os pedidos cujo status foi alterado com sucesso

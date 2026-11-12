@@ -32,11 +32,11 @@ public class ProdutoImagemStorageService {
 
     public String salvar(UUID produtoId, MultipartFile arquivo){
         if (arquivo == null || arquivo.isEmpty()) {
-            throw new ItemInvalidoException("Arquivo de imagem é obrigatório");
+            throw new ItemInvalidoException("O arquivo de imagem é obrigatório.");
         }
         String contentType = arquivo.getContentType();
         if (contentType == null || !CONTENT_TYPES_PERMITIDOS.contains(contentType)) {
-            throw new ItemInvalidoException("Tipo de arquivo não permitido. Use PNG, JPEG ou WEBP");
+            throw new ItemInvalidoException("Tipo de arquivo não permitido. Utilize PNG, JPEG ou WEBP.");
         }
 
         String extensao = switch (contentType) {

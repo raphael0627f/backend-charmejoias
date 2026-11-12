@@ -118,7 +118,7 @@ class MontagemClienteUnicoServicoTest {
     void mensagemDeClienteOcupadoCitaOIdEOStatusDaOutraMontagem() {
         Optional<MontagemMostruario> existente = Optional.of(montagem(1234L, UUID.randomUUID(), StatusMontagem.EM_MONTAGEM));
         assertThatThrownBy(() -> validation.validarSemMontagemEmAndamento(existente))
-                .hasMessage("O cliente já possui a montagem 1234 com status EM_MONTAGEM. Conclua ou cancele antes de criar outra");
+                .hasMessage("O cliente já possui a montagem 1234 com status EM_MONTAGEM. Conclua ou cancele essa montagem antes de criar outra.");
     }
 
     // ---------- serviço: a regra está ligada ----------

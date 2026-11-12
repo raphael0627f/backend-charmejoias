@@ -13,3 +13,4 @@ O módulo antigo **Rotas** passou a se chamar **Planejador de rotas** (a palavra
 - Quem estiver logado com um token emitido antes do deploy ainda carrega a permissão antiga: precisa fazer login de novo para receber a nova.
 - Mensagens de erro agora dizem "rota do planejador" (ex.: `"Rota do planejador não encontrada. id: 7"`).
 - No banco as tabelas viraram `planejador_rotas`, `planejador_rota_clientes`, `planejador_rota_consignacoes_deixar` e `planejador_rota_consignacoes_trazer` (migration V56, só renomeia objetos).
+- **Leitura também exige permissão:** todos os endpoints de `/planejador-rotas` (lista, detalhe, `/{id}/xlsx`, escrita) exigem `PLANEJADOR_ROTA_GERENCIAR`; sem ela a resposta é **403** (`menssage: "Acesso negado"`), inclusive nos GETs. O frontend deve esconder/bloquear o módulo para quem não tem a permissão.

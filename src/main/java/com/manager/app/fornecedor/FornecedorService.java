@@ -30,14 +30,14 @@ public class FornecedorService {
     }
 
     public Fornecedor findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Fornecedor não encontrado. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Fornecedor não encontrado. Id: " + id));
     }
 
     @Transactional
     public Fornecedor create(Fornecedor fornecedor){
         normalizarNome(fornecedor);
         if (repository.existsByNomeIgnoreCase(fornecedor.getNome())) {
-            throw new ObjetoExistenteException("Fornecedor existente com este nome: " + fornecedor.getNome());
+            throw new ObjetoExistenteException("Já existe um fornecedor cadastrado com este nome: " + fornecedor.getNome());
         }
         return repository.save(fornecedor);
     }
@@ -46,9 +46,9 @@ public class FornecedorService {
     public Fornecedor update(Fornecedor fornecedor){
         normalizarNome(fornecedor);
         if (repository.existsByNomeIgnoreCaseAndIdNot(fornecedor.getNome(), fornecedor.getId())) {
-            throw new ObjetoExistenteException("Fornecedor existente com este nome: " + fornecedor.getNome());
+            throw new ObjetoExistenteException("Já existe um fornecedor cadastrado com este nome: " + fornecedor.getNome());
         }
-        Fornecedor fornecedorUpdate = repository.findById(fornecedor.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Fornecedor não encontrado. id: " + fornecedor.getId()));
+        Fornecedor fornecedorUpdate = repository.findById(fornecedor.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Fornecedor não encontrado. Id: " + fornecedor.getId()));
         fornecedorUpdate.setNome(fornecedor.getNome());
         fornecedorUpdate.setAtivo(fornecedor.isAtivo());
         return fornecedorUpdate;
@@ -61,16 +61,16 @@ public class FornecedorService {
 
     @Transactional
     public Fornecedor activate(Long id){
-        Fornecedor fornecedor = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Fornecedor não encontrado. id: " + id));
+        Fornecedor fornecedor = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Fornecedor não encontrado. Id: " + id));
         fornecedor.setAtivo(true);
         return fornecedor;
     }
 
     @Transactional
     public void deactivate(Long id){
-        Fornecedor fornecedor = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Fornecedor não encontrado. id: " + id));
+        Fornecedor fornecedor = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Fornecedor não encontrado. Id: " + id));
         if (produtoRepository.existsByFornecedor(fornecedor)) {
-            throw new ObjetoEmUsoException("Fornecedor está em uso e não pode ser desativado");
+            throw new ObjetoEmUsoException("Não é possível desativar o fornecedor, pois ele está em uso.");
         }
         fornecedor.setAtivo(false);
     }

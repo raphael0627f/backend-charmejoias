@@ -29,7 +29,7 @@ public class TransportadoraService {
     }
 
     public Transportadora findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Transportadora não encontrada. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Transportadora não encontrada. Id: " + id));
     }
 
     @Transactional
@@ -64,7 +64,7 @@ public class TransportadoraService {
     public void deactivate(Long id){
         Transportadora transportadora = this.findById(id);
         if (notaFiscalRepository.existsByTransportadora(transportadora)) {
-            throw new ObjetoEmUsoException("Transportadora está em uso e não pode ser desativada");
+            throw new ObjetoEmUsoException("Não é possível desativar a transportadora, pois ela está em uso.");
         }
         transportadora.setAtivo(false);
     }

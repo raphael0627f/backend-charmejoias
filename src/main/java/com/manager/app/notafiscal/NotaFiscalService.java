@@ -113,7 +113,7 @@ public class NotaFiscalService {
     }
 
     public NotaFiscal findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Nota fiscal não encontrada. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Nota fiscal não encontrada. Id: " + id));
     }
 
     public List<CfopDisponivelDTO> cfopsDisponiveis(Long empresaId, UUID clienteId){
@@ -130,17 +130,17 @@ public class NotaFiscalService {
     @Transactional
     public NotaFiscal create(NotaFiscalRequestDTO request){
         Empresa empresa = empresaRepository.findByIdForUpdate(request.getEmpresaId())
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Empresa não encontrada. id: " + request.getEmpresaId()));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Empresa não encontrada. Id: " + request.getEmpresaId()));
         Cliente cliente = clienteService.findById(request.getClienteId());
 
         String ufEmpresa = empresa.getEndereco().getUf();
         String ufCliente = cliente.getEnderecoPrincipal().getUf();
 
         if (isBlank(empresa.getEndereco().getIbge())) {
-            throw new ItemInvalidoException("Endereço da empresa está sem o código IBGE do município, obrigatório para a NFe. empresaId: " + empresa.getId());
+            throw new ItemInvalidoException("O endereço da empresa não possui o código IBGE do município, obrigatório para a NFe. Empresa: " + empresa.getId());
         }
         if (isBlank(cliente.getEnderecoPrincipal().getIbge())) {
-            throw new ItemInvalidoException("Endereço do cliente está sem o código IBGE do município, obrigatório para a NFe. clienteId: " + cliente.getId());
+            throw new ItemInvalidoException("O endereço do cliente não possui o código IBGE do município, obrigatório para a NFe. Cliente: " + cliente.getId());
         }
 
         NotaFiscal notaFiscal = new NotaFiscal();
@@ -201,7 +201,7 @@ public class NotaFiscalService {
     public NotaFiscal update(Long id, NotaFiscalRequestDTO request){
         NotaFiscal notaFiscal = this.findById(id);
         if (notaFiscal.getStatus() != StatusNotaFiscal.RASCUNHO && notaFiscal.getStatus() != StatusNotaFiscal.REJEITADA) {
-            throw new ItemInvalidoException("Só é possível atualizar uma nota fiscal em rascunho ou rejeitada. id: " + id + ", status atual: " + notaFiscal.getStatus());
+            throw new ItemInvalidoException("Só é possível atualizar uma nota fiscal em rascunho ou rejeitada. Id: " + id + ", status atual: " + notaFiscal.getStatus());
         }
 
         // nota rejeitada pela SEFAZ nunca chega a ser autorizada, então não "gasta" a numeração:
@@ -221,10 +221,10 @@ public class NotaFiscalService {
         String ufCliente = cliente.getEnderecoPrincipal().getUf();
 
         if (isBlank(empresa.getEndereco().getIbge())) {
-            throw new ItemInvalidoException("Endereço da empresa está sem o código IBGE do município, obrigatório para a NFe. empresaId: " + empresa.getId());
+            throw new ItemInvalidoException("O endereço da empresa não possui o código IBGE do município, obrigatório para a NFe. Empresa: " + empresa.getId());
         }
         if (isBlank(cliente.getEnderecoPrincipal().getIbge())) {
-            throw new ItemInvalidoException("Endereço do cliente está sem o código IBGE do município, obrigatório para a NFe. clienteId: " + cliente.getId());
+            throw new ItemInvalidoException("O endereço do cliente não possui o código IBGE do município, obrigatório para a NFe. Cliente: " + cliente.getId());
         }
 
         notaFiscal.setEmpresa(empresa);
@@ -295,7 +295,7 @@ public class NotaFiscalService {
             // sempre quando a Contora falhava e a nota ficava ENVIADA sem contoraDocumentId.
             // O lock de verdade (contra envio duplicado) é o iniciarNovaTentativa acima
             NotaFiscal notaFiscal = repository.findById(id)
-                    .orElseThrow(() -> new ObjetoNaoEncontradoException("Nota fiscal não encontrada. id: " + id));
+                    .orElseThrow(() -> new ObjetoNaoEncontradoException("Nota fiscal não encontrada. Id: " + id));
 
             String contoraCompanyId = notaFiscal.getEmpresa().getContoraCompanyId();
             String documentId = contoraClient.criarRascunhoNfe(notaFiscal);
@@ -317,7 +317,7 @@ public class NotaFiscalService {
     public NotaFiscal atualizarStatus(Long id){
         NotaFiscal notaFiscal = this.findById(id);
         if (notaFiscal.getContoraDocumentId() == null) {
-            throw new ItemInvalidoException("Nota fiscal ainda não foi enviada à Contora. id: " + id);
+            throw new ItemInvalidoException("A nota fiscal ainda não foi enviada à Contora. Id: " + id);
         }
 
         Map<String, Object> dados = contoraClient.consultarStatus(notaFiscal.getEmpresa().getContoraCompanyId(), notaFiscal.getContoraDocumentId());
@@ -329,10 +329,10 @@ public class NotaFiscalService {
     public NotaFiscal cancelar(Long id, String motivo){
         NotaFiscal notaFiscal = this.findById(id);
         if (notaFiscal.getStatus() != StatusNotaFiscal.AUTORIZADA) {
-            throw new ItemInvalidoException("Só é possível cancelar uma nota autorizada. id: " + id + ", status atual: " + notaFiscal.getStatus());
+            throw new ItemInvalidoException("Só é possível cancelar uma nota autorizada. Id: " + id + ", status atual: " + notaFiscal.getStatus());
         }
         if (motivo == null || motivo.trim().length() < 15) {
-            throw new ItemInvalidoException("Motivo do cancelamento precisa ter ao menos 15 caracteres");
+            throw new ItemInvalidoException("O motivo do cancelamento deve ter ao menos 15 caracteres.");
         }
 
         contoraClient.cancelar(notaFiscal.getEmpresa().getContoraCompanyId(), notaFiscal.getContoraDocumentId(), motivo);
@@ -345,10 +345,10 @@ public class NotaFiscalService {
     public NotaFiscal corrigir(Long id, String texto){
         NotaFiscal notaFiscal = this.findById(id);
         if (notaFiscal.getStatus() != StatusNotaFiscal.AUTORIZADA) {
-            throw new ItemInvalidoException("Só é possível emitir carta de correção para uma nota autorizada. id: " + id + ", status atual: " + notaFiscal.getStatus());
+            throw new ItemInvalidoException("Só é possível emitir carta de correção para uma nota autorizada. Id: " + id + ", status atual: " + notaFiscal.getStatus());
         }
         if (texto == null || texto.trim().length() < 15) {
-            throw new ItemInvalidoException("Texto da carta de correção precisa ter ao menos 15 caracteres");
+            throw new ItemInvalidoException("O texto da carta de correção deve ter ao menos 15 caracteres.");
         }
 
         NotaFiscalCorrecao correcao = new NotaFiscalCorrecao();
@@ -389,7 +389,7 @@ public class NotaFiscalService {
     public byte[] baixarArtefato(Long id, String artefato){
         NotaFiscal notaFiscal = this.findById(id);
         if (notaFiscal.getContoraDocumentId() == null) {
-            throw new ItemInvalidoException("Nota fiscal ainda não foi enviada à Contora. id: " + id);
+            throw new ItemInvalidoException("A nota fiscal ainda não foi enviada à Contora. Id: " + id);
         }
         return contoraClient.baixarArtefato(notaFiscal.getEmpresa().getContoraCompanyId(), notaFiscal.getContoraDocumentId(), artefato);
     }
@@ -543,10 +543,10 @@ public class NotaFiscalService {
         BigDecimal totalBase = bases.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
 
         if (totalBase.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ItemInvalidoException("Não é possível ratear o desconto: valor total dos itens é zero");
+            throw new ItemInvalidoException("Não é possível ratear o desconto, pois o valor total dos itens é zero.");
         }
         if (descontoTotal.compareTo(BigDecimal.ZERO) < 0 || descontoTotal.compareTo(totalBase) > 0) {
-            throw new ItemInvalidoException("Desconto total inválido: deve ser maior ou igual a zero e no máximo igual ao valor total dos itens");
+            throw new ItemInvalidoException("Desconto total inválido. O valor deve ser maior ou igual a zero e no máximo igual ao valor total dos itens.");
         }
 
         List<BigDecimal> descontos = new ArrayList<>();

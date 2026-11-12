@@ -14,10 +14,10 @@ import java.util.List;
 @NoArgsConstructor
 public class PreviewVariacoesRequestDTO {
 
-    @NotBlank(message = "SKU pai é obrigatório")
+    @NotBlank(message = "O campo SKU pai é obrigatório.")
     private String skuPai;
 
-    @NotEmpty(message = "Ao menos uma variação deve ser selecionada")
+    @NotEmpty(message = "Selecione ao menos uma variação.")
     @Valid
     private List<VariacaoSelecionadaDTO> variacoesSelecionadas;
 }

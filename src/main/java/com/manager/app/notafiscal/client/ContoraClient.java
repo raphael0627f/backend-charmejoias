@@ -96,7 +96,7 @@ public class ContoraClient {
                 }
             });
         } catch (IOException e) {
-            throw new ContoraApiException("Falha ao ler o arquivo do certificado");
+            throw new ContoraApiException("Falha ao ler o arquivo do certificado.");
         }
         builder.part("password", senha);
 
@@ -418,7 +418,7 @@ public class ContoraClient {
         if (data instanceof Map<?, ?> dataMap && dataMap.get("id") != null) {
             return dataMap.get("id").toString();
         }
-        throw new ContoraApiException("Resposta da Contora sem o id da empresa criada");
+        throw new ContoraApiException("Resposta da Contora sem o id da empresa criada.");
     }
 
     private <T> T executar(java.util.function.Supplier<T> chamada){

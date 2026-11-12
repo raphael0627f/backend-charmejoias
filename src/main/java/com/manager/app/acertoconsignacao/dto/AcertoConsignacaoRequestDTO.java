@@ -19,6 +19,6 @@ public class AcertoConsignacaoRequestDTO {
     private BigDecimal desconto;
     private String observacoes;
 
-    @NotNull(message = "Este Acerto precisa ter um ou mais Produtos devolvidos")
+    @NotNull(message = "Informe ao menos um produto devolvido no acerto.")
     private List<AcertoConsignacaoProdutoRequestDTO> produtos;
 }

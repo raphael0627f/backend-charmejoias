@@ -110,15 +110,15 @@ public class ProdutoService {
     }
 
     public Produto findById(UUID id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Produto não encontrado. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Produto não encontrado. Id: " + id));
     }
 
     public Produto findByIdAndAtivo(UUID id){
-        return repository.findByIdAndAtivoTrue(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Produto não encontrado ou inativo. id: " + id));
+        return repository.findByIdAndAtivoTrue(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Produto não encontrado ou inativo. Id: " + id));
     }
 
     public Produto findBySku(String sku){
-        return repository.findBySkuAndAtivoTrue(sku).orElseThrow(() -> new ObjetoNaoEncontradoException("Produto não encontrado. sku: " + sku));
+        return repository.findBySkuAndAtivoTrue(sku).orElseThrow(() -> new ObjetoNaoEncontradoException("Produto não encontrado. SKU: " + sku));
     }
 
     // busca exata pra bipagem de código de barras (Consignações, Pré-acertos, Nota Fiscal, Pedidos,
@@ -133,7 +133,7 @@ public class ProdutoService {
     }
 
     public ProdutoVariacao findVariacaoById(Long id){
-        return produtoVariacaoRepository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Variação de produto não encontrada. id: " + id));
+        return produtoVariacaoRepository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Variação de produto não encontrada. Id: " + id));
     }
 
     public String proximoSku(){
@@ -186,7 +186,7 @@ public class ProdutoService {
 
         for (VariacaoSelecionadaDTO selecao : dto.getVariacoesSelecionadas()) {
             if (!variacaoIdsVistos.add(selecao.getVariacaoId())) {
-                throw new ItemInvalidoException("Variação selecionada mais de uma vez: " + selecao.getVariacaoId());
+                throw new ItemInvalidoException("A variação foi selecionada mais de uma vez: " + selecao.getVariacaoId());
             }
 
             Map<Long, ItemVariacao> itensPorId = itemVariacaoRepository.findAllById(selecao.getItensVariacaoIds()).stream()
@@ -196,10 +196,10 @@ public class ProdutoService {
             for (Long itemId : selecao.getItensVariacaoIds()) {
                 ItemVariacao item = itensPorId.get(itemId);
                 if (item == null) {
-                    throw new ObjetoNaoEncontradoException("Item de variação não encontrado. id: " + itemId);
+                    throw new ObjetoNaoEncontradoException("Item de variação não encontrado. Id: " + itemId);
                 }
                 if (!item.getVariacao().getId().equals(selecao.getVariacaoId())) {
-                    throw new ItemInvalidoException("Item " + itemId + " não pertence à variação " + selecao.getVariacaoId());
+                    throw new ItemInvalidoException("O item " + itemId + " não pertence à variação " + selecao.getVariacaoId());
                 }
                 itensOrdenados.add(item);
             }
@@ -256,10 +256,10 @@ public class ProdutoService {
         for (Long itemId : itensVariacaoIds) {
             ItemVariacao item = itensPorId.get(itemId);
             if (item == null) {
-                throw new ObjetoNaoEncontradoException("Item de variação não encontrado. id: " + itemId);
+                throw new ObjetoNaoEncontradoException("Item de variação não encontrado. Id: " + itemId);
             }
             if (!variacoesUsadas.add(item.getVariacao().getId())) {
-                throw new ItemInvalidoException("Mais de um item da mesma variação na combinação: " + item.getVariacao().getNome());
+                throw new ItemInvalidoException("A combinação contém mais de um item da mesma variação: " + item.getVariacao().getNome());
             }
             itensOrdenados.add(item);
         }
@@ -286,7 +286,7 @@ public class ProdutoService {
             existeEmVariacao = produtoVariacaoRepository.existsBySku(sku);
         }
         if (existeEmProduto || existeEmVariacao) {
-            throw new ObjetoExistenteException("SKU já existente: " + sku);
+            throw new ObjetoExistenteException("Já existe um produto cadastrado com este SKU: " + sku);
         }
     }
 
@@ -315,7 +315,7 @@ public class ProdutoService {
         for (ProdutoVariacaoRequestDTO reqVar : variacoesRequest) {
             Set<Long> chave = new LinkedHashSet<>(reqVar.getItensVariacaoIds());
             if (!combinacoesVistas.add(chave)) {
-                throw new ItemInvalidoException("Combinação de variação duplicada no request");
+                throw new ItemInvalidoException("Existem combinações de variação duplicadas na solicitação.");
             }
         }
     }
@@ -363,15 +363,15 @@ public class ProdutoService {
 
         if (produto.getTipo() == TipoProduto.SIMPLES) {
             if (variacoesRequest != null && !variacoesRequest.isEmpty()) {
-                throw new ItemInvalidoException("Produto simples não pode ter variações");
+                throw new ItemInvalidoException("Produto simples não pode ter variações.");
             }
             if (produto.getPrecoVenda() == null) {
-                throw new ItemInvalidoException("Preço de venda é obrigatório para produto simples");
+                throw new ItemInvalidoException("O preço de venda é obrigatório para produto simples.");
             }
             produto.setCodigoBarras(gerarCodigoBarrasUnico());
         } else {
             if (variacoesRequest == null || variacoesRequest.isEmpty()) {
-                throw new ItemInvalidoException("Produto variável precisa de ao menos uma combinação de variação");
+                throw new ItemInvalidoException("Produto variável deve ter ao menos uma combinação de variação.");
             }
             validarCombinacoesDuplicadas(variacoesRequest);
             for (ProdutoVariacaoRequestDTO reqVar : variacoesRequest) {
@@ -385,7 +385,7 @@ public class ProdutoService {
     @Transactional
     public Produto update(Produto produto, ProdutoRelacoesDTO relacoes, List<ProdutoVariacaoRequestDTO> variacoesRequest){
         validation.skuExistenteUpdate(produto.getSku(), produto.getId());
-        Produto produtoUpdate = repository.findById(produto.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Produto não encontrado. id: " + produto.getId()));
+        Produto produtoUpdate = repository.findById(produto.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Produto não encontrado. Id: " + produto.getId()));
 
         produtoUpdate.setSku(produto.getSku());
         produtoUpdate.setReferencia(produto.getReferencia());
@@ -413,10 +413,10 @@ public class ProdutoService {
 
         if (produtoUpdate.getTipo() == TipoProduto.SIMPLES) {
             if (variacoesRequest != null && !variacoesRequest.isEmpty()) {
-                throw new ItemInvalidoException("Produto simples não pode ter variações");
+                throw new ItemInvalidoException("Produto simples não pode ter variações.");
             }
             if (produtoUpdate.getPrecoVenda() == null) {
-                throw new ItemInvalidoException("Preço de venda é obrigatório para produto simples");
+                throw new ItemInvalidoException("O preço de venda é obrigatório para produto simples.");
             }
             if (produtoUpdate.getCodigoBarras() == null) {
                 produtoUpdate.setCodigoBarras(gerarCodigoBarrasUnico());
@@ -425,7 +425,7 @@ public class ProdutoService {
             antigas.forEach(produtoUpdate::removerVariacao);
         } else {
             if (variacoesRequest == null || variacoesRequest.isEmpty()) {
-                throw new ItemInvalidoException("Produto variável precisa de ao menos uma combinação de variação");
+                throw new ItemInvalidoException("Produto variável deve ter ao menos uma combinação de variação.");
             }
             validarCombinacoesDuplicadas(variacoesRequest);
 
@@ -495,7 +495,7 @@ public class ProdutoService {
         }
         List<Grupo> grupos = grupoRepository.findAllById(gruposIds);
         if (grupos.size() != gruposIds.size()) {
-            throw new ObjetoNaoEncontradoException("Um ou mais grupos não encontrados");
+            throw new ObjetoNaoEncontradoException("Um ou mais grupos informados não foram encontrados.");
         }
         grupoValidation.validarTipo(grupos, TipoGrupo.PRODUTO);
         return grupos;
@@ -529,7 +529,7 @@ public class ProdutoService {
     public byte[] carregarImagem(UUID id){
         Produto produto = this.findById(id);
         if (produto.getImagemUrl() == null) {
-            throw new ObjetoNaoEncontradoException("Produto não possui imagem cadastrada. id: " + id);
+            throw new ObjetoNaoEncontradoException("Produto não possui imagem cadastrada. Id: " + id);
         }
         return imagemStorageService.carregar(produto.getImagemUrl());
     }

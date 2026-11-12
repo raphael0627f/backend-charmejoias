@@ -21,12 +21,12 @@ public class PedidoProdutoRequestDTO {
 
     private String descricao;
     private String variacao;
-    @NotNull(message = "Quantidade é obrigatória")
-    @Positive(message = "Quantidade deve ser maior que zero")
+    @NotNull(message = "O campo Quantidade é obrigatório.")
+    @Positive(message = "A quantidade deve ser maior que zero.")
     private Integer quantidade;
 
-    @NotNull(message = "Preço é obrigatório")
-    @PositiveOrZero(message = "Preço não pode ser negativo")
+    @NotNull(message = "O campo Preço é obrigatório.")
+    @PositiveOrZero(message = "O preço não pode ser negativo.")
     private BigDecimal preco;
     private UUID produtoId;
     private Long produtoVariacaoId;

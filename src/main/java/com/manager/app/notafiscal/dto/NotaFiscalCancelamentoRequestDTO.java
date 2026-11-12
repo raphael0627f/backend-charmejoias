@@ -10,6 +10,6 @@ import lombok.Setter;
 @NoArgsConstructor
 public class NotaFiscalCancelamentoRequestDTO {
 
-    @NotBlank(message = "Motivo do cancelamento é obrigatório")
+    @NotBlank(message = "O campo Motivo do cancelamento é obrigatório.")
     private String motivo;
 }

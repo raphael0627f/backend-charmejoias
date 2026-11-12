@@ -11,9 +11,9 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PedidoStatusRequestDTO {
 
-    @NotNull(message = "Id é obrigatório")
+    @NotNull(message = "O campo Id é obrigatório.")
     private Long id;
 
-    @NotNull(message = "Status é obrigatório")
+    @NotNull(message = "O campo Status é obrigatório.")
     private StatusPedido status;
 }

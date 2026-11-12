@@ -27,6 +27,10 @@ import java.util.List;
         "dataPreAcertoConsignacao",
         "dataAcertoConsignacao",
         "confirmada",
+        "cancelada",
+        "motivoCancelamento",
+        "canceladaEm",
+        "canceladaPor",
         "createdAt",
         "updatedAt",
         "createdBy",
@@ -44,6 +48,10 @@ public class ConsignacaoResponseDTO {
     private LocalDate dataPreAcertoConsignacao;
     private LocalDate dataAcertoConsignacao;
     private Boolean confirmada;
+    private Boolean cancelada;
+    private String motivoCancelamento;
+    private LocalDateTime canceladaEm;
+    private UsuarioResumoDTO canceladaPor;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private UsuarioResumoDTO createdBy;

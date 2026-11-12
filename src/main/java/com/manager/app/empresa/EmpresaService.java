@@ -27,7 +27,7 @@ public class EmpresaService {
     }
 
     public Empresa findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Empresa não encontrada. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Empresa não encontrada. Id: " + id));
     }
 
     @Transactional
@@ -78,7 +78,7 @@ public class EmpresaService {
     public Empresa enviarCertificado(Long id, MultipartFile certificado, String senha){
         Empresa empresa = this.findById(id);
         if (empresa.getContoraCompanyId() == null) {
-            throw new ObjetoNaoEncontradoException("Empresa ainda não cadastrada na Contora. id: " + id);
+            throw new ObjetoNaoEncontradoException("Empresa ainda não cadastrada na Contora. Id: " + id);
         }
 
         contoraClient.enviarCertificado(empresa.getContoraCompanyId(), certificado, senha);

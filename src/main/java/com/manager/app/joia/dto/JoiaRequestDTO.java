@@ -18,24 +18,24 @@ public class JoiaRequestDTO {
 
     private String id;
 
-    @NotBlank(message = "Código é obrigatório")
+    @NotBlank(message = "O campo Código é obrigatório.")
     private String codigo;
 
-    @NotBlank(message = "Referência é obrigatório")
+    @NotBlank(message = "O campo Referência é obrigatório.")
     private String referencia;
 
-    @NotBlank(message = "Nome é obrigatório")
+    @NotBlank(message = "O campo Nome é obrigatório.")
     private String nome;
 
-    @NotNull(message = "Preço Venda é obrigatório")
+    @NotNull(message = "O campo Preço de venda é obrigatório.")
     private BigDecimal precoVenda;
 
-    @NotNull(message = "Ativo é obrigatório")
+    @NotNull(message = "O campo Ativo é obrigatório.")
     private boolean ativo;
 
     private String observacoes;
 
-    @NotNull(message = "Categoria é obrigatória")
+    @NotNull(message = "O campo Categoria é obrigatório.")
     private Long categoriaId;
 
     private List<Long> gruposIds;

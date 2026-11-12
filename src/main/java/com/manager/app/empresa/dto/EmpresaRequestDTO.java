@@ -16,22 +16,22 @@ public class EmpresaRequestDTO {
 
     private Long id;
 
-    @NotBlank(message = "Razão social é obrigatória")
+    @NotBlank(message = "O campo Razão social é obrigatório.")
     private String razaoSocial;
 
     private String nomeFantasia;
 
-    @NotBlank(message = "CNPJ é obrigatório")
+    @NotBlank(message = "O campo CNPJ é obrigatório.")
     private String cnpj;
 
     private String inscricaoEstadual;
     private String cnae;
     private String telefone;
 
-    @NotNull(message = "Regime tributário é obrigatório")
+    @NotNull(message = "O campo Regime tributário é obrigatório.")
     private RegimeTributario regimeTributario;
 
-    @NotNull(message = "Endereço é obrigatório")
+    @NotNull(message = "O campo Endereço é obrigatório.")
     @Valid
     private EnderecoDTO endereco;
 

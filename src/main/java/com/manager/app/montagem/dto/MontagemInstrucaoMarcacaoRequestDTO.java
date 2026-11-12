@@ -10,6 +10,6 @@ import lombok.Setter;
 @NoArgsConstructor
 public class MontagemInstrucaoMarcacaoRequestDTO {
 
-    @NotNull(message = "Informe se a instrução foi feita")
+    @NotNull(message = "Informe se a instrução foi feita.")
     private Boolean concluida;
 }

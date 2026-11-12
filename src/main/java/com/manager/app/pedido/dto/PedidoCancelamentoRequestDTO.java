@@ -10,7 +10,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PedidoCancelamentoRequestDTO {
 
-    @NotBlank(message = "Motivo é obrigatório")
-    @jakarta.validation.constraints.Size(min = 5, message = "Motivo deve ter ao menos 5 caracteres")
+    @NotBlank(message = "O campo Motivo é obrigatório.")
+    @jakarta.validation.constraints.Size(min = 5, message = "O motivo deve ter ao menos 5 caracteres.")
     private String motivo;
 }

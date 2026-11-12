@@ -34,6 +34,7 @@ public class ConsignacaoController {
             @RequestParam(required = false) Boolean temCliente,
             @RequestParam(required = false) Boolean temAcerto,
             @RequestParam(required = false) Boolean confirmada,
+            @RequestParam(required = false) Boolean cancelada,
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataEntregaInicio,
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataEntregaFim,
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataPreAcertoInicio,
@@ -41,7 +42,7 @@ public class ConsignacaoController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataAcertoInicio,
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataAcertoFim,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
-        return ResponseEntity.ok(service.findAllResumo(busca, modoBusca, clienteId, temCliente, temAcerto, confirmada,
+        return ResponseEntity.ok(service.findAllResumo(busca, modoBusca, clienteId, temCliente, temAcerto, confirmada, cancelada,
                 dataEntregaInicio, dataEntregaFim, dataPreAcertoInicio, dataPreAcertoFim, dataAcertoInicio, dataAcertoFim, pageable));
     }
 
@@ -69,6 +70,14 @@ public class ConsignacaoController {
     @PreAuthorize("hasAuthority('CONSIGNACAO_GERENCIAR')")
     public ResponseEntity<ConsignacaoResponseDTO> confirmar(@PathVariable Long id){
         Consignacao consignacao = service.confirmar(id);
+        return ResponseEntity.ok(mapper.toResponseDTO(consignacao));
+    }
+
+    // cancelamento definitivo (mesmo padrão de POST /pedidos/{id}/cancelar)
+    @PostMapping(value = "/{id}/cancelar")
+    @PreAuthorize("hasAuthority('CONSIGNACAO_GERENCIAR')")
+    public ResponseEntity<ConsignacaoResponseDTO> cancelar(@PathVariable Long id, @RequestBody @Valid com.manager.app.consignacao.dto.ConsignacaoCancelamentoRequestDTO request){
+        Consignacao consignacao = service.cancelar(id, request.getMotivo());
         return ResponseEntity.ok(mapper.toResponseDTO(consignacao));
     }
 

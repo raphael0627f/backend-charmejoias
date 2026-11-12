@@ -27,6 +27,10 @@ import java.util.List;
         "dataPreAcertoConsignacao",
         "dataAcertoConsignacao",
         "confirmada",
+        "cancelada",
+        "motivoCancelamento",
+        "canceladaEm",
+        "canceladaPor",
         "acertoFinalizado",
         "itensCount",
         "quantidadeTotal",
@@ -47,6 +51,10 @@ public class ConsignacaoResumoDTO {
     private LocalDate dataPreAcertoConsignacao;
     private LocalDate dataAcertoConsignacao;
     private Boolean confirmada;
+    private Boolean cancelada;
+    private String motivoCancelamento;
+    private LocalDateTime canceladaEm;
+    private UsuarioResumoDTO canceladaPor;
     // true quando existe um Acerto de Consignação confirmado pra essa
     // consignação — "Finalizado" na listagem; caso contrário "Em aberto"
     private Boolean acertoFinalizado;

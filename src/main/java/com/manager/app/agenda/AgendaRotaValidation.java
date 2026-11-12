@@ -18,13 +18,13 @@ public class AgendaRotaValidation {
 
     public void nomeExistenteCreate(String nome){
         if (repository.existsByNomeIgnoreCase(nome)) {
-            throw new ObjetoExistenteException("Já existe uma rota com o nome \"" + nome + "\"");
+            throw new ObjetoExistenteException("Já existe uma rota com o nome \"" + nome + "\".");
         }
     }
 
     public void nomeExistenteUpdate(String nome, Long id){
         if (repository.existsByNomeIgnoreCaseAndIdNot(nome, id)) {
-            throw new ObjetoExistenteException("Já existe uma rota com o nome \"" + nome + "\"");
+            throw new ObjetoExistenteException("Já existe uma rota com o nome \"" + nome + "\".");
         }
     }
 
@@ -34,15 +34,15 @@ public class AgendaRotaValidation {
 
     public void cidadesObrigatorias(List<Long> cidadeIds){
         if (cidadeIds == null || cidadeIds.isEmpty()) {
-            throw new ItemInvalidoException("A rota precisa ter ao menos uma cidade");
+            throw new ItemInvalidoException("Informe ao menos uma cidade para a rota.");
         }
     }
 
     public void podeExcluir(Long id){
         long usos = marcadorRepository.countByRota_Id(id);
         if (usos > 0) {
-            throw new ObjetoEmUsoException("Não é possível excluir a rota: ela está em uso em " + usos
-                    + (usos == 1 ? " marcador da agenda" : " marcadores da agenda"));
+            throw new ObjetoEmUsoException("Não é possível excluir a rota, pois ela está vinculada a " + usos
+                    + (usos == 1 ? " marcador da agenda." : " marcadores da agenda."));
         }
     }
 }

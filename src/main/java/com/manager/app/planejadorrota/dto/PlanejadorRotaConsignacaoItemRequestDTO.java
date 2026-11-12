@@ -10,7 +10,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PlanejadorRotaConsignacaoItemRequestDTO {
 
-    @NotNull(message = "consignacaoId é obrigatório")
+    @NotNull(message = "O campo Consignação é obrigatório.")
     private Long consignacaoId;
 
     // null/false = ainda nao confirmado - so passa a fazer sentido preencher depois,

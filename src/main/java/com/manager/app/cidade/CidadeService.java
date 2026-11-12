@@ -43,7 +43,7 @@ public class CidadeService {
         }
         if (uf != null && !uf.isBlank()) {
             if (!uf.trim().matches("[A-Za-z]{2}")) {
-                throw new ItemInvalidoException("UF inválida: informe a sigla com 2 letras");
+                throw new ItemInvalidoException("UF inválida. Informe a sigla com 2 letras.");
             }
             String ufUpper = uf.trim().toUpperCase();
             spec = SpecificationUtils.and(spec, (root, query, cb) -> cb.equal(root.get("uf"), ufUpper));
@@ -79,7 +79,7 @@ public class CidadeService {
     }
 
     public Cidade findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Cidade não encontrada. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Cidade não encontrada. Id: " + id));
     }
 
     // carrega várias cidades de uma vez (uma consulta), preservando a ordem recebida; erro se repetir id ou se algum não existir
@@ -87,14 +87,14 @@ public class CidadeService {
         if (ids == null || ids.isEmpty()) return new ArrayList<>();
         Set<Long> vistos = new HashSet<>();
         for (Long id : ids) {
-            if (id == null) throw new ItemInvalidoException("Cidade inválida: id nulo");
-            if (!vistos.add(id)) throw new ItemInvalidoException("Cidade repetida na lista. id: " + id);
+            if (id == null) throw new ItemInvalidoException("Cidade inválida. Informe o identificador de todas as cidades.");
+            if (!vistos.add(id)) throw new ItemInvalidoException("Cidade repetida na lista. Id: " + id);
         }
         Map<Long, Cidade> porId = repository.findAllById(ids).stream().collect(Collectors.toMap(Cidade::getId, Function.identity()));
         List<Cidade> resultado = new ArrayList<>();
         for (Long id : ids) {
             Cidade cidade = porId.get(id);
-            if (cidade == null) throw new ObjetoNaoEncontradoException("Cidade não encontrada. id: " + id);
+            if (cidade == null) throw new ObjetoNaoEncontradoException("Cidade não encontrada. Id: " + id);
             resultado.add(cidade);
         }
         return resultado;

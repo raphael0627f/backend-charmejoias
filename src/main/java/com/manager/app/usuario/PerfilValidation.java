@@ -12,13 +12,13 @@ public class PerfilValidation {
 
     public void nomeExistenteCreate(String nome){
         if (repository.existsByNome(nome)) {
-            throw new ObjetoExistenteException("Perfil existente com este nome: " + nome);
+            throw new ObjetoExistenteException("Já existe um perfil cadastrado com este nome: " + nome);
         }
     }
 
     public void nomeExistenteUpdate(String nome, Long id){
         if (repository.existsByNomeAndIdNot(nome, id)) {
-            throw new ObjetoExistenteException("Perfil existente com este nome: " + nome);
+            throw new ObjetoExistenteException("Já existe um perfil cadastrado com este nome: " + nome);
         }
     }
 }

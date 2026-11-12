@@ -12,13 +12,13 @@ import java.util.UUID;
 @Setter
 public class SpcConsultaRequestDTO {
 
-    @NotNull
+    @NotNull(message = "O campo Cliente é obrigatório.")
     private UUID clienteId;
 
-    @NotNull
+    @NotNull(message = "O campo Tipo de pessoa é obrigatório.")
     private TipoPessoaSpc tipoPessoa;
 
-    @NotNull
+    @NotNull(message = "O campo Código do produto é obrigatório.")
     private Integer codigoProduto;
 
     private List<Integer> insumosOpcionais;

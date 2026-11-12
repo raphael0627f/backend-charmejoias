@@ -160,7 +160,7 @@ public class NotaFiscalController {
 
     private ResponseEntity<byte[]> gerarPdfDeXml(MultipartFile xml, DanfeGeneratorService.TipoDocumento tipo, String prefixoArquivo){
         if (xml == null || xml.isEmpty()) {
-            throw new ItemInvalidoException("Arquivo XML é obrigatório");
+            throw new ItemInvalidoException("O arquivo XML é obrigatório.");
         }
         String nomeOriginal = xml.getOriginalFilename() != null ? xml.getOriginalFilename().toLowerCase() : "";
         String contentType = xml.getContentType();
@@ -169,14 +169,14 @@ public class NotaFiscalController {
                 || MediaType.TEXT_XML_VALUE.equals(contentType)
                 || "application/xml".equals(contentType);
         if (!pareceXml) {
-            throw new ItemInvalidoException("Arquivo deve ser um XML");
+            throw new ItemInvalidoException("O arquivo deve estar no formato XML.");
         }
 
         byte[] xmlBytes;
         try {
             xmlBytes = xml.getBytes();
         } catch (java.io.IOException e) {
-            throw new ItemInvalidoException("Não foi possível ler o arquivo enviado");
+            throw new ItemInvalidoException("Não foi possível ler o arquivo enviado.");
         }
 
         byte[] pdf = danfeGeneratorService.gerarPdf(xmlBytes, tipo);

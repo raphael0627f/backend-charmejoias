@@ -72,7 +72,7 @@ public class BackupService {
 
     public BackupArquivoResponseDTO executar(String origem){
         if (!lock.tryLock()) {
-            throw new ItemInvalidoException("Já existe um backup em andamento. Aguarde terminar e tente novamente");
+            throw new ItemInvalidoException("Já existe um backup em andamento. Aguarde a conclusão e tente novamente.");
         }
         try {
             return gerar(origem);
@@ -99,21 +99,21 @@ public class BackupService {
             String saida = new String(processo.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
             if (!processo.waitFor(TIMEOUT_MINUTOS, TimeUnit.MINUTES)) {
                 processo.destroyForcibly();
-                throw new BackupException("O backup excedeu " + TIMEOUT_MINUTOS + " minutos e foi cancelado");
+                throw new BackupException("O backup excedeu " + TIMEOUT_MINUTOS + " minutos e foi cancelado.");
             }
             if (processo.exitValue() != 0) {
                 log.error("pg_dump terminou com código {}: {}", processo.exitValue(), saida);
                 throw new BackupException("Falha ao gerar o backup (pg_dump código " + processo.exitValue() + "): " + saida);
             }
             if (!Files.exists(temporario) || Files.size(temporario) == 0) {
-                throw new BackupException("O pg_dump terminou sem gerar o arquivo de backup");
+                throw new BackupException("O pg_dump terminou sem gerar o arquivo de backup.");
             }
             Files.move(temporario, destino, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             throw new BackupException("Não foi possível executar o pg_dump (confira a instalação do PostgreSQL ou a propriedade backup.pg-dump-path): " + e.getMessage(), e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new BackupException("Backup interrompido", e);
+            throw new BackupException("Backup interrompido.", e);
         } finally {
             try {
                 Files.deleteIfExists(temporario);
@@ -144,11 +144,11 @@ public class BackupService {
     public Path caminhoDoBackup(String nomeArquivo){
         if (nomeArquivo == null || !nomeArquivo.endsWith(".dump")
                 || nomeArquivo.contains("/") || nomeArquivo.contains("\\") || nomeArquivo.contains("..")) {
-            throw new ItemInvalidoException("Nome de arquivo de backup inválido");
+            throw new ItemInvalidoException("Nome de arquivo de backup inválido.");
         }
         Path resolvido = diretorio.resolve(nomeArquivo).normalize();
         if (!resolvido.startsWith(diretorio)) {
-            throw new ItemInvalidoException("Nome de arquivo de backup inválido");
+            throw new ItemInvalidoException("Nome de arquivo de backup inválido.");
         }
         if (!Files.isRegularFile(resolvido)) {
             throw new ObjetoNaoEncontradoException("Backup não encontrado: " + nomeArquivo);

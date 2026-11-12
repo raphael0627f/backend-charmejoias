@@ -34,7 +34,7 @@ public class VariacaoService {
     }
 
     public Variacao findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Variação não encontrada. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Variação não encontrada. Id: " + id));
     }
 
     @Transactional
@@ -50,7 +50,7 @@ public class VariacaoService {
         validation.nomeExistenteUpdate(variacao.getNome(), variacao.getId());
         validation.itensNomesDuplicados(variacao.getItens());
 
-        Variacao variacaoUpdate = repository.findById(variacao.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Variação não encontrada. id: " + variacao.getId()));
+        Variacao variacaoUpdate = repository.findById(variacao.getId()).orElseThrow(() -> new ObjetoNaoEncontradoException("Variação não encontrada. Id: " + variacao.getId()));
         variacaoUpdate.setNome(variacao.getNome());
         variacaoUpdate.setAtivo(variacao.isAtivo());
 
@@ -73,7 +73,7 @@ public class VariacaoService {
         List<ItemVariacao> removidos = List.copyOf(existentesPorId.values());
         for (ItemVariacao item : removidos) {
             if (produtoVariacaoItemRepository.existsByItemVariacaoId(item.getId())) {
-                throw new ObjetoEmUsoException("Item '" + item.getNome() + "' está em uso e não pode ser removido");
+                throw new ObjetoEmUsoException("Não é possível remover o item '" + item.getNome() + "', pois ele está em uso.");
             }
         }
         removidos.forEach(variacaoUpdate::removerItem);
@@ -87,10 +87,10 @@ public class VariacaoService {
         ItemVariacao item = variacao.getItens().stream()
                 .filter(i -> i.getId().equals(itemId))
                 .findFirst()
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Item não encontrado nesta variação. id: " + itemId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Item não encontrado nesta variação. Id: " + itemId));
 
         if (produtoVariacaoItemRepository.existsByItemVariacaoId(itemId)) {
-            throw new ObjetoEmUsoException("Item '" + item.getNome() + "' está em uso e não pode ser removido");
+            throw new ObjetoEmUsoException("Não é possível remover o item '" + item.getNome() + "', pois ele está em uso.");
         }
 
         variacao.removerItem(item);
@@ -110,7 +110,7 @@ public class VariacaoService {
         boolean emUso = variacao.getItens().stream()
                 .anyMatch(item -> produtoVariacaoItemRepository.existsByItemVariacao_VariacaoIdAndProdutoVariacao_AtivoTrue(item.getId()));
         if (emUso) {
-            throw new ObjetoEmUsoException("Variação está em uso e não pode ser desativada");
+            throw new ObjetoEmUsoException("Não é possível desativar a variação, pois ela está em uso.");
         }
         variacao.setAtivo(false);
     }

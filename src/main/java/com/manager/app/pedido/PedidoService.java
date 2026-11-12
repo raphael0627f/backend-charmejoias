@@ -198,7 +198,7 @@ public class PedidoService {
     }
 
     public Pedido findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Pedido não encontrada. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Pedido não encontrado. Id: " + id));
     }
 
     private void preencherItem(PedidoProduto produto, PedidoProdutoRequestDTO produtoRequest, TipoItem tipo){
@@ -232,7 +232,7 @@ public class PedidoService {
         if (produtoVariacaoId == null) return null;
         ProdutoVariacao variacao = produtoService.findVariacaoById(produtoVariacaoId);
         if (!variacao.getProduto().getId().equals(produtoId)) {
-            throw new ItemInvalidoException("A combinação informada não pertence ao produto selecionado");
+            throw new ItemInvalidoException("A combinação informada não pertence ao produto selecionado.");
         }
         return variacao;
     }
@@ -287,7 +287,7 @@ public class PedidoService {
         validation.validarEdicao(pedidoUpdate);
 
         if (pedidoUpdate.getCategoria() != request.getCategoria()) {
-            throw new ItemInvalidoException("A categoria do pedido não pode ser alterada. id: " + pedidoUpdate.getId());
+            throw new ItemInvalidoException("A categoria do pedido não pode ser alterada. Id: " + pedidoUpdate.getId());
         }
 
         validation.validarClienteEEntrega(request.getClienteId(), request.getDataEntrega());
@@ -297,7 +297,7 @@ public class PedidoService {
         boolean incluiEntrega = pedidoUpdate.getDataEntrega() == null && request.getDataEntrega() != null;
         if ((incluiCliente || incluiEntrega) && montagemRepository.findByPedidos_Id(pedidoUpdate.getId()).isPresent()) {
             throw new ItemInvalidoException("O pedido " + pedidoUpdate.getId()
-                    + " está vinculado a uma montagem: cliente e data de entrega serão preenchidos com os da montagem ao concluí-la");
+                    + " está vinculado a uma montagem. O cliente e a data de entrega serão preenchidos com os da montagem ao concluí-la.");
         }
 
         // editou, então o que foi impresso antes pode estar desatualizado
@@ -354,7 +354,7 @@ public class PedidoService {
                 if (!Objects.equals(produtoExistente.getQuantidade(), produtoRequest.getQuantidade())) {
                     int jaCancelada = produtoExistente.getQuantidadeCancelada() != null ? produtoExistente.getQuantidadeCancelada() : 0;
                     if (produtoRequest.getQuantidade() < jaCancelada) {
-                        throw new ItemInvalidoException("A quantidade não pode ser menor que a já cancelada (" + jaCancelada + ") do item");
+                        throw new ItemInvalidoException("A quantidade não pode ser menor que a já cancelada (" + jaCancelada + ") do item.");
                     }
                     produtoExistente.setQuantidade(produtoRequest.getQuantidade());
                 }
@@ -409,7 +409,7 @@ public class PedidoService {
     public Pedido updateStatus(PedidoStatusRequestDTO statusRequest){
         // lock pessimista: dois cliques/usuários mudando o status do mesmo pedido não furam a regra de transição
         Pedido pedido = repository.findByIdForUpdate(statusRequest.getId())
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Pedido não encontrada. id: " + statusRequest.getId()));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Pedido não encontrado. Id: " + statusRequest.getId()));
         validation.validarTransicao(pedido.getId(), pedido.getStatus(), statusRequest.getStatus());
         if (statusRequest.getStatus() == StatusPedido.SEPARADO) {
             validation.validarTodosSeparados(pedido);
@@ -425,13 +425,13 @@ public class PedidoService {
     @Transactional
     public Pedido marcarItemSeparado(Long pedidoId, Long itemId, boolean separado){
         Pedido pedido = repository.findByIdForUpdate(pedidoId)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Pedido não encontrada. id: " + pedidoId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Pedido não encontrado. Id: " + pedidoId));
         validation.validarMarcacaoSeparado(pedido);
 
         PedidoProduto item = pedido.getProdutos().stream()
                 .filter(produto -> produto.getId().equals(itemId))
                 .findFirst()
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Item não encontrado no pedido. id: " + itemId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Item não encontrado no pedido. Id: " + itemId));
         if (separado) {
             validation.validarItemVinculado(pedido, item);
         }
@@ -444,18 +444,18 @@ public class PedidoService {
     @Transactional
     public Pedido vincularProdutoItem(Long pedidoId, Long itemId, java.util.UUID produtoId, Long produtoVariacaoId, Integer quantidade){
         Pedido pedido = repository.findByIdForUpdate(pedidoId)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Pedido não encontrada. id: " + pedidoId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Pedido não encontrado. Id: " + pedidoId));
 
         PedidoProduto item = pedido.getProdutos().stream()
                 .filter(produto -> produto.getId().equals(itemId))
                 .findFirst()
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Item não encontrado no pedido. id: " + itemId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Item não encontrado no pedido. Id: " + itemId));
         validation.validarVinculoProduto(pedido, item);
 
         var produto = produtoService.findByIdAndAtivo(produtoId);
         ProdutoVariacao variacao = resolverProdutoVariacao(produtoVariacaoId, produto.getId());
         if (variacao != null && !variacao.isAtivo()) {
-            throw new ItemInvalidoException("A variação informada está inativa. id: " + variacao.getId());
+            throw new ItemInvalidoException("A variação informada está inativa. Id: " + variacao.getId());
         }
         boolean temVariacoesAtivas = produto.getVariacoes().stream().anyMatch(ProdutoVariacao::isAtivo);
         if (variacao == null && temVariacoesAtivas) {
@@ -465,7 +465,7 @@ public class PedidoService {
         int cancelada = item.getQuantidadeCancelada() != null ? item.getQuantidadeCancelada() : 0;
         int disponivel = item.getQuantidade() - cancelada;
         if (disponivel <= 0) {
-            throw new ItemInvalidoException("O item " + item.getId() + " está totalmente cancelado e não pode ser vinculado a um produto");
+            throw new ItemInvalidoException("O item " + item.getId() + " está totalmente cancelado e não pode ser vinculado a um produto.");
         }
         int quantidadeVinculo = quantidade != null ? quantidade : disponivel;
         if (quantidadeVinculo < 1 || quantidadeVinculo > disponivel) {
@@ -510,10 +510,10 @@ public class PedidoService {
     @Transactional
     public Pedido cancelar(Long id, String motivo){
         if (motivo == null || motivo.trim().length() < MOTIVO_CANCELAMENTO_TAMANHO_MINIMO) {
-            throw new ItemInvalidoException("O motivo do cancelamento deve ter ao menos " + MOTIVO_CANCELAMENTO_TAMANHO_MINIMO + " caracteres");
+            throw new ItemInvalidoException("O motivo do cancelamento deve ter ao menos " + MOTIVO_CANCELAMENTO_TAMANHO_MINIMO + " caracteres.");
         }
         Pedido pedido = repository.findByIdForUpdate(id)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Pedido não encontrada. id: " + id));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Pedido não encontrado. Id: " + id));
         validation.validarTransicao(pedido.getId(), pedido.getStatus(), StatusPedido.CANCELADO);
         pedido.setStatus(StatusPedido.CANCELADO);
         pedido.setMotivoCancelamento(motivo.trim());
@@ -526,23 +526,23 @@ public class PedidoService {
     @Transactional
     public Pedido cancelarItem(Long pedidoId, Long itemId, Integer quantidade, String motivo){
         if (motivo == null || motivo.trim().length() < MOTIVO_CANCELAMENTO_TAMANHO_MINIMO) {
-            throw new ItemInvalidoException("O motivo do cancelamento deve ter ao menos " + MOTIVO_CANCELAMENTO_TAMANHO_MINIMO + " caracteres");
+            throw new ItemInvalidoException("O motivo do cancelamento deve ter ao menos " + MOTIVO_CANCELAMENTO_TAMANHO_MINIMO + " caracteres.");
         }
 
         Pedido pedido = this.findById(pedidoId);
         if (pedido.getStatus() == StatusPedido.CANCELADO) {
-            throw new ItemInvalidoException("Pedido " + pedidoId + " já está cancelado");
+            throw new ItemInvalidoException("O pedido " + pedidoId + " já está cancelado.");
         }
 
         PedidoProduto item = pedido.getProdutos().stream()
                 .filter(produto -> produto.getId().equals(itemId))
                 .findFirst()
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Item não encontrado no pedido. id: " + itemId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Item não encontrado no pedido. Id: " + itemId));
 
         int jaCancelada = item.getQuantidadeCancelada() != null ? item.getQuantidadeCancelada() : 0;
         int disponivel = item.getQuantidade() - jaCancelada;
         if (quantidade == null || quantidade <= 0 || quantidade > disponivel) {
-            throw new ItemInvalidoException("Quantidade a cancelar deve ser maior que 0 e no máximo " + disponivel);
+            throw new ItemInvalidoException("A quantidade a cancelar deve ser maior que zero e no máximo " + disponivel);
         }
 
         item.setQuantidadeCancelada(jaCancelada + quantidade);

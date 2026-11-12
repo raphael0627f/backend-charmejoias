@@ -16,13 +16,13 @@ public class AgendaMarcadorRequestDTO {
 
     private Long id;
 
-    @NotNull(message = "Data do marcador é obrigatória")
+    @NotNull(message = "O campo Data do marcador é obrigatório.")
     private LocalDate data;
 
     // só NAO_TRABALHA (obrigatório nele); no TRABALHA o nome é o da rota e este campo é ignorado
     private String nome;
 
-    @NotNull(message = "Tipo do marcador é obrigatório")
+    @NotNull(message = "O campo Tipo do marcador é obrigatório.")
     private AgendaMarcadorTipo tipo;
 
     // obrigatório em TRABALHA, proibido em NAO_TRABALHA

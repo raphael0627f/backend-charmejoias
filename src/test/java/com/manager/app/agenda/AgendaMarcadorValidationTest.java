@@ -61,7 +61,7 @@ class AgendaMarcadorValidationTest {
         AgendaMarcador m = marcador(AgendaMarcadorTipo.TRABALHA, DIA, null, DIA.plusDays(5));
         assertThatThrownBy(() -> validation.datasPorTipo(m))
                 .isInstanceOf(ItemInvalidoException.class)
-                .hasMessage("Marcador do tipo TRABALHA exige data do pré-acerto e data do acerto");
+                .hasMessage("Marcador do tipo TRABALHA exige data do pré-acerto e data do acerto.");
     }
 
     @Test
@@ -69,7 +69,7 @@ class AgendaMarcadorValidationTest {
         AgendaMarcador m = marcador(AgendaMarcadorTipo.TRABALHA, DIA, DIA.plusDays(5), null);
         assertThatThrownBy(() -> validation.datasPorTipo(m))
                 .isInstanceOf(ItemInvalidoException.class)
-                .hasMessage("Marcador do tipo TRABALHA exige data do pré-acerto e data do acerto");
+                .hasMessage("Marcador do tipo TRABALHA exige data do pré-acerto e data do acerto.");
     }
 
     @Test
@@ -83,7 +83,7 @@ class AgendaMarcadorValidationTest {
         AgendaMarcador m = marcador(AgendaMarcadorTipo.TRABALHA, DIA, DIA.minusDays(1), DIA.plusDays(5));
         assertThatThrownBy(() -> validation.datasPorTipo(m))
                 .isInstanceOf(ItemInvalidoException.class)
-                .hasMessage("A data do pré-acerto não pode ser anterior à data do marcador");
+                .hasMessage("A data do pré-acerto não pode ser anterior à data do marcador.");
     }
 
     @Test
@@ -91,7 +91,7 @@ class AgendaMarcadorValidationTest {
         AgendaMarcador m = marcador(AgendaMarcadorTipo.TRABALHA, DIA, DIA.plusDays(10), DIA.plusDays(9));
         assertThatThrownBy(() -> validation.datasPorTipo(m))
                 .isInstanceOf(ItemInvalidoException.class)
-                .hasMessage("A data do acerto não pode ser anterior à data do pré-acerto");
+                .hasMessage("A data do acerto não pode ser anterior à data do pré-acerto.");
     }
 
     // ---------- NAO_TRABALHA ----------
@@ -107,7 +107,7 @@ class AgendaMarcadorValidationTest {
         AgendaMarcador m = marcador(AgendaMarcadorTipo.NAO_TRABALHA, DIA, DIA.plusDays(1), null);
         assertThatThrownBy(() -> validation.datasPorTipo(m))
                 .isInstanceOf(ItemInvalidoException.class)
-                .hasMessage("Marcador do tipo NAO_TRABALHA não pode ter data do pré-acerto nem data do acerto");
+                .hasMessage("Marcador do tipo NAO_TRABALHA não pode ter data do pré-acerto nem data do acerto.");
     }
 
     @Test
@@ -135,7 +135,7 @@ class AgendaMarcadorValidationTest {
         when(repository.existsByData(DIA)).thenReturn(true);
         assertThatThrownBy(() -> validation.dataExistenteCreate(DIA))
                 .isInstanceOf(ObjetoExistenteException.class)
-                .hasMessage("Já existe um marcador na data 2026-03-12");
+                .hasMessage("Já existe um marcador na data 12/03/2026.");
     }
 
     @Test
@@ -169,6 +169,6 @@ class AgendaMarcadorValidationTest {
     void periodoComFimAntesDoInicioLanca() {
         assertThatThrownBy(() -> validation.periodo(DIA, DIA.minusDays(1)))
                 .isInstanceOf(ItemInvalidoException.class)
-                .hasMessage("Data final não pode ser anterior à data inicial");
+                .hasMessage("A data final não pode ser anterior à data inicial.");
     }
 }

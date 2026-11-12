@@ -17,7 +17,7 @@ public class MontagemRequestDTO {
 
     private Long id;
 
-    @NotNull(message = "clienteId é obrigatório")
+    @NotNull(message = "O campo Cliente é obrigatório.")
     private UUID clienteId;
 
     // opcional
@@ -27,6 +27,6 @@ public class MontagemRequestDTO {
     @Valid
     private List<MontagemInstrucaoRequestDTO> instrucoes;
 
-    @NotNull(message = "Data de entrega é obrigatória")
+    @NotNull(message = "O campo Data de entrega é obrigatório.")
     private LocalDate dataEntrega;
 }

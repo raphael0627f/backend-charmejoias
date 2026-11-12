@@ -53,6 +53,6 @@ public class SpcConsultaResponseParser {
                 return (Element) filho;
             }
         }
-        throw new SpcApiException("Resposta de consulta do SPC sem o elemento esperado");
+        throw new SpcApiException("Resposta de consulta do SPC sem o elemento esperado.");
     }
 }

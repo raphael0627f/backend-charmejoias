@@ -12,6 +12,6 @@ public class MostruarioRequestDTO {
 
     private Long id;
 
-    @NotBlank(message = "Descrição é obrigatória")
+    @NotBlank(message = "O campo Descrição é obrigatório.")
     private String descricao;
 }

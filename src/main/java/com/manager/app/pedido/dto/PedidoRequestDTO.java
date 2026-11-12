@@ -26,13 +26,13 @@ public class PedidoRequestDTO {
     // obrigatória só quando o pedido tem cliente (pedido sem cliente pode ficar sem data de entrega)
     private LocalDate dataEntrega;
 
-    @NotNull(message = "Data do pedido é obrigatória")
+    @NotNull(message = "O campo Data do pedido é obrigatório.")
     private LocalDate dataPedido;
 
-    @NotNull(message = "Categoria é obrigatória")
+    @NotNull(message = "O campo Categoria é obrigatório.")
     private CategoriaPedido categoria;
 
-    @NotNull(message = "Tipo é obrigatório")
+    @NotNull(message = "O campo Tipo é obrigatório.")
     private TipoItem tipo;
 
     // opcional: pedido sem cliente (avulso), como a consignação
@@ -42,7 +42,7 @@ public class PedidoRequestDTO {
     private Long mostruarioId;
 
     @Valid
-    @NotEmpty(message = "Informe ao menos um produto")
+    @NotEmpty(message = "Informe ao menos um produto.")
     private List<PedidoProdutoRequestDTO> produtosRequest = new ArrayList<>();
 
 }

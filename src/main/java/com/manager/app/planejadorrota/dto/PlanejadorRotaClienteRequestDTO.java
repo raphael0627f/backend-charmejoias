@@ -17,10 +17,10 @@ public class PlanejadorRotaClienteRequestDTO {
 
     private Long id;
 
-    @NotNull(message = "clienteId é obrigatório")
+    @NotNull(message = "O campo Cliente é obrigatório.")
     private UUID clienteId;
 
-    @NotNull(message = "enderecoId é obrigatório")
+    @NotNull(message = "O campo Endereço é obrigatório.")
     private Long enderecoId;
 
     private Integer ordem;

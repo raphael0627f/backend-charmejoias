@@ -26,7 +26,7 @@ public interface ConsignacaoRepository  extends JpaRepository<Consignacao, Long>
     boolean existsByMostruario(Mostruario mostruario);
 
     // consignações ainda não confirmadas do cliente para uma data de entrega (vínculo automático à montagem)
-    List<Consignacao> findByCliente_IdAndDataEntregaAndConfirmadaFalse(UUID clienteId, LocalDate dataEntrega);
+    List<Consignacao> findByCliente_IdAndDataEntregaAndConfirmadaFalseAndCanceladaFalse(UUID clienteId, LocalDate dataEntrega);
 
     // O Hibernate só marca a linha da consignação como "suja" (e dispara
     // @UpdateTimestamp/@LastModifiedBy) quando um campo escalar dela mesma muda de

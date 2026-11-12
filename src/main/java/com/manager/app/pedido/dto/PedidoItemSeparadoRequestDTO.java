@@ -10,6 +10,6 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PedidoItemSeparadoRequestDTO {
 
-    @NotNull(message = "Informe se o item foi separado")
+    @NotNull(message = "Informe se o item foi separado.")
     private Boolean separado;
 }

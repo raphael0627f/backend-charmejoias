@@ -20,16 +20,16 @@ public class ProdutoRequestDTO {
 
     private String id;
 
-    @NotBlank(message = "SKU é obrigatório")
+    @NotBlank(message = "O campo SKU é obrigatório.")
     private String sku;
 
-    @NotBlank(message = "Referência é obrigatório")
+    @NotBlank(message = "O campo Referência é obrigatório.")
     private String referencia;
 
-    @NotBlank(message = "Nome é obrigatório")
+    @NotBlank(message = "O campo Nome é obrigatório.")
     private String nome;
 
-    @NotNull(message = "Tipo é obrigatório")
+    @NotNull(message = "O campo Tipo é obrigatório.")
     private TipoProduto tipo;
 
     private BigDecimal precoCusto;
@@ -38,7 +38,7 @@ public class ProdutoRequestDTO {
 
     private Integer quantidadeEstoque;
 
-    @NotNull(message = "Ativo é obrigatório")
+    @NotNull(message = "O campo Ativo é obrigatório.")
     private boolean ativo;
 
     private String observacoes;
@@ -50,7 +50,7 @@ public class ProdutoRequestDTO {
     private String codigoSituacaoTributariaPis;
     private String codigoSituacaoTributariaCofins;
 
-    @NotNull(message = "Categoria é obrigatória")
+    @NotNull(message = "O campo Categoria é obrigatório.")
     private Long categoriaId;
 
     private Long fornecedorId;
