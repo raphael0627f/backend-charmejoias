@@ -55,6 +55,18 @@ public class Consignacao {
 
     private Boolean confirmada = false;
 
+    // cancelamento definitivo (só de consignação não confirmada): continua na lista, somente leitura
+    private Boolean cancelada = false;
+
+    @Column(name = "motivo_cancelamento")
+    private String motivoCancelamento;
+
+    private LocalDateTime canceladaEm;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cancelada_por_id")
+    private Usuario canceladaPor;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

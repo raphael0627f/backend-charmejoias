@@ -11,6 +11,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ConsignacaoValidation {
 
+    // consignação cancelada é só leitura e fica de fora dos demais módulos (acerto, pré-acerto, montagem, planejador);
+    // a única exceção é usá-la como ORIGEM de itens ao copiar produtos para outro documento (feito no frontend, só leitura)
+    public static void exigirNaoCancelada(com.manager.app.consignacao.Consignacao consignacao){
+        if (consignacao != null && Boolean.TRUE.equals(consignacao.getCancelada())) {
+            throw new ItemInvalidoException("Não é possível utilizar uma consignação cancelada.");
+        }
+    }
+
     public boolean clienteNovo(UUID clienteId){
         return clienteId == null;
     }

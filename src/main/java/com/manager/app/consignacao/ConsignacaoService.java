@@ -76,6 +76,8 @@ public class ConsignacaoService {
     private final ConsignacaoValidation validation;
     private final UsuarioResumoMapper usuarioResumoMapper;
     private final UsuarioAuditorAware usuarioAuditorAware;
+    private final com.manager.app.preacerto.PreAcertoConsignacaoRepository preAcertoConsignacaoRepository;
+    private final com.manager.app.montagem.MontagemMostruarioRepository montagemMostruarioRepository;
 
     // logo dos relatórios de consignação, buscada numa pasta fora do projeto (mesmo nível da
     // pasta de XMLs de NFe) - se o arquivo não existir lá, o relatório sai sem logo em vez de
@@ -83,7 +85,7 @@ public class ConsignacaoService {
     @Value("${app.storage.relatorio-path}")
     private String relatorioPath;
 
-    public Page<Consignacao> findAll(String busca, ModoBusca modoBusca, UUID clienteId, Boolean temCliente, Boolean temAcerto, Boolean confirmada,
+    public Page<Consignacao> findAll(String busca, ModoBusca modoBusca, UUID clienteId, Boolean temCliente, Boolean temAcerto, Boolean confirmada, Boolean cancelada,
                                       LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
                                       LocalDate dataPreAcertoInicio, LocalDate dataPreAcertoFim,
                                       LocalDate dataAcertoInicio, LocalDate dataAcertoFim,
@@ -118,6 +120,11 @@ public class ConsignacaoService {
             spec = SpecificationUtils.and(spec, confirmadaSpec);
         }
 
+        // sem o filtro devolve todas, inclusive as canceladas (a tela e o "adicionar de outro documento" usam isso)
+        if (cancelada != null) {
+            spec = SpecificationUtils.and(spec, (root, query, cb) -> cb.equal(root.get("cancelada"), cancelada));
+        }
+
         if (dataEntregaInicio != null) {
             spec = SpecificationUtils.and(spec, (root, query, cb) -> SpecificationUtils.apartirDe(cb, root.get("dataEntrega"), dataEntregaInicio));
         }
@@ -146,12 +153,12 @@ public class ConsignacaoService {
     // produto/joia/variacao/categoria/fornecedor/ncm inteiros por linha, que é o que deixava a
     // listagem lenta) - os agregados (itensCount, quantidadeTotal, valorTotal, quantidadePorCategoria)
     // vêm de duas queries de GROUP BY à parte, batendo só nos ids da página atual
-    public Page<ConsignacaoResumoDTO> findAllResumo(String busca, ModoBusca modoBusca, UUID clienteId, Boolean temCliente, Boolean temAcerto, Boolean confirmada,
+    public Page<ConsignacaoResumoDTO> findAllResumo(String busca, ModoBusca modoBusca, UUID clienteId, Boolean temCliente, Boolean temAcerto, Boolean confirmada, Boolean cancelada,
                                                      LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
                                                      LocalDate dataPreAcertoInicio, LocalDate dataPreAcertoFim,
                                                      LocalDate dataAcertoInicio, LocalDate dataAcertoFim,
                                                      Pageable pageable){
-        Page<Consignacao> pagina = findAll(busca, modoBusca, clienteId, temCliente, temAcerto, confirmada,
+        Page<Consignacao> pagina = findAll(busca, modoBusca, clienteId, temCliente, temAcerto, confirmada, cancelada,
                 dataEntregaInicio, dataEntregaFim, dataPreAcertoInicio, dataPreAcertoFim, dataAcertoInicio, dataAcertoFim, pageable);
 
         List<Long> ids = pagina.getContent().stream().map(Consignacao::getId).toList();
@@ -188,6 +195,10 @@ public class ConsignacaoService {
         dto.setDataPreAcertoConsignacao(consignacao.getDataPreAcertoConsignacao());
         dto.setDataAcertoConsignacao(consignacao.getDataAcertoConsignacao());
         dto.setConfirmada(consignacao.getConfirmada());
+        dto.setCancelada(consignacao.getCancelada());
+        dto.setMotivoCancelamento(consignacao.getMotivoCancelamento());
+        dto.setCanceladaEm(consignacao.getCanceladaEm());
+        dto.setCanceladaPor(usuarioResumoMapper.toResumoDTO(consignacao.getCanceladaPor()));
         dto.setAcertoFinalizado(acertoFinalizado);
         dto.setItensCount(totais != null ? totais.getItensCount().intValue() : 0);
         dto.setQuantidadeTotal(totais != null ? totais.getQuantidadeTotal() : 0);
@@ -283,6 +294,9 @@ public class ConsignacaoService {
     public Consignacao update(ConsignacaoRequestDTO request){
         Consignacao consignacaoUpdate = this.findById(request.getId());
 
+        if (Boolean.TRUE.equals(consignacaoUpdate.getCancelada())) {
+            throw new ObjetoEmUsoException("Não é possível editar uma consignação cancelada.");
+        }
         if (Boolean.TRUE.equals(consignacaoUpdate.getConfirmada())) {
             throw new ObjetoEmUsoException("Não é possível editar uma consignação confirmada. Id: " + consignacaoUpdate.getId());
         }
@@ -359,6 +373,9 @@ public class ConsignacaoService {
     public Consignacao adicionarProdutos(Long id, List<ConsignacaoItemAdicionar> itens){
         Consignacao consignacao = this.findById(id);
 
+        if (Boolean.TRUE.equals(consignacao.getCancelada())) {
+            throw new ObjetoEmUsoException("Não é possível editar uma consignação cancelada.");
+        }
         if (Boolean.TRUE.equals(consignacao.getConfirmada())) {
             throw new ObjetoEmUsoException("Não é possível editar uma consignação confirmada. Id: " + consignacao.getId());
         }
@@ -405,6 +422,9 @@ public class ConsignacaoService {
     public Consignacao confirmar(Long id){
         Consignacao consignacao = this.findById(id);
 
+        if (Boolean.TRUE.equals(consignacao.getCancelada())) {
+            throw new ItemInvalidoException("Não é possível confirmar uma consignação cancelada.");
+        }
         if (Boolean.TRUE.equals(consignacao.getConfirmada())) {
             throw new ItemInvalidoException("A consignação já está confirmada. Id: " + id);
         }
@@ -414,6 +434,46 @@ public class ConsignacaoService {
         }
 
         consignacao.setConfirmada(true);
+        return consignacao;
+    }
+
+    private static final int MOTIVO_CANCELAMENTO_TAMANHO_MINIMO = 5;
+
+    // cancelamento definitivo da consignação inteira (sem reativar): só consignação não confirmada, sem pré-acerto/acerto
+    // e fora de montagem em andamento; exige motivo (mínimo 5 caracteres, igual ao pedido) e registra quem/quando.
+    // A consignação continua na lista, somente leitura.
+    @Transactional
+    public Consignacao cancelar(Long id, String motivo){
+        if (motivo == null || motivo.isBlank()) {
+            throw new ItemInvalidoException("O campo Motivo é obrigatório.");
+        }
+        if (motivo.trim().length() < MOTIVO_CANCELAMENTO_TAMANHO_MINIMO) {
+            throw new ItemInvalidoException("O motivo do cancelamento deve ter ao menos " + MOTIVO_CANCELAMENTO_TAMANHO_MINIMO + " caracteres.");
+        }
+        com.manager.app.shared.TextoUtils.validarTexto(motivo, "O motivo do cancelamento", 1000);
+
+        Consignacao consignacao = this.findById(id);
+        if (Boolean.TRUE.equals(consignacao.getCancelada())) {
+            throw new ItemInvalidoException("A consignação já está cancelada.");
+        }
+        if (Boolean.TRUE.equals(consignacao.getConfirmada())) {
+            throw new ObjetoEmUsoException("Não é possível cancelar uma consignação confirmada.");
+        }
+        if (preAcertoConsignacaoRepository.existsByConsignacaoId(id) || acertoConsignacaoRepository.existsByConsignacaoId(id)) {
+            throw new ObjetoEmUsoException("Não é possível cancelar a consignação, pois ela possui pré-acerto ou acerto.");
+        }
+        boolean emMontagemEmAndamento = montagemMostruarioRepository.findByConsignacoes_Id(id)
+                .map(m -> m.getStatus() == com.manager.app.montagem.StatusMontagem.ABERTA
+                        || m.getStatus() == com.manager.app.montagem.StatusMontagem.EM_MONTAGEM)
+                .orElse(false);
+        if (emMontagemEmAndamento) {
+            throw new ObjetoEmUsoException("Não é possível cancelar a consignação, pois ela está vinculada a uma montagem em andamento. Desvincule-a da montagem antes de cancelar.");
+        }
+
+        consignacao.setCancelada(true);
+        consignacao.setMotivoCancelamento(motivo.trim());
+        consignacao.setCanceladaEm(LocalDateTime.now());
+        consignacao.setCanceladaPor(usuarioAuditorAware.getCurrentAuditor().orElse(null));
         return consignacao;
     }
 
