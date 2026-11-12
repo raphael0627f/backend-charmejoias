@@ -12,13 +12,13 @@ public class EmpresaValidation {
 
     public void cnpjExistenteCreate(String cnpj){
         if(repository.existsByCnpj(cnpj)){
-            throw new ObjetoExistenteException("Empresa existente com este CNPJ: " + cnpj);
+            throw new ObjetoExistenteException("Já existe uma empresa cadastrada com este CNPJ: " + cnpj);
         }
     }
 
     public void cnpjExistenteUpdate(String cnpj, Long id){
         if(repository.existsByCnpjAndIdNot(cnpj, id)){
-            throw new ObjetoExistenteException("Empresa existente com este CNPJ: " + cnpj);
+            throw new ObjetoExistenteException("Já existe uma empresa cadastrada com este CNPJ: " + cnpj);
         }
     }
 }

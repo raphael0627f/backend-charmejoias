@@ -52,13 +52,13 @@ public class SpcConsultaService {
         SpcProduto produto = catalogoService.buscarProduto(request.getCodigoProduto());
 
         if (!produto.aceita(request.getTipoPessoa())) {
-            throw new ItemInvalidoException("Produto " + produto.getCodigo() + " não aceita tipo de pessoa " + request.getTipoPessoa());
+            throw new ItemInvalidoException("O produto " + produto.getCodigo() + " não aceita tipo de pessoa " + request.getTipoPessoa());
         }
 
         List<Integer> insumosOpcionais = request.getInsumosOpcionais() != null ? request.getInsumosOpcionais() : List.of();
         for (Integer codigoInsumo : insumosOpcionais) {
             if (!catalogoService.insumoOpcionalValido(produto.getCodigo(), codigoInsumo)) {
-                throw new ItemInvalidoException("Insumo opcional " + codigoInsumo + " não pertence ao produto " + produto.getCodigo());
+                throw new ItemInvalidoException("O insumo opcional " + codigoInsumo + " não pertence ao produto " + produto.getCodigo());
             }
         }
 
@@ -88,7 +88,7 @@ public class SpcConsultaService {
 
     public SpcConsultaResponseDTO buscarPorId(UUID id){
         SpcConsulta consulta = repository.findById(id)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Consulta SPC não encontrada. id: " + id));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Consulta SPC não encontrada. Id: " + id));
         String xmlResponse = xmlStorageService.lerRespostaConsulta(consulta.getId());
         SpcConsultaResponseDTO dto = mapper.mapear(responseParser.parse(xmlResponse));
         dto.setId(consulta.getId());
@@ -107,7 +107,7 @@ public class SpcConsultaService {
 
     public byte[] gerarRelatorio(UUID id){
         SpcConsulta consulta = repository.findById(id)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Consulta SPC não encontrada. id: " + id));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Consulta SPC não encontrada. Id: " + id));
         SpcConsultaResponseDTO dto = buscarPorId(id);
         List<Map<String, ?>> linhas = montarLinhasRelatorio(consulta, dto);
 

@@ -43,7 +43,7 @@ public class SpcXmlStorageService {
         try {
             return Files.readString(arquivo, StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new UncheckedIOException("Não foi possível ler o XML da consulta SPC. id: " + id, e);
+            throw new UncheckedIOException("Não foi possível ler o XML da consulta SPC. Id: " + id, e);
         }
     }
 

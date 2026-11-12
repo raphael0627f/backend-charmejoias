@@ -16,15 +16,15 @@ public class ComissaoRequestDTO {
 
     private Long id;
 
-    @NotNull(message = "Percentual é obrigatório")
-    @DecimalMin(value = "0", inclusive = true, message = "Percentual deve ser maior ou igual a zero")
-    @DecimalMax(value = "100", inclusive = true, message = "Percentual deve ser menor ou igual a 100")
+    @NotNull(message = "O campo Percentual é obrigatório.")
+    @DecimalMin(value = "0", inclusive = true, message = "O percentual deve ser maior ou igual a zero.")
+    @DecimalMax(value = "100", inclusive = true, message = "O percentual deve ser menor ou igual a 100.")
     private BigDecimal percentual;
 
-    @NotNull(message = "Valor mínimo do range é obrigatório")
-    @DecimalMin(value = "0", inclusive = true, message = "Valor mínimo deve ser maior ou igual a zero")
+    @NotNull(message = "O campo Valor mínimo da faixa é obrigatório.")
+    @DecimalMin(value = "0", inclusive = true, message = "O valor mínimo deve ser maior ou igual a zero.")
     private BigDecimal valorMinimo;
 
-    @NotNull(message = "Valor máximo do range é obrigatório")
+    @NotNull(message = "O campo Valor máximo da faixa é obrigatório.")
     private BigDecimal valorMaximo;
 }

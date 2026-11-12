@@ -35,7 +35,7 @@ public class SpcCatalogoService {
 
     public List<SpcInsumoOpcionalDTO> insumosOpcionais(Integer codigoProduto){
         if (!produtoRepository.existsById(codigoProduto)) {
-            throw new ObjetoNaoEncontradoException("Produto SPC não encontrado no catálogo. código: " + codigoProduto);
+            throw new ObjetoNaoEncontradoException("Produto SPC não encontrado no catálogo. Código: " + codigoProduto);
         }
         return produtoInsumoOpcionalRepository.findByProdutoCodigoOrderByInsumoNome(codigoProduto).stream()
                 .map(insumo -> new SpcInsumoOpcionalDTO(insumo.getInsumoCodigo(), insumo.getInsumoNome()))
@@ -44,7 +44,7 @@ public class SpcCatalogoService {
 
     public SpcProduto buscarProduto(Integer codigo){
         return produtoRepository.findById(codigo)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Produto SPC não encontrado no catálogo. código: " + codigo));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Produto SPC não encontrado no catálogo. Código: " + codigo));
     }
 
     public boolean insumoOpcionalValido(Integer codigoProduto, Integer codigoInsumo){
@@ -53,11 +53,11 @@ public class SpcCatalogoService {
 
     public SpcNaturezaInclusao buscarNaturezaInclusao(Integer id){
         return naturezaInclusaoRepository.findById(id)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Natureza de inclusão SPC não encontrada. id: " + id));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Natureza de inclusão SPC não encontrada. Id: " + id));
     }
 
     public SpcMotivoExclusao buscarMotivoExclusao(Integer id){
         return motivoExclusaoRepository.findById(id)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Motivo de exclusão SPC não encontrado. id: " + id));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Motivo de exclusão SPC não encontrado. Id: " + id));
     }
 }
