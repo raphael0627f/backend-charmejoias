@@ -93,8 +93,10 @@ public class PlanejadorRotaService {
 
     private Consignacao resolverConsignacao(Long consignacaoId){
         if (consignacaoId == null) return null;
-        return consignacaoRepository.findById(consignacaoId)
+        Consignacao consignacao = consignacaoRepository.findById(consignacaoId)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. Id: " + consignacaoId));
+        com.manager.app.consignacao.ConsignacaoValidation.exigirNaoCancelada(consignacao);
+        return consignacao;
     }
 
     private void validarClienteUnico(List<PlanejadorRotaClienteRequestDTO> itens){
@@ -112,6 +114,7 @@ public class PlanejadorRotaService {
         for (PlanejadorRotaConsignacaoItemRequestDTO request : requests) {
             Consignacao consignacao = consignacaoRepository.findById(request.getConsignacaoId())
                     .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. Id: " + request.getConsignacaoId()));
+            com.manager.app.consignacao.ConsignacaoValidation.exigirNaoCancelada(consignacao);
             consignacoes.add(consignacao);
         }
         validation.validarConsignacoesDoCliente(cliente, consignacoes);

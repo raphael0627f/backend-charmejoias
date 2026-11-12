@@ -150,6 +150,7 @@ public class MontagemValidation {
     // item (consignação/pedido) a vincular: do mesmo cliente da montagem e ainda livre
     public void validarVinculoConsignacao(MontagemMostruario montagem, Consignacao consignacao, Optional<MontagemMostruario> vinculoAtual){
         validarEditavel(montagem);
+        com.manager.app.consignacao.ConsignacaoValidation.exigirNaoCancelada(consignacao);
         if (consignacao.getCliente() == null || !consignacao.getCliente().getId().equals(montagem.getCliente().getId())) {
             throw new ItemInvalidoException("A consignação " + consignacao.getId() + " não pertence ao cliente da montagem.");
         }

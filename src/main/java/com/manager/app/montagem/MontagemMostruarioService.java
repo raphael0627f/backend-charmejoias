@@ -201,7 +201,7 @@ public class MontagemMostruarioService {
         UUID clienteId = montagem.getCliente().getId();
         LocalDate dataEntrega = montagem.getDataEntrega();
 
-        for (Consignacao consignacao : consignacaoRepository.findByCliente_IdAndDataEntregaAndConfirmadaFalse(clienteId, dataEntrega)) {
+        for (Consignacao consignacao : consignacaoRepository.findByCliente_IdAndDataEntregaAndConfirmadaFalseAndCanceladaFalse(clienteId, dataEntrega)) {
             if (repository.findByConsignacoes_Id(consignacao.getId()).isEmpty()) {
                 montagem.getConsignacoes().add(consignacao);
             }

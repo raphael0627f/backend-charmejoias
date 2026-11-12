@@ -78,6 +78,9 @@ public class AcertoJoiaService {
         List<Consignacao> consignacoes = consignacaoRepository.findAllById(request.getConsignacoesIds());
         List<Consignacao> maletas = consignacaoRepository.findAllById(request.getMaletasIds());
         List<Consignacao> acessorios = consignacaoRepository.findAllById(request.getAcessoriosIds());
+        consignacoes.forEach(com.manager.app.consignacao.ConsignacaoValidation::exigirNaoCancelada);
+        maletas.forEach(com.manager.app.consignacao.ConsignacaoValidation::exigirNaoCancelada);
+        acessorios.forEach(com.manager.app.consignacao.ConsignacaoValidation::exigirNaoCancelada);
 
 
         for (Consignacao consignacao : consignacoes){
@@ -140,6 +143,7 @@ public class AcertoJoiaService {
 
         for (Long consignacaoId : request.getConsignacoesIds()){
             Consignacao consignacao = consignacaoService.findById(consignacaoId);
+            com.manager.app.consignacao.ConsignacaoValidation.exigirNaoCancelada(consignacao);
             AcertoJoiaConsignacao acertoConsignacao = new AcertoJoiaConsignacao();
 
             acertoConsignacao.setDescricao(consignacao.getDescricao());
@@ -154,6 +158,7 @@ public class AcertoJoiaService {
 
         for (Long consignacaoId : request.getMaletasIds()){
             Consignacao consignacao = consignacaoService.findById(consignacaoId);
+            com.manager.app.consignacao.ConsignacaoValidation.exigirNaoCancelada(consignacao);
             AcertoJoiaConsignacao acertoConsignacao = new AcertoJoiaConsignacao();
 
             acertoConsignacao.setDescricao(consignacao.getDescricao());
@@ -168,6 +173,7 @@ public class AcertoJoiaService {
 
         for (Long consignacaoId : request.getAcessoriosIds()){
             Consignacao consignacao = consignacaoService.findById(consignacaoId);
+            com.manager.app.consignacao.ConsignacaoValidation.exigirNaoCancelada(consignacao);
             AcertoJoiaConsignacao acertoConsignacao = new AcertoJoiaConsignacao();
 
             acertoConsignacao.setDescricao(consignacao.getDescricao());

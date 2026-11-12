@@ -215,8 +215,10 @@ public class AcertoConsignacaoService {
         if (consignacaoId == null) {
             throw new ItemInvalidoException("O campo Consignação é obrigatório.");
         }
-        return consignacaoRepository.findById(consignacaoId)
+        Consignacao consignacao = consignacaoRepository.findById(consignacaoId)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. Id: " + consignacaoId));
+        com.manager.app.consignacao.ConsignacaoValidation.exigirNaoCancelada(consignacao);
+        return consignacao;
     }
 
     // referência opcional: se o usuário não informar preAcertoId, o Acerto simplesmente não fica
