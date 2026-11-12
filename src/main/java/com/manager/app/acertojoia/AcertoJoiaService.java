@@ -64,7 +64,7 @@ public class AcertoJoiaService {
     }
 
     public AcertoJoia findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Acerto de joia não encontrado. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Acerto de joia não encontrado. Id: " + id));
     }
 
     @Transactional

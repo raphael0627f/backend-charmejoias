@@ -16,6 +16,6 @@ public class AcertoConsignacaoProdutoRequestDTO {
     private Long produtoVariacaoId;
     private UUID joiaId;
 
-    @NotNull(message = "Quantidade é obrigatória")
+    @NotNull(message = "O campo Quantidade é obrigatório.")
     private Integer quantidade;
 }

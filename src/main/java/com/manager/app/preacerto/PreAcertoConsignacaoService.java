@@ -179,7 +179,7 @@ public class PreAcertoConsignacaoService {
     }
 
     public PreAcertoConsignacao findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Pré-acerto de consignação não encontrado. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Pré-acerto de consignação não encontrado. Id: " + id));
     }
 
     private void validarConsignacaoDisponivel(Long consignacaoId, Long idAtual){
@@ -187,7 +187,7 @@ public class PreAcertoConsignacaoService {
                 ? repository.existsByConsignacaoId(consignacaoId)
                 : repository.existsByConsignacaoIdAndIdNot(consignacaoId, idAtual);
         if (emUso) {
-            throw new ObjetoExistenteException("Esta Consignação já possui um Pré-acerto. consignacaoId: " + consignacaoId);
+            throw new ObjetoExistenteException("A consignação já possui um pré-acerto. Consignação: " + consignacaoId);
         }
     }
 
@@ -195,7 +195,7 @@ public class PreAcertoConsignacaoService {
         if (produtoVariacaoId == null) return null;
         ProdutoVariacao variacao = produtoService.findVariacaoById(produtoVariacaoId);
         if (!variacao.getProduto().getId().equals(produtoId)) {
-            throw new ItemInvalidoException("A combinação informada não pertence ao produto selecionado");
+            throw new ItemInvalidoException("A combinação informada não pertence ao produto selecionado.");
         }
         return variacao;
     }
@@ -216,7 +216,7 @@ public class PreAcertoConsignacaoService {
         }
 
         if (precoRequest == null) {
-            throw new ItemInvalidoException("Preço é obrigatório para produtos que não estão na Consignação de referência");
+            throw new ItemInvalidoException("O preço é obrigatório para produtos que não constam na consignação de referência.");
         }
         return precoRequest;
     }
@@ -245,7 +245,7 @@ public class PreAcertoConsignacaoService {
     private Consignacao resolverConsignacao(Long consignacaoId){
         if (consignacaoId == null) return null;
         return consignacaoRepository.findById(consignacaoId)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. id: " + consignacaoId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. Id: " + consignacaoId));
     }
 
     private TipoItem tipoDe(Consignacao consignacao){
@@ -264,7 +264,7 @@ public class PreAcertoConsignacaoService {
             cliente = consignacao.getCliente();
         } else {
             if (request.getClienteId() == null) {
-                throw new ItemInvalidoException("clienteId é obrigatório quando não há Consignação de referência");
+                throw new ItemInvalidoException("O cliente é obrigatório quando não há consignação de referência.");
             }
             cliente = clienteService.findByIdAndAtivo(request.getClienteId());
         }
@@ -297,7 +297,7 @@ public class PreAcertoConsignacaoService {
             cliente = consignacao.getCliente();
         } else {
             if (request.getClienteId() == null) {
-                throw new ItemInvalidoException("clienteId é obrigatório quando não há Consignação de referência");
+                throw new ItemInvalidoException("O cliente é obrigatório quando não há consignação de referência.");
             }
             cliente = clienteService.findByIdAndAtivo(request.getClienteId());
         }

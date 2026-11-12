@@ -188,7 +188,7 @@ public class AcertoConsignacaoService {
     }
 
     public AcertoConsignacao findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Acerto de Consignação não encontrado. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Acerto de consignação não encontrado. Id: " + id));
     }
 
     public List<ProdutoVendidoDTO> produtosVendidos(Long id){
@@ -213,10 +213,10 @@ public class AcertoConsignacaoService {
 
     private Consignacao resolverConsignacao(Long consignacaoId){
         if (consignacaoId == null) {
-            throw new ItemInvalidoException("consignacaoId é obrigatório");
+            throw new ItemInvalidoException("O campo Consignação é obrigatório.");
         }
         return consignacaoRepository.findById(consignacaoId)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. id: " + consignacaoId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. Id: " + consignacaoId));
     }
 
     // referência opcional: se o usuário não informar preAcertoId, o Acerto simplesmente não fica
@@ -224,12 +224,12 @@ public class AcertoConsignacaoService {
     private PreAcertoConsignacao resolverPreAcerto(Long preAcertoId){
         if (preAcertoId == null) return null;
         return preAcertoConsignacaoRepository.findById(preAcertoId)
-                .orElseThrow(() -> new ObjetoNaoEncontradoException("Pré-acerto de Consignação não encontrado. id: " + preAcertoId));
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Pré-acerto de consignação não encontrado. Id: " + preAcertoId));
     }
 
     private void validarConsignacaoDisponivel(Long consignacaoId){
         if (repository.existsByConsignacaoId(consignacaoId)) {
-            throw new ObjetoExistenteException("Esta Consignação já possui um Acerto de Consignação. consignacaoId: " + consignacaoId);
+            throw new ObjetoExistenteException("A consignação já possui um acerto. Consignação: " + consignacaoId);
         }
     }
 
@@ -237,7 +237,7 @@ public class AcertoConsignacaoService {
         if (produtoVariacaoId == null) return null;
         ProdutoVariacao variacao = produtoService.findVariacaoById(produtoVariacaoId);
         if (!variacao.getProduto().getId().equals(produtoId)) {
-            throw new ItemInvalidoException("A combinação informada não pertence ao produto selecionado");
+            throw new ItemInvalidoException("A combinação informada não pertence ao produto selecionado.");
         }
         return variacao;
     }
@@ -254,7 +254,7 @@ public class AcertoConsignacaoService {
                 return item;
             }
         }
-        throw new ItemInvalidoException("Produto informado não faz parte desta Consignação.");
+        throw new ItemInvalidoException("O produto informado não faz parte desta consignação.");
     }
 
     private void preencherItem(AcertoConsignacaoProduto item, AcertoConsignacaoProdutoRequestDTO produtoRequest, Consignacao consignacao){
@@ -274,10 +274,10 @@ public class AcertoConsignacaoService {
         ConsignacaoProduto itemConsignacao = buscarItemNaConsignacao(consignacao, produto, produtoVariacao, joia);
 
         if (produtoRequest.getQuantidade() == null || produtoRequest.getQuantidade() <= 0) {
-            throw new ItemInvalidoException("Quantidade devolvida deve ser maior que zero.");
+            throw new ItemInvalidoException("A quantidade devolvida deve ser maior que zero.");
         }
         if (produtoRequest.getQuantidade() > itemConsignacao.getQuantidade()) {
-            throw new ItemInvalidoException("Quantidade devolvida maior que a quantidade da Consignação.");
+            throw new ItemInvalidoException("A quantidade devolvida não pode ser maior que a quantidade da consignação.");
         }
 
         item.setProduto(produto);
@@ -291,7 +291,7 @@ public class AcertoConsignacaoService {
         Consignacao consignacao = resolverConsignacao(request.getConsignacaoId());
 
         if (!Boolean.TRUE.equals(consignacao.getConfirmada())) {
-            throw new ItemInvalidoException("A Consignação precisa estar confirmada para gerar um Acerto de Consignação. consignacaoId: " + consignacao.getId());
+            throw new ItemInvalidoException("A consignação precisa estar confirmada para gerar um acerto. Consignação: " + consignacao.getId());
         }
 
         validarConsignacaoDisponivel(consignacao.getId());
@@ -316,7 +316,7 @@ public class AcertoConsignacaoService {
         AcertoConsignacao acertoUpdate = this.findById(request.getId());
 
         if (Boolean.TRUE.equals(acertoUpdate.getConfirmado())) {
-            throw new ObjetoEmUsoException("Acerto de Consignação confirmado não pode ser editado. id: " + acertoUpdate.getId());
+            throw new ObjetoEmUsoException("Não é possível editar um acerto confirmado. Id: " + acertoUpdate.getId());
         }
 
         Consignacao consignacao = acertoUpdate.getConsignacao();
@@ -372,7 +372,7 @@ public class AcertoConsignacaoService {
         AcertoConsignacao acerto = this.findById(id);
 
         if (Boolean.TRUE.equals(acerto.getConfirmado())) {
-            throw new ItemInvalidoException("Acerto de Consignação já está confirmado. id: " + id);
+            throw new ItemInvalidoException("O acerto já está confirmado. Id: " + id);
         }
 
         acerto.setConfirmado(true);

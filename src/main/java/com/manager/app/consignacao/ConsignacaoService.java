@@ -222,7 +222,7 @@ public class ConsignacaoService {
     }
 
     public Consignacao findById(Long id){
-        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. id: " + id));
+        return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. Id: " + id));
     }
 
     private void preencherItem(ConsignacaoProduto produto, ConsignacaoProdutoRequestDTO produtoRequest, TipoItem tipo){
@@ -244,7 +244,7 @@ public class ConsignacaoService {
         if (produtoVariacaoId == null) return null;
         ProdutoVariacao variacao = produtoService.findVariacaoById(produtoVariacaoId);
         if (!variacao.getProduto().getId().equals(produtoId)) {
-            throw new ItemInvalidoException("A combinação informada não pertence ao produto selecionado");
+            throw new ItemInvalidoException("A combinação informada não pertence ao produto selecionado.");
         }
         return variacao;
     }
@@ -284,7 +284,7 @@ public class ConsignacaoService {
         Consignacao consignacaoUpdate = this.findById(request.getId());
 
         if (Boolean.TRUE.equals(consignacaoUpdate.getConfirmada())) {
-            throw new ObjetoEmUsoException("Consignação confirmada não pode ser editada. id: " + consignacaoUpdate.getId());
+            throw new ObjetoEmUsoException("Não é possível editar uma consignação confirmada. Id: " + consignacaoUpdate.getId());
         }
 
         if (!validation.clienteNovo(request.getClienteId())){
@@ -360,10 +360,10 @@ public class ConsignacaoService {
         Consignacao consignacao = this.findById(id);
 
         if (Boolean.TRUE.equals(consignacao.getConfirmada())) {
-            throw new ObjetoEmUsoException("Consignação confirmada não pode ser editada. id: " + consignacao.getId());
+            throw new ObjetoEmUsoException("Não é possível editar uma consignação confirmada. Id: " + consignacao.getId());
         }
         if (consignacao.getTipo() != TipoItem.PRODUTO) {
-            throw new ItemInvalidoException("Só é possível adicionar produtos em consignação do tipo PRODUTO. id: " + consignacao.getId());
+            throw new ItemInvalidoException("Só é possível adicionar produtos em consignação do tipo PRODUTO. Id: " + consignacao.getId());
         }
 
         for (ConsignacaoItemAdicionar adicionar : itens) {
@@ -381,7 +381,7 @@ public class ConsignacaoService {
             } else {
                 BigDecimal preco = variacao != null && variacao.getPrecoVenda() != null ? variacao.getPrecoVenda() : produto.getPrecoVenda();
                 if (preco == null || preco.compareTo(BigDecimal.ZERO) <= 0) {
-                    throw new ItemInvalidoException("O produto " + produto.getNome() + " não tem preço de venda cadastrado; cadastre o preço antes de adicioná-lo à consignação");
+                    throw new ItemInvalidoException("O produto " + produto.getNome() + " não possui preço de venda cadastrado. Cadastre o preço antes de adicioná-lo à consignação.");
                 }
                 ConsignacaoProduto novo = new ConsignacaoProduto();
                 novo.setProduto(produto);
@@ -406,11 +406,11 @@ public class ConsignacaoService {
         Consignacao consignacao = this.findById(id);
 
         if (Boolean.TRUE.equals(consignacao.getConfirmada())) {
-            throw new ItemInvalidoException("Consignação já está confirmada. id: " + id);
+            throw new ItemInvalidoException("A consignação já está confirmada. Id: " + id);
         }
 
         if (consignacao.getCliente() == null) {
-            throw new ItemInvalidoException("Consignação sem cliente não pode ser confirmada. id: " + id);
+            throw new ItemInvalidoException("Não é possível confirmar uma consignação sem cliente. Id: " + id);
         }
 
         consignacao.setConfirmada(true);
