@@ -12,11 +12,11 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PedidoItemCancelamentoRequestDTO {
 
-    @NotNull(message = "Quantidade é obrigatória")
-    @Positive(message = "Quantidade deve ser maior que zero")
+    @NotNull(message = "O campo Quantidade é obrigatório.")
+    @Positive(message = "A quantidade deve ser maior que zero.")
     private Integer quantidade;
 
-    @NotBlank(message = "Motivo é obrigatório")
-    @jakarta.validation.constraints.Size(min = 5, message = "Motivo deve ter ao menos 5 caracteres")
+    @NotBlank(message = "O campo Motivo é obrigatório.")
+    @jakarta.validation.constraints.Size(min = 5, message = "O motivo deve ter ao menos 5 caracteres.")
     private String motivo;
 }

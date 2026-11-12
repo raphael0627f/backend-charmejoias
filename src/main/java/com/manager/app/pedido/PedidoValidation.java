@@ -37,7 +37,7 @@ public class PedidoValidation {
     // só dá pra marcar/desmarcar item como separado enquanto o pedido está em separação
     public void validarMarcacaoSeparado(Pedido pedido){
         if (pedido.getStatus() != StatusPedido.SEPARACAO) {
-            throw new ItemInvalidoException("Itens só podem ser marcados como separados com o pedido em separação. id: " + pedido.getId());
+            throw new ItemInvalidoException("Os itens só podem ser marcados como separados com o pedido em separação. Id: " + pedido.getId());
         }
     }
 
@@ -50,7 +50,7 @@ public class PedidoValidation {
     public void validarItemVinculado(Pedido pedido, PedidoProduto item){
         if (itemAvulso(item)) {
             throw new ItemInvalidoException("O item avulso \"" + item.getDescricao() + "\" do pedido " + pedido.getId()
-                    + " precisa ser vinculado a um produto cadastrado antes de ser separado");
+                    + " precisa ser vinculado a um produto cadastrado antes de ser separado.");
         }
     }
 
@@ -77,13 +77,13 @@ public class PedidoValidation {
     // o vínculo do item avulso com um produto só é feito (ou trocado) durante a separação
     public void validarVinculoProduto(Pedido pedido, PedidoProduto item){
         if (pedido.getStatus() != StatusPedido.SEPARACAO) {
-            throw new ItemInvalidoException("O item só pode ser vinculado a um produto com o pedido em separação. id: " + pedido.getId());
+            throw new ItemInvalidoException("O item só pode ser vinculado a um produto com o pedido em separação. Id: " + pedido.getId());
         }
         if (pedido.getTipo() == TipoItem.JOIA) {
-            throw new ItemInvalidoException("Pedidos do tipo JOIA não têm item avulso. id: " + pedido.getId());
+            throw new ItemInvalidoException("Pedidos do tipo JOIA não possuem item avulso. Id: " + pedido.getId());
         }
         if (!itemAceitaVinculo(item)) {
-            throw new ItemInvalidoException("O item " + item.getId() + " é um produto cadastrado do pedido e não pode ser trocado na separação");
+            throw new ItemInvalidoException("O item " + item.getId() + " é um produto cadastrado do pedido e não pode ser trocado na separação.");
         }
     }
 
@@ -105,14 +105,14 @@ public class PedidoValidation {
             return disponivel && !item.isSeparado();
         });
         if (faltaSeparar) {
-            throw new ItemInvalidoException("O pedido " + pedido.getId() + " ainda tem itens não separados");
+            throw new ItemInvalidoException("O pedido " + pedido.getId() + " ainda tem itens não separados.");
         }
     }
 
     // cliente é opcional (pedido avulso, como a consignação); com cliente, a data de entrega é obrigatória
     public void validarClienteEEntrega(UUID clienteId, java.time.LocalDate dataEntrega){
         if (clienteId != null && dataEntrega == null) {
-            throw new ItemInvalidoException("Data de entrega é obrigatória para pedido com cliente");
+            throw new ItemInvalidoException("A data de entrega é obrigatória para pedido com cliente.");
         }
     }
 
@@ -120,14 +120,14 @@ public class PedidoValidation {
     public void validarEnvio(Pedido pedido){
         if (pedido.getCliente() == null || pedido.getDataEntrega() == null) {
             throw new ItemInvalidoException("O pedido " + pedido.getId()
-                    + " não pode ser enviado sem cliente e data de entrega. Vincule-o a uma montagem e conclua a montagem para preenchê-los");
+                    + " não pode ser enviado sem cliente e data de entrega. Vincule-o a uma montagem e conclua a montagem para preenchê-los.");
         }
     }
 
     // itens/dados só podem ser editados antes de a separação começar
     public void validarEdicao(Pedido pedido){
         if (pedido.getStatus() != StatusPedido.PRODUCAO && pedido.getStatus() != StatusPedido.PENDENTE) {
-            throw new ItemInvalidoException("Pedido " + pedido.getId() + " não pode ser editado no status " + pedido.getStatus());
+            throw new ItemInvalidoException("O pedido " + pedido.getId() + " não pode ser editado no status " + pedido.getStatus());
         }
     }
 
@@ -138,20 +138,20 @@ public class PedidoValidation {
     public void validarItem(TipoItem tipo, UUID produtoId, UUID joiaId, Long produtoVariacaoId){
         if (tipo == TipoItem.JOIA) {
             if (joiaId == null) {
-                throw new ItemInvalidoException("joiaId é obrigatório para pedidos do tipo JOIA");
+                throw new ItemInvalidoException("Informe a joia para pedidos do tipo JOIA.");
             }
             if (produtoId != null) {
-                throw new ItemInvalidoException("Não é possível informar produtoId em um pedido do tipo JOIA");
+                throw new ItemInvalidoException("Não é possível informar produto em um pedido do tipo JOIA.");
             }
             if (produtoVariacaoId != null) {
-                throw new ItemInvalidoException("Não é possível informar produtoVariacaoId em um pedido do tipo JOIA");
+                throw new ItemInvalidoException("Não é possível informar variação de produto em um pedido do tipo JOIA.");
             }
         } else {
             if (joiaId != null) {
-                throw new ItemInvalidoException("Não é possível informar joiaId em um pedido do tipo PRODUTO");
+                throw new ItemInvalidoException("Não é possível informar joia em um pedido do tipo PRODUTO.");
             }
             if (produtoVariacaoId != null && produtoNovo(produtoId)) {
-                throw new ItemInvalidoException("produtoId é obrigatório para informar produtoVariacaoId");
+                throw new ItemInvalidoException("Informe o produto para informar a variação do produto.");
             }
         }
     }

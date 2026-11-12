@@ -14,7 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class PedidoItemProdutoRequestDTO {
 
-    @NotNull(message = "Informe o produto")
+    @NotNull(message = "Informe o produto.")
     private UUID produtoId;
 
     // obrigatório quando o produto tem variações
@@ -22,6 +22,6 @@ public class PedidoItemProdutoRequestDTO {
 
     // quantas unidades do item vão para esse produto; vazio = todas as disponíveis. Um item com
     // várias unidades pode ser dividido entre produtos diferentes
-    @Min(value = 1, message = "A quantidade deve ser maior que zero")
+    @Min(value = 1, message = "A quantidade deve ser maior que zero.")
     private Integer quantidade;
 }
