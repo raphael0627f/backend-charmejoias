@@ -83,7 +83,7 @@ public class AgendaMarcadorService {
         } catch (DataIntegrityViolationException e) {
             String sqlState = SqlErros.sqlState(e);
             if (SqlErros.UNIQUE.equals(sqlState)) {
-                throw new ObjetoExistenteException("Já existe um marcador na data " + data + ".");
+                throw new ObjetoExistenteException("Já existe um marcador na data " + com.manager.app.shared.TextoUtils.data(data) + ".");
             }
             if (SqlErros.FOREIGN_KEY.equals(sqlState)) {
                 throw new ObjetoNaoEncontradoException("Rota ou cidade do marcador não encontrada. O registro foi removido durante a operação.");

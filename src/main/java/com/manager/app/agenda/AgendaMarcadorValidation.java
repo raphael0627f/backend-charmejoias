@@ -20,13 +20,13 @@ public class AgendaMarcadorValidation {
 
     public void dataExistenteCreate(LocalDate data){
         if (repository.existsByData(data)) {
-            throw new ObjetoExistenteException("Já existe um marcador na data " + data + ".");
+            throw new ObjetoExistenteException("Já existe um marcador na data " + com.manager.app.shared.TextoUtils.data(data) + ".");
         }
     }
 
     public void dataExistenteUpdate(LocalDate data, Long id){
         if (repository.existsByDataAndIdNot(data, id)) {
-            throw new ObjetoExistenteException("Já existe um marcador na data " + data + ".");
+            throw new ObjetoExistenteException("Já existe um marcador na data " + com.manager.app.shared.TextoUtils.data(data) + ".");
         }
     }
 

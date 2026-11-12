@@ -135,7 +135,7 @@ class AgendaMarcadorValidationTest {
         when(repository.existsByData(DIA)).thenReturn(true);
         assertThatThrownBy(() -> validation.dataExistenteCreate(DIA))
                 .isInstanceOf(ObjetoExistenteException.class)
-                .hasMessage("Já existe um marcador na data 2026-03-12.");
+                .hasMessage("Já existe um marcador na data 12/03/2026.");
     }
 
     @Test
