@@ -13,9 +13,9 @@ import java.util.List;
 @NoArgsConstructor
 public class VariacaoSelecionadaDTO {
 
-    @NotNull(message = "Variação é obrigatória")
+    @NotNull(message = "O campo Variação é obrigatório.")
     private Long variacaoId;
 
-    @NotEmpty(message = "Ao menos um item deve ser selecionado")
+    @NotEmpty(message = "Selecione ao menos um item.")
     private List<Long> itensVariacaoIds;
 }

@@ -17,20 +17,20 @@ public class ProdutoVariacaoRequestDTO {
 
     private Long id;
 
-    @NotBlank(message = "SKU é obrigatório")
+    @NotBlank(message = "O campo SKU é obrigatório.")
     private String sku;
 
-    @NotNull(message = "Preço de custo é obrigatório")
+    @NotNull(message = "O campo Preço de custo é obrigatório.")
     private BigDecimal precoCusto;
 
-    @NotNull(message = "Preço de venda é obrigatório")
+    @NotNull(message = "O campo Preço de venda é obrigatório.")
     private BigDecimal precoVenda;
 
-    @NotNull(message = "Quantidade em estoque é obrigatória")
+    @NotNull(message = "O campo Quantidade em estoque é obrigatório.")
     private Integer quantidadeEstoque;
 
     private boolean ativo = true;
 
-    @NotEmpty(message = "Ao menos um item de variação é obrigatório")
+    @NotEmpty(message = "Informe ao menos um item de variação.")
     private List<Long> itensVariacaoIds;
 }

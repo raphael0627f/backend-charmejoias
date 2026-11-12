@@ -15,12 +15,12 @@ public class ProdutoValidation {
 
     public void skuExistenteCreate(String sku){
         if(repository.existsBySku(sku) || produtoVariacaoRepository.existsBySku(sku)){
-            throw new ObjetoExistenteException("Produto existente com este SKU: " + sku);
+            throw new ObjetoExistenteException("Já existe um produto cadastrado com este SKU: " + sku);
         }
     }
     public void skuExistenteUpdate(String sku, UUID id){
         if(repository.existsBySkuAndIdNot(sku, id) || produtoVariacaoRepository.existsBySku(sku)){
-            throw new ObjetoExistenteException("Produto existente com este SKU: " + sku);
+            throw new ObjetoExistenteException("Já existe um produto cadastrado com este SKU: " + sku);
         }
     }
 }
