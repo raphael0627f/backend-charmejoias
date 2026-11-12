@@ -13,9 +13,9 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class NotaFiscalPagamentoRequestDTO {
 
-    @NotBlank(message = "Forma de pagamento é obrigatória")
+    @NotBlank(message = "O campo Forma de pagamento é obrigatório.")
     private String formaPagamento;
 
-    @NotNull(message = "Valor é obrigatório")
+    @NotNull(message = "O campo Valor é obrigatório.")
     private BigDecimal valor;
 }

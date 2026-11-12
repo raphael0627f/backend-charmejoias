@@ -21,29 +21,29 @@ import java.util.UUID;
 @NoArgsConstructor
 public class NotaFiscalRequestDTO {
 
-    @NotNull(message = "Empresa é obrigatória")
+    @NotNull(message = "O campo Empresa é obrigatório.")
     private Long empresaId;
 
-    @NotNull(message = "Cliente é obrigatório")
+    @NotNull(message = "O campo Cliente é obrigatório.")
     private UUID clienteId;
 
-    @NotBlank(message = "Natureza da operação é obrigatória")
+    @NotBlank(message = "O campo Natureza da operação é obrigatório.")
     private String naturezaOperacao;
 
-    @NotNull(message = "Indicador de consumidor final é obrigatório")
+    @NotNull(message = "O campo Indicador de consumidor final é obrigatório.")
     private Boolean consumidorFinal;
 
-    @NotNull(message = "Indicador de presença é obrigatório")
+    @NotNull(message = "O campo Indicador de presença é obrigatório.")
     private Integer indicadorPresenca;
 
-    @NotNull(message = "Ambiente é obrigatório")
+    @NotNull(message = "O campo Ambiente é obrigatório.")
     private AmbienteNfe ambiente;
 
-    @NotEmpty(message = "A nota precisa de ao menos um item")
+    @NotEmpty(message = "Informe ao menos um item na nota.")
     @Valid
     private List<NotaFiscalItemRequestDTO> itens;
 
-    @NotEmpty(message = "A nota precisa de ao menos uma forma de pagamento")
+    @NotEmpty(message = "Informe ao menos uma forma de pagamento.")
     @Valid
     private List<NotaFiscalPagamentoRequestDTO> pagamentos;
 

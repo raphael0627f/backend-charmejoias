@@ -18,7 +18,7 @@ public class NotaFiscalValidation {
                 && cfop.startsWith(escopo.getPrefixoCfop())
                 && cfopRepository.existsById(cfop);
         if (!compativel) {
-            throw new ItemInvalidoException("CFOP " + cfop + " incompatível com a operação (" + escopo + ") entre a UF da empresa (" + ufEmpresa + ") e a UF do cliente (" + ufCliente + ")");
+            throw new ItemInvalidoException("CFOP " + cfop + " incompatível com a operação (" + escopo + ") entre a UF da empresa (" + ufEmpresa + ") e a UF do cliente (" + ufCliente + ").");
         }
     }
 }

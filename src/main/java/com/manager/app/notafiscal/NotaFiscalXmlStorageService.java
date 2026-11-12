@@ -69,7 +69,7 @@ public class NotaFiscalXmlStorageService {
         try {
             Files.write(destino, xml);
         } catch (IOException e) {
-            throw new UncheckedIOException("Não foi possível salvar o XML da nota fiscal. id: " + notaFiscalId, e);
+            throw new UncheckedIOException("Não foi possível salvar o XML da nota fiscal. Id: " + notaFiscalId, e);
         }
     }
 
@@ -142,12 +142,12 @@ public class NotaFiscalXmlStorageService {
     // normalizar e conferir que o caminho resolvido continua dentro do diretório base
     public byte[] carregar(String nomeArquivo){
         if (nomeArquivo == null || nomeArquivo.contains("/") || nomeArquivo.contains("\\") || nomeArquivo.contains("..")) {
-            throw new ItemInvalidoException("Nome de arquivo inválido");
+            throw new ItemInvalidoException("Nome de arquivo inválido.");
         }
 
         Path resolvido = diretorioBase.resolve(nomeArquivo).normalize();
         if (!resolvido.startsWith(diretorioBase.normalize())) {
-            throw new ItemInvalidoException("Nome de arquivo inválido");
+            throw new ItemInvalidoException("Nome de arquivo inválido.");
         }
         if (!Files.exists(resolvido) || !Files.isRegularFile(resolvido)) {
             throw new ObjetoNaoEncontradoException("Arquivo XML não encontrado: " + nomeArquivo);

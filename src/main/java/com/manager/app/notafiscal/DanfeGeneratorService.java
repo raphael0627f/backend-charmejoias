@@ -111,7 +111,7 @@ public class DanfeGeneratorService {
 
     private byte[] chamarApi(byte[] xmlBytes){
         if (apiKey == null || apiKey.isBlank()) {
-            throw new DanfeApiException("Chave da API de DANFE não configurada (propriedade danfe.api.key / variável DANFE_API_KEY)");
+            throw new DanfeApiException("Chave da API de DANFE não configurada (propriedade danfe.api.key / variável DANFE_API_KEY).");
         }
 
         Map<String, Object> resposta;
@@ -129,22 +129,22 @@ public class DanfeGeneratorService {
         } catch (RestClientResponseException e) {
             throw new DanfeApiException(mensagemDeErro(e), e);
         } catch (RestClientException e) {
-            throw new DanfeApiException("Serviço de geração de DANFE indisponível no momento. Tente novamente em instantes", e);
+            throw new DanfeApiException("Serviço de geração de DANFE indisponível no momento. Tente novamente em instantes.", e);
         }
 
         Object data = resposta != null ? resposta.get("data") : null;
         if (data == null) {
-            throw new DanfeApiException("O serviço de geração de DANFE não devolveu o PDF");
+            throw new DanfeApiException("O serviço de geração de DANFE não devolveu o PDF.");
         }
 
         byte[] pdf;
         try {
             pdf = Base64.getMimeDecoder().decode(data.toString());
         } catch (IllegalArgumentException e) {
-            throw new DanfeApiException("O serviço de geração de DANFE devolveu um PDF ilegível", e);
+            throw new DanfeApiException("O serviço de geração de DANFE devolveu um PDF ilegível.", e);
         }
         if (!comecaComPdf(pdf)) {
-            throw new DanfeApiException("O serviço de geração de DANFE não devolveu um PDF válido");
+            throw new DanfeApiException("O serviço de geração de DANFE não devolveu um PDF válido.");
         }
         return pdf;
     }
@@ -185,18 +185,18 @@ public class DanfeGeneratorService {
 
     private void validarNfeAutorizada(Document documento){
         if (!"nfeProc".equals(documento.getDocumentElement().getLocalName())) {
-            throw new ItemInvalidoException("XML não é uma NFe autorizada (elemento raiz esperado: nfeProc)");
+            throw new ItemInvalidoException("XML não é uma NFe autorizada (elemento raiz esperado: nfeProc).");
         }
 
         NodeList protNFe = documento.getElementsByTagNameNS("*", "protNFe");
         if (protNFe.getLength() == 0) {
-            throw new ItemInvalidoException("XML não é uma NFe autorizada (protNFe ausente)");
+            throw new ItemInvalidoException("XML não é uma NFe autorizada (protNFe ausente).");
         }
 
         NodeList chNFe = documento.getElementsByTagNameNS("*", "chNFe");
         NodeList nProt = documento.getElementsByTagNameNS("*", "nProt");
         if (chNFe.getLength() == 0 || nProt.getLength() == 0) {
-            throw new ItemInvalidoException("XML não é uma NFe autorizada (chave de acesso ou protocolo de autorização ausente)");
+            throw new ItemInvalidoException("XML não é uma NFe autorizada (chave de acesso ou protocolo de autorização ausente).");
         }
     }
 
@@ -206,13 +206,13 @@ public class DanfeGeneratorService {
 
         NodeList tpEvento = documento.getElementsByTagNameNS("*", "tpEvento");
         if (tpEvento.getLength() == 0 || !tipo.tpEvento.equals(tpEvento.item(0).getTextContent().trim())) {
-            throw new ItemInvalidoException("XML não é de " + nome + " de NFe (evento " + tipo.tpEvento + " não encontrado)");
+            throw new ItemInvalidoException("XML não é de " + nome + " de NFe (evento " + tipo.tpEvento + " não encontrado).");
         }
 
         NodeList retEvento = documento.getElementsByTagNameNS("*", "retEvento");
         NodeList nProt = documento.getElementsByTagNameNS("*", "nProt");
         if (retEvento.getLength() == 0 || nProt.getLength() == 0) {
-            throw new ItemInvalidoException("XML de " + nome + " sem o retorno da SEFAZ (protocolo ausente)");
+            throw new ItemInvalidoException("XML de " + nome + " sem o retorno da SEFAZ (protocolo ausente).");
         }
     }
 

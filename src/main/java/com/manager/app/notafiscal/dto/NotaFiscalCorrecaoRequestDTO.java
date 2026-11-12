@@ -10,6 +10,6 @@ import lombok.Setter;
 @NoArgsConstructor
 public class NotaFiscalCorrecaoRequestDTO {
 
-    @NotBlank(message = "Texto da carta de correção é obrigatório")
+    @NotBlank(message = "O campo Texto da carta de correção é obrigatório.")
     private String texto;
 }
