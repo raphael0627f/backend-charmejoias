@@ -33,6 +33,8 @@ Resposta 200:
 
 ## Conteúdo do e-mail
 
+O e-mail sai em **HTML padronizado** (cabeçalho com logotipo/nome da empresa, mensagem, quadro com as notas e o zip, rodapé com os dados da empresa) e também em texto simples. O texto do usuário é escapado; quebras de linha viram parágrafos e links http(s) viram links. Detalhes em `docs/email-modelo-html.md`.
+
 - Remetente: a conta SMTP fixa da empresa (nome de exibição opcional, configurado na tela de Sistema). **Reply-To**: o e-mail do usuário logado (se ele tiver e-mail cadastrado).
 - Anexo `nfe-xmls-<yyyyMMdd-HHmm>.zip`, uma pasta por nota:
   - `NF-<número>/<chave>-nfe.xml` (autorizado);
