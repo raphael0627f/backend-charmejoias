@@ -176,8 +176,7 @@ public class EmailTemplateService {
 
         // cabecalho: faixa dourada fina + faixa escura com logotipo (ou nome) e nome da empresa
         h.append("<tr><td style=\"background-color:").append(DOURADO).append(";height:4px;line-height:4px;font-size:0;border-radius:6px 6px 0 0;\">&nbsp;</td></tr>\n");
-        h.append("<tr><td align=\"center\" style=\"background-color:").append(CABECALHO).append(";padding:24px;\">
-");
+        h.append("<tr><td align=\"center\" style=\"background-color:").append(CABECALHO).append(";padding:24px;\">\n");
         if (comLogo) {
             // so a logo, centralizada, direto sobre o escuro (imagem 2x para telas retina, exibida a 126x140)
             h.append("<img src=\"cid:").append(CID_LOGO).append("\" alt=\"Logotipo de ").append(escapar(empresa.nome()))
@@ -186,9 +185,7 @@ public class EmailTemplateService {
             h.append("<span style=\"").append(FONTE).append("color:").append(DOURADO).append(";font-size:22px;font-weight:bold;line-height:30px;\">")
                     .append(escapar(empresa.nome())).append("</span>");
         }
-        h.append("
-</td></tr>
-");
+        h.append("\n</td></tr>\n");
 
         // corpo: titulo, mensagem, resumo
         h.append("<tr><td style=\"background-color:#FFFFFF;border-left:1px solid ").append(BORDA).append(";border-right:1px solid ").append(BORDA)
