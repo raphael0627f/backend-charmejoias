@@ -155,7 +155,7 @@ public class EmailTemplateService {
         EmpresaEmail empresa = m.empresa() != null ? m.empresa() : new EmpresaEmail("Sistema ERP", null, null, null, null);
         String titulo = escapar(m.titulo());
         StringBuilder h = new StringBuilder(4096);
-        h.append("<!DOCTYPE html>\n<html lang=\"pt-BR\" xmlns=\"http://www.w3.org/1999/xhtml\">\n<head>\n")
+        h.append("<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n")
                 .append("<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n")
                 .append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n<meta name=\"x-apple-disable-message-reformatting\">\n")
                 .append("<title>").append(titulo).append("</title>\n</head>\n");
