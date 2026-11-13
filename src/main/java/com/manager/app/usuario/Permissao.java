@@ -26,6 +26,8 @@ public enum Permissao {
     SPC_REGISTRAR,
     PLANEJADOR_ROTA_GERENCIAR,
     BACKUP_GERENCIAR,
+    // configuração do e-mail de envio (SMTP) na tela de Sistema: só o perfil ADMIN (guarda credenciais)
+    CONFIGURACAO_EMAIL_GERENCIAR,
     MONTAGEM_GERENCIAR,
     AGENDA_GERENCIAR,
     // só existe para a tela de perfis: o backend não a verifica (o GET da agenda exige apenas login)

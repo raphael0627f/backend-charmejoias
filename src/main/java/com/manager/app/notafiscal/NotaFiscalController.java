@@ -5,6 +5,8 @@ import com.manager.app.notafiscal.dto.NotaFiscalCancelamentoRequestDTO;
 import com.manager.app.notafiscal.dto.NotaFiscalCorrecaoRequestDTO;
 import com.manager.app.notafiscal.dto.NotaFiscalRequestDTO;
 import com.manager.app.notafiscal.dto.NotaFiscalResponseDTO;
+import com.manager.app.notafiscal.dto.EnviarXmlEmailRequestDTO;
+import com.manager.app.notafiscal.dto.EnviarXmlEmailResponseDTO;
 import com.manager.app.notafiscal.dto.XmlArquivoResponseDTO;
 import com.manager.app.shared.exception.ItemInvalidoException;
 import jakarta.validation.Valid;
@@ -33,6 +35,7 @@ public class NotaFiscalController {
     private final NotaFiscalService service;
     private final NotaFiscalMapper mapper;
     private final NotaFiscalXmlStorageService xmlStorageService;
+    private final NotaFiscalEmailXmlService emailXmlService;
     private final DanfeGeneratorService danfeGeneratorService;
 
     @GetMapping
@@ -187,6 +190,14 @@ public class NotaFiscalController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .header("Content-Disposition", "inline; filename=" + nomeArquivo)
                 .body(pdf);
+    }
+
+    // envia por e-mail um zip com os XMLs (autorizado, cancelamento e cartas de correcao) das notas selecionadas.
+    // Os GETs de XML so exigem autenticacao; o envio para fora da empresa exige a permissao de gerenciar notas
+    @PostMapping(value = "/enviar-xml-email")
+    @PreAuthorize("hasAuthority('NOTA_FISCAL_GERENCIAR')")
+    public ResponseEntity<EnviarXmlEmailResponseDTO> enviarXmlPorEmail(@RequestBody @Valid EnviarXmlEmailRequestDTO request){
+        return ResponseEntity.ok(emailXmlService.enviar(request));
     }
 
     @GetMapping(value = "/xmls")
