@@ -1,5 +1,6 @@
 package com.manager.app.planejadorrota;
 
+import com.manager.app.planejadorrota.dto.PlanejadorRotaPedidoResumoDTO;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaRequestDTO;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaResponseDTO;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaResumoDTO;
@@ -17,6 +18,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,7 +29,6 @@ import java.time.LocalDate;
 public class PlanejadorRotaController {
 
     private final PlanejadorRotaService service;
-    private final PlanejadorRotaMapper mapper;
     private final PlanejadorRotaXlsxService xlsxService;
 
     @GetMapping
@@ -39,9 +41,15 @@ public class PlanejadorRotaController {
         return ResponseEntity.ok(service.findAllResumo(busca, modoBusca, dataInicio, dataFim, pageable));
     }
 
+    // pedidos SEPARADO do cliente que podem ser escolhidos para deixar na visita (GET /pedidos nao filtra por cliente pelo id)
+    @GetMapping(value = "/clientes/{clienteId}/pedidos-para-deixar")
+    public ResponseEntity<List<PlanejadorRotaPedidoResumoDTO>> pedidosParaDeixar(@PathVariable UUID clienteId){
+        return ResponseEntity.ok(service.pedidosParaDeixar(clienteId));
+    }
+
     @GetMapping(value = "/{id}")
     public ResponseEntity<PlanejadorRotaResponseDTO> findById(@PathVariable Long id){
-        return ResponseEntity.ok(mapper.toResponseDTO(service.findById(id)));
+        return ResponseEntity.ok(service.toResponseDTO(service.findById(id)));
     }
 
     @PostMapping
@@ -49,14 +57,14 @@ public class PlanejadorRotaController {
     public ResponseEntity<PlanejadorRotaResponseDTO> create(@RequestBody @Valid PlanejadorRotaRequestDTO request){
         PlanejadorRota rota = service.create(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(rota.getId()).toUri();
-        return ResponseEntity.created(location).body(mapper.toResponseDTO(rota));
+        return ResponseEntity.created(location).body(service.toResponseDTO(rota));
     }
 
     @PutMapping
     @PreAuthorize("hasAuthority('PLANEJADOR_ROTA_GERENCIAR')")
     public ResponseEntity<PlanejadorRotaResponseDTO> update(@RequestBody @Valid PlanejadorRotaRequestDTO request){
         PlanejadorRota rota = service.update(request);
-        return ResponseEntity.ok(mapper.toResponseDTO(rota));
+        return ResponseEntity.ok(service.toResponseDTO(rota));
     }
 
     @DeleteMapping(value = "/{id}")

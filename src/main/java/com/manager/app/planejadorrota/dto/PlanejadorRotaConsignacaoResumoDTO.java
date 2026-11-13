@@ -22,4 +22,6 @@ public class PlanejadorRotaConsignacaoResumoDTO {
     private Boolean confirmada;
     // descricao do mostruario da consignacao (nulo se nao tiver)
     private String mostruarioDescricao;
+    // número da montagem da consignação (a mais recente não cancelada); nulo se não tiver
+    private Long montagemId;
 }

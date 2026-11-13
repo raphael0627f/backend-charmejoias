@@ -4,6 +4,7 @@ import com.manager.app.cliente.Cliente;
 import com.manager.app.endereco.Endereco;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -12,19 +13,23 @@ import java.io.UncheckedIOException;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 // monta o .xlsx de uma PlanejadorRota no mesmo layout usado hoje manualmente pela equipe de campo
 @Service
+@RequiredArgsConstructor
 public class PlanejadorRotaXlsxService {
+
+    private final PlanejadorRotaDetalhes detalhes;
 
     private static final DateTimeFormatter FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private static final String[] CABECALHO = {
             "ITEM", "codigo", "VISITA", "ROTA", "IDA", "VOLTA", "DEIXOU", "TROUXE",
             "nome do cliente", "Endereço", "Latitude", "Longitude", "Notas", "Cliente Móvel", "Referência", "observação",
-            "Valor a pagar"
+            "Valor a pagar", "Deixar (documentos)", "Trazer (documentos)"
     };
 
     public byte[] gerarXlsx(PlanejadorRota rota){
@@ -45,10 +50,11 @@ public class PlanejadorRotaXlsxService {
                     .sorted(Comparator.comparing(PlanejadorRotaCliente::getOrdem, Comparator.nullsLast(Comparator.naturalOrder())))
                     .toList();
 
+            Map<Long, Long> montagens = detalhes.montagemPorConsignacao(rota);
             int linhaIndex = 1;
             for (PlanejadorRotaCliente item : itens) {
                 Row row = sheet.createRow(linhaIndex++);
-                preencherLinha(row, rota, item, enderecoStyle);
+                preencherLinha(row, rota, item, enderecoStyle, montagens);
             }
 
             for (int i = 0; i < CABECALHO.length; i++) {
@@ -63,14 +69,16 @@ public class PlanejadorRotaXlsxService {
         }
     }
 
-    private void preencherLinha(Row row, PlanejadorRota rota, PlanejadorRotaCliente item, CellStyle enderecoStyle){
+    private void preencherLinha(Row row, PlanejadorRota rota, PlanejadorRotaCliente item, CellStyle enderecoStyle, Map<Long, Long> montagens){
         Cliente cliente = item.getCliente();
         Endereco enderecoSelecionado = item.getEndereco();
         // IDA/VOLTA = previsto (quantidade de consignacoes planejadas pra deixar/trazer); DEIXOU/TROUXE =
         // resultado real (quantas dessas ja foram confirmadas), preenchido na edicao pos-rota
-        int previstoDeixar = item.getConsignacoesDeixar().size();
+        // (o que se deixa pode ser consignacao e/ou pedido SEPARADO; os dois entram na conta do deixar)
+        int previstoDeixar = item.getConsignacoesDeixar().size() + item.getPedidosDeixar().size();
         int previstoTrazer = item.getConsignacoesTrazer().size();
-        long confirmadoDeixar = item.getConsignacoesDeixar().stream().filter(c -> Boolean.TRUE.equals(c.getConfirmada())).count();
+        long confirmadoDeixar = item.getConsignacoesDeixar().stream().filter(c -> Boolean.TRUE.equals(c.getConfirmada())).count()
+                + item.getPedidosDeixar().stream().filter(p -> Boolean.TRUE.equals(p.getConfirmada())).count();
         long confirmadoTrazer = item.getConsignacoesTrazer().stream().filter(c -> Boolean.TRUE.equals(c.getConfirmada())).count();
 
         row.createCell(0).setCellValue(item.getOrdem() != null ? item.getOrdem() : row.getRowNum());
@@ -95,6 +103,28 @@ public class PlanejadorRotaXlsxService {
         row.createCell(14).setCellValue(cliente.getReferencia() != null ? cliente.getReferencia() : "");
         row.createCell(15).setCellValue(item.getObservacao() != null ? item.getObservacao() : "");
         row.createCell(16).setCellValue(item.getValorAPagar() != null ? item.getValorAPagar().doubleValue() : 0);
+
+        // quais documentos, um por linha na celula: "Consignação Nº 8756 (Montagem Nº 830)" / "Pedido Nº 12"
+        Cell deixarCell = row.createCell(17);
+        deixarCell.setCellValue(documentosDeixar(item, montagens));
+        deixarCell.setCellStyle(enderecoStyle);
+        Cell trazerCell = row.createCell(18);
+        trazerCell.setCellValue(item.getConsignacoesTrazer().stream()
+                .map(c -> descricaoConsignacao(c.getConsignacao().getId(), montagens))
+                .collect(Collectors.joining("\n")));
+        trazerCell.setCellStyle(enderecoStyle);
+    }
+
+    private String documentosDeixar(PlanejadorRotaCliente item, Map<Long, Long> montagens){
+        return Stream.concat(
+                        item.getConsignacoesDeixar().stream().map(c -> descricaoConsignacao(c.getConsignacao().getId(), montagens)),
+                        item.getPedidosDeixar().stream().map(p -> "Pedido Nº " + p.getPedido().getId()))
+                .collect(Collectors.joining("\n"));
+    }
+
+    static String descricaoConsignacao(Long consignacaoId, Map<Long, Long> montagens){
+        Long montagemId = montagens.get(consignacaoId);
+        return "Consignação Nº " + consignacaoId + (montagemId != null ? " (Montagem Nº " + montagemId + ")" : "");
     }
 
     // todos os enderecos cadastrados do cliente, comecando pelo selecionado, um por linha na mesma celula

@@ -55,6 +55,20 @@ public class PlanejadorRotaCliente {
     @OneToMany(mappedBy = "rotaCliente", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PlanejadorRotaConsignacaoTrazer> consignacoesTrazer = new ArrayList<>();
 
+    // pedidos SEPARADO escolhidos para deixar (alternativa/complemento as consignacoes a deixar)
+    @OneToMany(mappedBy = "rotaCliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PlanejadorRotaPedidoDeixar> pedidosDeixar = new ArrayList<>();
+
+    public void adicionarPedidoDeixar(PlanejadorRotaPedidoDeixar item) {
+        item.setRotaCliente(this);
+        this.pedidosDeixar.add(item);
+    }
+
+    public void removerPedidoDeixar(PlanejadorRotaPedidoDeixar item) {
+        item.setRotaCliente(null);
+        this.pedidosDeixar.remove(item);
+    }
+
     public void adicionarConsignacaoDeixar(PlanejadorRotaConsignacaoDeixar item) {
         item.setRotaCliente(this);
         this.consignacoesDeixar.add(item);

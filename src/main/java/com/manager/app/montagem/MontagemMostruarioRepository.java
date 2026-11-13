@@ -39,6 +39,11 @@ public interface MontagemMostruarioRepository extends JpaRepository<MontagemMost
             + "where m.id in :ids group by m.id")
     List<MontagemContagemProjecao> contarConsignacoes(@Param("ids") List<Long> ids);
 
+    // montagens (não canceladas) de cada consignação, em lote: quem chama escolhe a mais recente
+    @Query("select c.id as consignacaoId, m.id as montagemId from MontagemMostruario m join m.consignacoes c "
+            + "where c.id in :ids and m.status <> com.manager.app.montagem.StatusMontagem.CANCELADA")
+    List<MontagemConsignacaoProjecao> montagensDasConsignacoes(@Param("ids") List<Long> ids);
+
     // pedidos cancelados continuam vinculados, mas não entram na contagem
     @Query("select m.id as montagemId, count(p) as total from MontagemMostruario m join m.pedidos p "
             + "where m.id in :ids and p.status <> com.manager.app.pedido.StatusPedido.CANCELADO group by m.id")

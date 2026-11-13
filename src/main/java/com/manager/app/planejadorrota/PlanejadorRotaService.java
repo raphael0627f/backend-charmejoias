@@ -7,7 +7,14 @@ import com.manager.app.consignacao.ConsignacaoRepository;
 import com.manager.app.endereco.Endereco;
 import com.manager.app.endereco.EnderecoRepository;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaClienteRequestDTO;
+import com.manager.app.planejadorrota.dto.PlanejadorRotaClienteResponseDTO;
+import com.manager.app.planejadorrota.dto.PlanejadorRotaResponseDTO;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaConsignacaoItemRequestDTO;
+import com.manager.app.pedido.Pedido;
+import com.manager.app.pedido.PedidoRepository;
+import com.manager.app.pedido.StatusPedido;
+import com.manager.app.planejadorrota.dto.PlanejadorRotaPedidoItemRequestDTO;
+import com.manager.app.planejadorrota.dto.PlanejadorRotaPedidoResumoDTO;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaRequestDTO;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaResumoDTO;
 import com.manager.app.shared.ModoBusca;
@@ -27,7 +34,11 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -38,9 +49,12 @@ public class PlanejadorRotaService {
     private final ClienteRepository clienteRepository;
     private final EnderecoRepository enderecoRepository;
     private final ConsignacaoRepository consignacaoRepository;
+    private final PedidoRepository pedidoRepository;
     private final PlanejadorRotaValidation validation;
     private final UsuarioResumoMapper usuarioResumoMapper;
     private final UsuarioAuditorAware usuarioAuditorAware;
+    private final PlanejadorRotaMapper mapper;
+    private final PlanejadorRotaDetalhes detalhes;
 
     public Page<PlanejadorRota> findAll(String busca, ModoBusca modoBusca, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
         Specification<PlanejadorRota> spec = comBusca(busca, modoBusca);
@@ -75,6 +89,34 @@ public class PlanejadorRotaService {
     private Specification<PlanejadorRota> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
         return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca, modoBusca);
+    }
+
+    // resposta completa da rota: o mapper monta a estrutura e aqui entram os dados buscados em lote (montagem das consignacoes)
+    public PlanejadorRotaResponseDTO toResponseDTO(PlanejadorRota rota){
+        PlanejadorRotaResponseDTO dto = mapper.toResponseDTO(rota);
+        Map<Long, Long> montagens = detalhes.montagemPorConsignacao(rota);
+        for (PlanejadorRotaClienteResponseDTO item : dto.getItens()) {
+            item.getConsignacoesDeixar().forEach(c -> c.setMontagemId(montagens.get(c.getId())));
+            item.getConsignacoesTrazer().forEach(c -> c.setMontagemId(montagens.get(c.getId())));
+        }
+        detalhes.preencherTotais(dto.getItens().stream().flatMap(i -> i.getPedidosDeixar().stream()).toList());
+        return dto;
+    }
+
+    // pedidos SEPARADO do cliente que podem ser escolhidos para deixar na visita (sem "confirmada")
+    public List<PlanejadorRotaPedidoResumoDTO> pedidosParaDeixar(UUID clienteId){
+        resolverCliente(clienteId);
+        List<PlanejadorRotaPedidoResumoDTO> pedidos = pedidoRepository.findByCliente_IdAndStatusOrderById(clienteId, StatusPedido.SEPARADO).stream()
+                .map(pedido -> {
+                    PlanejadorRotaPedidoResumoDTO dto = new PlanejadorRotaPedidoResumoDTO();
+                    dto.setId(pedido.getId());
+                    dto.setStatus(pedido.getStatus());
+                    dto.setObservacao(pedido.getObservacao());
+                    dto.setDataEntrega(pedido.getDataEntrega());
+                    return dto;
+                }).toList();
+        detalhes.preencherTotais(pedidos);
+        return pedidos;
     }
 
     public PlanejadorRota findById(Long id){
@@ -171,6 +213,53 @@ public class PlanejadorRotaService {
         }
     }
 
+    // pedidos a deixar: cada pedido deve existir, ser do mesmo cliente do item e nao repetir; so um pedido que ENTRA agora
+    // precisa estar SEPARADO - o que ja estava gravado no item segue valido mesmo que o status tenha mudado depois
+    // (ex.: virou ENVIADO), senao a edicao da rota (confirmacao pos-visita) falharia
+    private void validarPedidosDeixar(PlanejadorRotaCliente item, Cliente cliente, List<PlanejadorRotaPedidoItemRequestDTO> requests){
+        if (requests == null) return;
+        Set<Long> jaGravados = item.getPedidosDeixar().stream().map(p -> p.getPedido().getId()).collect(Collectors.toSet());
+        Set<Long> vistos = new HashSet<>();
+        for (PlanejadorRotaPedidoItemRequestDTO request : requests) {
+            if (!vistos.add(request.getPedidoId())) {
+                throw new ItemInvalidoException("O pedido Nº " + request.getPedidoId() + " foi informado mais de uma vez para o mesmo cliente.");
+            }
+            Pedido pedido = pedidoRepository.findById(request.getPedidoId())
+                    .orElseThrow(() -> new ObjetoNaoEncontradoException("Pedido não encontrado. Id: " + request.getPedidoId()));
+            if (pedido.getCliente() == null || !pedido.getCliente().getId().equals(cliente.getId())) {
+                throw new ItemInvalidoException("O pedido Nº " + pedido.getId() + " não pertence ao cliente selecionado.");
+            }
+            if (!jaGravados.contains(pedido.getId()) && pedido.getStatus() != StatusPedido.SEPARADO) {
+                throw new ItemInvalidoException("O pedido Nº " + pedido.getId() + " não está com o status Separado e não pode ser deixado na rota.");
+            }
+        }
+    }
+
+    private void atualizarPedidosDeixar(PlanejadorRotaCliente item, List<PlanejadorRotaPedidoItemRequestDTO> requests){
+        List<PlanejadorRotaPedidoDeixar> atuais = new ArrayList<>(item.getPedidosDeixar());
+        List<PlanejadorRotaPedidoItemRequestDTO> pendentes = requests != null ? requests : new ArrayList<>();
+
+        for (PlanejadorRotaPedidoItemRequestDTO request : pendentes) {
+            PlanejadorRotaPedidoDeixar existente = atuais.stream()
+                    .filter(p -> p.getPedido().getId().equals(request.getPedidoId()))
+                    .findFirst().orElse(null);
+
+            if (existente != null) {
+                existente.setConfirmada(Boolean.TRUE.equals(request.getConfirmada()));
+                atuais.remove(existente);
+            } else {
+                PlanejadorRotaPedidoDeixar novo = new PlanejadorRotaPedidoDeixar();
+                novo.setPedido(pedidoRepository.getReferenceById(request.getPedidoId()));
+                novo.setConfirmada(Boolean.TRUE.equals(request.getConfirmada()));
+                item.adicionarPedidoDeixar(novo);
+            }
+        }
+
+        for (PlanejadorRotaPedidoDeixar remover : atuais) {
+            item.removerPedidoDeixar(remover);
+        }
+    }
+
     private void preencherItem(PlanejadorRotaCliente item, PlanejadorRotaClienteRequestDTO itemRequest){
         Cliente cliente = resolverCliente(itemRequest.getClienteId());
         Endereco endereco = resolverEndereco(itemRequest.getEnderecoId());
@@ -181,6 +270,7 @@ public class PlanejadorRotaService {
         // ou ate sem nenhuma das duas (ex.: so uma visita de cobranca)
         resolverEValidarConsignacoes(cliente, itemRequest.getConsignacoesDeixar());
         resolverEValidarConsignacoes(cliente, itemRequest.getConsignacoesTrazer());
+        validarPedidosDeixar(item, cliente, itemRequest.getPedidosDeixar());
 
         item.setCliente(cliente);
         item.setEndereco(endereco);
@@ -190,6 +280,7 @@ public class PlanejadorRotaService {
         item.setValorAPagar(itemRequest.getValorAPagar());
         atualizarConsignacoesDeixar(item, itemRequest.getConsignacoesDeixar());
         atualizarConsignacoesTrazer(item, itemRequest.getConsignacoesTrazer());
+        atualizarPedidosDeixar(item, itemRequest.getPedidosDeixar());
     }
 
     @Transactional
