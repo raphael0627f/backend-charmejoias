@@ -179,8 +179,24 @@ public class ConsignacaoService {
             comAcertoConfirmado.addAll(acertoConsignacaoRepository.findConsignacaoIdsComAcertoConfirmado(ids));
         }
 
-        return pagina.map(consignacao -> toResumoDTO(consignacao, totaisPorId.get(consignacao.getId()),
-                categoriasPorId.get(consignacao.getId()), comAcertoConfirmado.contains(consignacao.getId())));
+        Map<Long, Long> montagens = montagensPorConsignacao(ids);
+        return pagina.map(consignacao -> {
+            ConsignacaoResumoDTO dto = toResumoDTO(consignacao, totaisPorId.get(consignacao.getId()),
+                    categoriasPorId.get(consignacao.getId()), comAcertoConfirmado.contains(consignacao.getId()));
+            dto.setMontagemId(montagens.get(consignacao.getId()));
+            return dto;
+        });
+    }
+
+    // consignacao -> numero da montagem, em lote (uma consulta). Ligada a mais de uma: vale a mais recente (maior id)
+    // que nao esteja CANCELADA; sem montagem (ou so em canceladas) nao consta no mapa.
+    public Map<Long, Long> montagensPorConsignacao(List<Long> consignacaoIds){
+        Map<Long, Long> resultado = new HashMap<>();
+        if (consignacaoIds.isEmpty()) return resultado;
+        for (var vinculo : montagemMostruarioRepository.montagensDasConsignacoes(consignacaoIds)) {
+            resultado.merge(vinculo.getConsignacaoId(), vinculo.getMontagemId(), Math::max);
+        }
+        return resultado;
     }
 
     private ConsignacaoResumoDTO toResumoDTO(Consignacao consignacao, ConsignacaoTotaisProjecao totais, List<QuantidadePorCategoriaDTO> quantidadePorCategoria, boolean acertoFinalizado){

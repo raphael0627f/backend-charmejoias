@@ -48,7 +48,9 @@ public class ConsignacaoController {
 
     @GetMapping(value = "/{id}")
     public ResponseEntity<ConsignacaoResponseDTO> findById(@PathVariable Long id){
-        return ResponseEntity.ok(mapper.toResponseDTO(service.findById(id)));
+        ConsignacaoResponseDTO dto = mapper.toResponseDTO(service.findById(id));
+        dto.setMontagemId(service.montagensPorConsignacao(java.util.List.of(id)).get(id));
+        return ResponseEntity.ok(dto);
     }
 
     @PostMapping

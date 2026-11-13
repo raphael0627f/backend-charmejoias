@@ -31,6 +31,7 @@ import java.util.List;
         "motivoCancelamento",
         "canceladaEm",
         "canceladaPor",
+        "montagemId",
         "createdAt",
         "updatedAt",
         "createdBy",
@@ -52,6 +53,8 @@ public class ConsignacaoResponseDTO {
     private String motivoCancelamento;
     private LocalDateTime canceladaEm;
     private UsuarioResumoDTO canceladaPor;
+    // numero da montagem da consignacao (a mais recente nao cancelada); nulo se nao tiver
+    private Long montagemId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private UsuarioResumoDTO createdBy;

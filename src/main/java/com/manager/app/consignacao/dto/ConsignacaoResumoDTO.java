@@ -31,6 +31,7 @@ import java.util.List;
         "motivoCancelamento",
         "canceladaEm",
         "canceladaPor",
+        "montagemId",
         "acertoFinalizado",
         "itensCount",
         "quantidadeTotal",
@@ -55,6 +56,8 @@ public class ConsignacaoResumoDTO {
     private String motivoCancelamento;
     private LocalDateTime canceladaEm;
     private UsuarioResumoDTO canceladaPor;
+    // numero da montagem da consignacao (a mais recente nao cancelada); nulo se nao tiver
+    private Long montagemId;
     // true quando existe um Acerto de Consignação confirmado pra essa
     // consignação — "Finalizado" na listagem; caso contrário "Em aberto"
     private Boolean acertoFinalizado;
