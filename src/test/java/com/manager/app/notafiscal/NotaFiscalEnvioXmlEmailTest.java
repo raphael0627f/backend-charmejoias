@@ -186,7 +186,7 @@ class NotaFiscalEnvioXmlEmailTest {
         assertThat(tipos).contains("multipart/alternative", "text/plain", "text/html", "application/zip");
         String html = parteDe(m, "text/html");
         String texto = parteDe(m, "text/plain");
-        assertThat(html).contains("1 nota(s) fiscal(is) em anexo").contains("NF 100").contains("nfe-xmls-").contains("Linha 1<br>Linha 2");
+        assertThat(html).contains("1 nota fiscal em anexo").contains("NF 100").contains("nfe-xmls-").contains("Linha 1<br>Linha 2");
         assertThat(texto).contains("Linha 1\nLinha 2").contains("NF 100");
         assertThat(resposta.getEnviadas()).containsExactly(100L);
         assertThat(resposta.getDestinatarios()).containsExactly("cliente@dominio.com.br", "copia@dominio.com.br");
@@ -205,6 +205,15 @@ class NotaFiscalEnvioXmlEmailTest {
         captor.getValue().saveChanges();
         String html = parteDe(captor.getValue(), "text/html");
         assertThat(html).doesNotContain("<script>alert").doesNotContain("<b>você</b>").contains("&lt;script&gt;alert(1)&lt;/script&gt;Olá &lt;b&gt;você&lt;/b&gt;");
+    }
+
+    @Test
+    void concordanciaETamanhoLegiveis() {
+        assertThat(NotaFiscalEmailXmlService.tituloResumo(1)).isEqualTo("1 nota fiscal em anexo");
+        assertThat(NotaFiscalEmailXmlService.tituloResumo(3)).isEqualTo("3 notas fiscais em anexo");
+        assertThat(NotaFiscalEmailXmlService.tamanho(249)).isEqualTo("249 bytes");
+        assertThat(NotaFiscalEmailXmlService.tamanho(12698)).isEqualTo("12,4 KB");
+        assertThat(NotaFiscalEmailXmlService.tamanho(3355443)).isEqualTo("3,2 MB");
     }
 
     private void tipos(jakarta.mail.Part parte, List<String> tipos) throws Exception {

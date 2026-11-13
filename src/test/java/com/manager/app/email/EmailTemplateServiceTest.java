@@ -47,7 +47,7 @@ class EmailTemplateServiceTest {
     }
 
     EmailTemplateService.Modelo modelo(String mensagem, EmailTemplateService.EmpresaEmail empresa) {
-        return new EmailTemplateService.Modelo("Envio de XMLs", mensagem, "2 nota(s) fiscal(is) em anexo",
+        return new EmailTemplateService.Modelo("Envio de XMLs", mensagem, "2 notas fiscais em anexo",
                 List.of(new EmailTemplateService.Linha("Notas fiscais", "NF 300, NF 301"),
                         new EmailTemplateService.Linha("Arquivo", "nfe-xmls-20261113-0300.zip (4,1 KB)")), empresa);
     }
@@ -154,7 +154,7 @@ class EmailTemplateServiceTest {
     void textoSimplesTemTituloMensagemResumoERodape() {
         EmailTemplateService.Conteudo c = service("./nao-existe/logo.png").montar(modelo("Linha 1\nLinha 2", empresaCompleta()));
         assertThat(c.texto()).startsWith("Envio de XMLs\n\nLinha 1\nLinha 2")
-                .contains("2 nota(s) fiscal(is) em anexo").contains("- Notas fiscais: NF 300, NF 301")
+                .contains("2 notas fiscais em anexo").contains("- Notas fiscais: NF 300, NF 301")
                 .contains("Charme Comércio de Jóias LTDA").contains(EmailTemplateService.FRASE_AUTOMATICA);
     }
 
@@ -211,7 +211,7 @@ class EmailTemplateServiceTest {
         EmailTemplateService s = service(caminho);
         EmailTemplateService.Modelo m = new EmailTemplateService.Modelo("Notas fiscais de outubro",
                 "Prezados,\n\nSegue em anexo o arquivo com os XMLs das notas fiscais emitidas em outubro, conforme combinado.\nQualquer dúvida, estamos à disposição: https://exemplo.com.br/contato.\n\nAtenciosamente,\nEquipe Fiscal",
-                "2 nota(s) fiscal(is) em anexo",
+                "2 notas fiscais em anexo",
                 List.of(new EmailTemplateService.Linha("Notas fiscais", "NF 300, NF 301"),
                         new EmailTemplateService.Linha("Arquivo", "nfe-xmls-20261113-0300.zip (4,1 KB)")), empresaCompleta());
         EmailTemplateService.Conteudo c = s.montar(m);
