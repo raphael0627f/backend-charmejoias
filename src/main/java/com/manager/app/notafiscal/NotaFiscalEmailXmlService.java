@@ -1,7 +1,8 @@
 package com.manager.app.notafiscal;
 
+import com.manager.app.email.ConfiguracaoEmailService;
+import com.manager.app.email.EmailErros;
 import com.manager.app.email.EmailFalhaEnvioException;
-import com.manager.app.email.EmailNaoConfiguradoException;
 import com.manager.app.notafiscal.dto.EnviarXmlEmailRequestDTO;
 import com.manager.app.notafiscal.dto.EnviarXmlEmailResponseDTO;
 import com.manager.app.security.UsuarioAuditorAware;
@@ -10,7 +11,6 @@ import com.manager.app.usuario.Usuario;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
@@ -36,32 +36,24 @@ public class NotaFiscalEmailXmlService {
     private static final Pattern EMAIL = Pattern.compile("^[A-Za-z0-9._%+'-]+@[A-Za-z0-9-]+([.][A-Za-z0-9-]+)*[.][A-Za-z]{2,}$");
 
     private final NotaFiscalXmlZipService zipService;
-    private final ObjectProvider<JavaMailSender> mailSender;
+    private final ConfiguracaoEmailService configuracaoEmail;
     private final UsuarioAuditorAware usuarioAuditorAware;
-    private final String remetenteConfigurado;
-    private final String usuarioSmtp;
     private final int maxNotas;
 
     public NotaFiscalEmailXmlService(NotaFiscalXmlZipService zipService,
-                                     ObjectProvider<JavaMailSender> mailSender,
+                                     ConfiguracaoEmailService configuracaoEmail,
                                      UsuarioAuditorAware usuarioAuditorAware,
-                                     @Value("${app.mail.from:}") String remetenteConfigurado,
-                                     @Value("${app.mail.username:}") String usuarioSmtp,
                                      @Value("${app.mail.max-notas:200}") int maxNotas) {
         this.zipService = zipService;
-        this.mailSender = mailSender;
+        this.configuracaoEmail = configuracaoEmail;
         this.usuarioAuditorAware = usuarioAuditorAware;
-        this.remetenteConfigurado = remetenteConfigurado;
-        this.usuarioSmtp = usuarioSmtp;
         this.maxNotas = maxNotas;
     }
 
     public EnviarXmlEmailResponseDTO enviar(EnviarXmlEmailRequestDTO request){
-        JavaMailSender sender = mailSender.getIfAvailable();
-        String remetente = remetente();
-        if (sender == null || remetente == null) {
-            throw new EmailNaoConfiguradoException();
-        }
+        // configuracao salva no banco (ou, sem ela, as variaveis MAIL_*); sem nenhuma, 503
+        ConfiguracaoEmailService.EnvioEmail envio = configuracaoEmail.resolverParaEnvio();
+        JavaMailSender sender = envio.sender();
 
         List<Long> notaIds = new ArrayList<>(new LinkedHashSet<>(request.getNotaIds()));
         if (notaIds.size() > maxNotas) {
@@ -87,7 +79,7 @@ public class NotaFiscalEmailXmlService {
         try {
             MimeMessage mensagem = sender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensagem, true, "UTF-8");
-            helper.setFrom(remetente);
+            ConfiguracaoEmailService.definirRemetente(helper, envio.config());
             helper.setTo(para.toArray(new String[0]));
             if (!cc.isEmpty()) {
                 helper.setCc(cc.toArray(new String[0]));
@@ -100,11 +92,11 @@ public class NotaFiscalEmailXmlService {
             helper.setText(request.getCorpo(), false);
             helper.addAttachment(nomeZip, new ByteArrayResource(xmlZip.conteudo()), "application/zip");
             sender.send(mensagem);
-        } catch (MessagingException | MailException e) {
+        } catch (MessagingException | MailException | java.io.UnsupportedEncodingException e) {
             // so a classe e a mensagem tecnica no log (o JavaMail nao inclui a senha); a resposta ao usuario nao detalha o servidor
             log.error("Falha ao enviar e-mail com XMLs de notas fiscais: usuario={}, notas={}, erro={}: {}",
                     nomeUsuario(usuario), xmlZip.incluidas(), e.getClass().getSimpleName(), e.getMessage());
-            throw new EmailFalhaEnvioException("Não foi possível enviar o e-mail. Verifique a configuração do servidor de e-mail ou tente novamente mais tarde.", e);
+            throw new EmailFalhaEnvioException("Não foi possível enviar o e-mail: " + EmailErros.descrever(e) + " Verifique a configuração do e-mail em Sistema ou tente novamente mais tarde.", e);
         }
 
         List<String> destinatarios = new ArrayList<>(para);
@@ -112,12 +104,6 @@ public class NotaFiscalEmailXmlService {
         log.info("E-mail com XMLs de notas fiscais enviado: usuario={}, para={}, cc={}, notas={}, ignoradasSemXml={}, zipBytes={}",
                 nomeUsuario(usuario), para, cc, xmlZip.incluidas(), xmlZip.ignoradasSemXml(), xmlZip.conteudo().length);
         return new EnviarXmlEmailResponseDTO(xmlZip.incluidas(), xmlZip.ignoradasSemXml(), xmlZip.conteudo().length, destinatarios);
-    }
-
-    private String remetente(){
-        if (remetenteConfigurado != null && !remetenteConfigurado.isBlank()) return remetenteConfigurado.trim();
-        if (usuarioSmtp != null && !usuarioSmtp.isBlank()) return usuarioSmtp.trim();
-        return null;
     }
 
     private String nomeUsuario(Usuario usuario){

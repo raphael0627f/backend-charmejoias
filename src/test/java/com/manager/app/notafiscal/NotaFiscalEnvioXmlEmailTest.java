@@ -1,5 +1,7 @@
 package com.manager.app.notafiscal;
 
+import com.manager.app.email.ConfiguracaoEmailService;
+import com.manager.app.email.EmailConfigEfetiva;
 import com.manager.app.email.EmailFalhaEnvioException;
 import com.manager.app.email.EmailNaoConfiguradoException;
 import com.manager.app.notafiscal.dto.EnviarXmlEmailRequestDTO;
@@ -15,7 +17,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -47,8 +48,7 @@ class NotaFiscalEnvioXmlEmailTest {
     NotaFiscalXmlZipService zipService;
     JavaMailSender sender = mock(JavaMailSender.class);
     UsuarioAuditorAware auditor = mock(UsuarioAuditorAware.class);
-    @SuppressWarnings("unchecked")
-    ObjectProvider<JavaMailSender> provider = mock(ObjectProvider.class);
+    ConfiguracaoEmailService configuracao = mock(ConfiguracaoEmailService.class);
     NotaFiscalEmailXmlService service;
 
     @BeforeEach
@@ -62,13 +62,14 @@ class NotaFiscalEnvioXmlEmailTest {
             ((Iterable<Long>) i.getArgument(0)).forEach(ids::add);
             return notas.stream().filter(n -> ids.contains(n.getId())).toList();
         });
-        when(provider.getIfAvailable()).thenReturn(sender);
+        when(configuracao.resolverParaEnvio()).thenReturn(new ConfiguracaoEmailService.EnvioEmail(sender,
+                new EmailConfigEfetiva("smtp.local", 25, null, null, "nfe@empresa.com.br", "Fiscal Empresa", false, false, 1000)));
         when(sender.createMimeMessage()).thenReturn(new MimeMessage(Session.getInstance(new Properties())));
         Usuario u = new Usuario();
         u.setUsuario("admin");
         u.setEmail("admin@empresa.com.br");
         when(auditor.getCurrentAuditor()).thenReturn(Optional.of(u));
-        service = new NotaFiscalEmailXmlService(zipService, provider, auditor, "nfe@empresa.com.br", "", 200);
+        service = new NotaFiscalEmailXmlService(zipService, configuracao, auditor, 200);
     }
 
     private NotaFiscal nota(Long id, Long numero, StatusNotaFiscal status) {
@@ -166,7 +167,8 @@ class NotaFiscalEnvioXmlEmailTest {
         verify(sender).send(captor.capture());
         MimeMessage m = captor.getValue();
         m.saveChanges();
-        assertThat(m.getFrom()[0].toString()).isEqualTo("nfe@empresa.com.br");
+        assertThat(((jakarta.mail.internet.InternetAddress) m.getFrom()[0]).getAddress()).isEqualTo("nfe@empresa.com.br");
+        assertThat(((jakarta.mail.internet.InternetAddress) m.getFrom()[0]).getPersonal()).isEqualTo("Fiscal Empresa");
         assertThat(m.getReplyTo()[0].toString()).isEqualTo("admin@empresa.com.br");
         assertThat(m.getSubject()).isEqualTo("XMLs das notas");
         assertThat(m.getContent()).isInstanceOf(MimeMultipart.class);
@@ -177,9 +179,9 @@ class NotaFiscalEnvioXmlEmailTest {
 
     @Test
     void semConfiguracaoDoServidorResponde503Claro() {
-        when(provider.getIfAvailable()).thenReturn(null);
+        when(configuracao.resolverParaEnvio()).thenThrow(new EmailNaoConfiguradoException());
         assertThatThrownBy(() -> service.enviar(request(1L))).isInstanceOf(EmailNaoConfiguradoException.class)
-                .hasMessageContaining("Envio de e-mail não configurado");
+                .hasMessageContaining("Envio de e-mail não configurado").hasMessageContaining("em Sistema");
     }
 
     @Test
