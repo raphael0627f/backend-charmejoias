@@ -196,7 +196,7 @@ public class EmailTemplateService {
                     .append(";border:1px solid ").append(BORDA).append(";border-left:4px solid ").append(DOURADO).append(";\">\n");
             if (naoVazio(m.resumoTitulo())) {
                 h.append("<tr><td colspan=\"2\" style=\"padding:14px 16px 6px 16px;").append(FONTE).append("color:").append(DOURADO_ESCURO)
-                        .append(";font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;\">").append(escapar(m.resumoTitulo())).append("</td></tr>\n");
+                        .append(";font-size:13px;font-weight:bold;\">").append(escapar(m.resumoTitulo())).append("</td></tr>\n");
             }
             for (Linha linha : m.resumo()) {
                 h.append("<tr><td valign=\"top\" width=\"32%\" style=\"padding:6px 8px 6px 16px;").append(FONTE).append("color:").append(SECUNDARIO)

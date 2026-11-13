@@ -114,13 +114,17 @@ public class NotaFiscalEmailXmlService {
     // quadro de resumo: N nota(s) fiscal(is) em anexo, numeros, nome e tamanho do zip (e as que ficaram de fora por falta de XML)
     private EmailTemplateService.Modelo modeloEmail(EnviarXmlEmailRequestDTO request, String assunto, NotaFiscalXmlZipService.XmlZip zip, String nomeZip){
         List<EmailTemplateService.Linha> linhas = new ArrayList<>();
-        linhas.add(new EmailTemplateService.Linha("Notas fiscais", numeros(zip.incluidas())));
+        linhas.add(new EmailTemplateService.Linha(zip.incluidas().size() == 1 ? "Nota fiscal" : "Notas fiscais", numeros(zip.incluidas())));
         linhas.add(new EmailTemplateService.Linha("Arquivo", nomeZip + " (" + tamanho(zip.conteudo().length) + ")"));
         if (!zip.ignoradasSemXml().isEmpty()) {
             linhas.add(new EmailTemplateService.Linha("Sem XML disponível", numeros(zip.ignoradasSemXml()) + " (não incluídas)"));
         }
-        return new EmailTemplateService.Modelo(assunto, request.getCorpo(), zip.incluidas().size() + " nota(s) fiscal(is) em anexo",
+        return new EmailTemplateService.Modelo(assunto, request.getCorpo(), tituloResumo(zip.incluidas().size()),
                 linhas, templateService.empresaPorId(zip.empresaId()));
+    }
+
+    static String tituloResumo(int n){
+        return n == 1 ? "1 nota fiscal em anexo" : n + " notas fiscais em anexo";
     }
 
     private static String numeros(List<Long> numeros){
