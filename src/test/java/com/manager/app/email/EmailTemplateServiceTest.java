@@ -208,16 +208,7 @@ class EmailTemplateServiceTest {
     @Test
     @EnabledIfEnvironmentVariable(named = "EMAIL_PREVIEW_PATH", matches = ".+")
     void gerarPreview() throws Exception {
-        // logo de demonstracao: recorte do cabecalho de relatorio existente (so o logotipo, sem telefone/titulo)
-        Path logo = pasta.resolve("logo.png");
-        File origem = new File("../relatorio/cabecalhoCharme.png");
-        String caminho = "./nao-existe/logo.png";
-        if (origem.exists()) {
-            BufferedImage img = ImageIO.read(origem);
-            ImageIO.write(img.getSubimage(0, 0, Math.min(255, img.getWidth()), Math.min(272, img.getHeight())), "png", logo.toFile());
-            caminho = logo.toString();
-        }
-        EmailTemplateService s = service(caminho);
+        EmailTemplateService s = service(""); // logo padrao do classpath
         EmailTemplateService.Modelo m = new EmailTemplateService.Modelo("Notas fiscais de outubro",
                 "Prezados,\n\nSegue em anexo o arquivo com os XMLs das notas fiscais emitidas em outubro, conforme combinado.\nQualquer dúvida, estamos à disposição: https://exemplo.com.br/contato.\n\nAtenciosamente,\nEquipe Fiscal",
                 "2 notas fiscais em anexo",
