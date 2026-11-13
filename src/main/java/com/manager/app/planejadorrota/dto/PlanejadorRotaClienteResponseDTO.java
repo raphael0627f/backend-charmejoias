@@ -21,6 +21,7 @@ import java.util.List;
         "observacao",
         "consignacoesDeixar",
         "consignacoesTrazer",
+        "pedidosDeixar",
         "valorAPagar"
 })
 public class PlanejadorRotaClienteResponseDTO {
@@ -31,5 +32,6 @@ public class PlanejadorRotaClienteResponseDTO {
     private String observacao;
     private List<PlanejadorRotaConsignacaoResumoDTO> consignacoesDeixar;
     private List<PlanejadorRotaConsignacaoResumoDTO> consignacoesTrazer;
+    private List<PlanejadorRotaPedidoResumoDTO> pedidosDeixar;
     private BigDecimal valorAPagar;
 }

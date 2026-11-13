@@ -34,4 +34,8 @@ public class PlanejadorRotaClienteRequestDTO {
 
     @Valid
     private List<PlanejadorRotaConsignacaoItemRequestDTO> consignacoesTrazer;
+
+    // opcional: pedidos SEPARADO do cliente a deixar na visita (podem coexistir com consignacoesDeixar)
+    @Valid
+    private List<PlanejadorRotaPedidoItemRequestDTO> pedidosDeixar;
 }
