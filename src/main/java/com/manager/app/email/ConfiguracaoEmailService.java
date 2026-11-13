@@ -224,6 +224,10 @@ public class ConfiguracaoEmailService {
         if (starttls && Boolean.TRUE.equals(r.getSsl())) {
             throw new ItemInvalidoException("As opções STARTTLS e SSL não podem ser utilizadas ao mesmo tempo. Escolha apenas uma.");
         }
+        // senha sem usuario nao tem como ser usada (sem usuario o SMTP e sem autenticacao): recusa em vez de descartar em silencio
+        if (r.getSenha() != null && !r.getSenha().isBlank() && (r.getUsuario() == null || r.getUsuario().isBlank())) {
+            throw new ItemInvalidoException("Informe o usuário para armazenar a senha.");
+        }
         if (obrigatorios) {
             if (r.getHost() == null || r.getHost().isBlank()) {
                 throw new ItemInvalidoException("O campo Servidor SMTP é obrigatório.");

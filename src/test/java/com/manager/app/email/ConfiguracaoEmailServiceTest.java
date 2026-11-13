@@ -106,6 +106,22 @@ class ConfiguracaoEmailServiceTest {
     }
 
     @Test
+    void senhaPreenchidaSemUsuarioDa400ComMensagemFormalNoSalvarENoTestar() {
+        ConfiguracaoEmailService s = service("");
+        ConfiguracaoEmailRequestDTO r = request();
+        r.setUsuario("");
+        assertThatThrownBy(() -> s.salvar(r)).isInstanceOf(ItemInvalidoException.class).hasMessage("Informe o usuário para armazenar a senha.");
+        r.setUsuario(null);
+        assertThatThrownBy(() -> s.salvar(r)).isInstanceOf(ItemInvalidoException.class).hasMessage("Informe o usuário para armazenar a senha.");
+        assertThat(banco).isNull();
+
+        ConfiguracaoEmailTesteRequestDTO t = new ConfiguracaoEmailTesteRequestDTO();
+        t.setPara("ok@exemplo.com");
+        t.setConfiguracao(r);
+        assertThatThrownBy(() -> s.testar(t)).isInstanceOf(ItemInvalidoException.class).hasMessage("Informe o usuário para armazenar a senha.");
+    }
+
+    @Test
     void semUsuarioNaoGuardaSenha() {
         ConfiguracaoEmailService s = service("");
         s.salvar(request());
