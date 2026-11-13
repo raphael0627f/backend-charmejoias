@@ -1,6 +1,8 @@
 package com.manager.app.shared.exception.handler;
 
 import com.manager.app.backup.BackupException;
+import com.manager.app.email.EmailFalhaEnvioException;
+import com.manager.app.email.EmailNaoConfiguradoException;
 import com.manager.app.notafiscal.DanfeApiException;
 import com.manager.app.notafiscal.client.ContoraApiException;
 import com.manager.app.spc.client.SpcApiException;
@@ -106,6 +108,21 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(DanfeApiException.class)
     private ResponseEntity<RestErrorMenssage> danfeApiError(DanfeApiException exception, WebRequest request){
+        HttpStatus status = HttpStatus.BAD_GATEWAY;
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
+        return ResponseEntity.status(status).body(response);
+    }
+
+    // e-mail: sem configuracao do servidor SMTP (503) ou falha do servidor (502); mensagens ja sem credenciais
+    @ExceptionHandler(EmailNaoConfiguradoException.class)
+    private ResponseEntity<RestErrorMenssage> emailNaoConfigurado(EmailNaoConfiguradoException exception, WebRequest request){
+        HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
+        return ResponseEntity.status(status).body(response);
+    }
+
+    @ExceptionHandler(EmailFalhaEnvioException.class)
+    private ResponseEntity<RestErrorMenssage> emailFalhaEnvio(EmailFalhaEnvioException exception, WebRequest request){
         HttpStatus status = HttpStatus.BAD_GATEWAY;
         RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
         return ResponseEntity.status(status).body(response);
