@@ -1,6 +1,8 @@
 # Notas fiscais — envio dos XMLs por e-mail (contrato para o frontend)
 
-Sem migration. Nova dependência: `spring-boot-starter-mail`.
+Sem migration neste recurso. Nova dependência: `spring-boot-starter-mail`.
+
+**A conta de e-mail (SMTP) agora é configurada pelo administrador na tela de Sistema** (`docs/configuracao-email-integracao-frontend.md`, salva no banco). As variáveis `MAIL_*` abaixo passaram a ser apenas **fallback**: valem somente quando não existe nenhuma configuração salva no banco.
 
 ## Endpoint
 
@@ -31,7 +33,7 @@ Resposta 200:
 
 ## Conteúdo do e-mail
 
-- Remetente: a conta SMTP fixa da empresa. **Reply-To**: o e-mail do usuário logado (se ele tiver e-mail cadastrado).
+- Remetente: a conta SMTP fixa da empresa (nome de exibição opcional, configurado na tela de Sistema). **Reply-To**: o e-mail do usuário logado (se ele tiver e-mail cadastrado).
 - Anexo `nfe-xmls-<yyyyMMdd-HHmm>.zip`, uma pasta por nota:
   - `NF-<número>/<chave>-nfe.xml` (autorizado);
   - `NF-<número>/cancelamento.xml` (nota cancelada);
@@ -51,12 +53,15 @@ Resposta 200:
 | Nenhuma nota com XML | 400 | `Nenhuma das notas fiscais selecionadas possui XML disponível para envio.` |
 | Zip acima de 20 MB | 400 | `O arquivo zip com os XMLs excede o tamanho máximo de 20 MB. Divida o envio em partes, selecionando menos notas.` |
 | Nota inexistente | 404 | `Nota fiscal não encontrada.` |
-| Servidor de e-mail não configurado | 503 | `Envio de e-mail não configurado. Informe ao administrador do sistema.` |
-| Falha do servidor SMTP (conexão, autenticação, recusa) | 502 | `Não foi possível enviar o e-mail. Verifique a configuração do servidor de e-mail ou tente novamente mais tarde.` |
+| Servidor de e-mail não configurado (nada ativo no banco e sem `MAIL_*`) | 503 | `Envio de e-mail não configurado. Solicite ao administrador que configure o e-mail em Sistema.` |
+| Senha salva ilegível (chave de criptografia trocada) | 503 | `Não foi possível ler a senha salva. Informe a senha novamente na configuração de e-mail.` |
+| Falha do servidor SMTP (conexão, autenticação, recusa) | 502 | `Não foi possível enviar o e-mail: <motivo em português, ex.: falha de autenticação: usuário ou senha incorretos…> Verifique a configuração do e-mail em Sistema ou tente novamente mais tarde.` |
 
 O envio é síncrono (timeout de 30 s no SMTP). O log registra quem enviou, para quem e quais notas (nunca a senha).
 
-## Configuração (variáveis de ambiente)
+## Variáveis de ambiente (FALLBACK)
+
+Usadas só se não houver configuração salva no banco (compatibilidade e testes). Uma configuração salva mas **inativa** desativa o envio, sem cair nas variáveis.
 
 | Variável | Padrão | Descrição |
 |---|---|---|
@@ -80,4 +85,4 @@ O envio é síncrono (timeout de 30 s no SMTP). O log registra quem enviou, para
    `MAIL_FROM=conta@gmail.com`, `MAIL_STARTTLS=true`.
 4. Reinicie a aplicação. O Gmail limita o anexo a 25 MB; o limite do sistema é 20 MB.
 
-No desenvolvimento local use o `application-dev.properties` (fora do git) ou as variáveis acima; sem elas o envio responde 503.
+Preferencialmente configure tudo pela tela de Sistema (Gmail: servidor `smtp.gmail.com`, porta 587, STARTTLS, senha de app). No desenvolvimento local também é possível usar as variáveis acima; sem nenhuma configuração o envio responde 503.
