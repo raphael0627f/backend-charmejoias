@@ -44,9 +44,10 @@ esquemas permanecem texto. A pontuação final colada ao link fica fora dele.
 - Empresa: `Empresa` (razão social, nome fantasia, CNPJ, telefone, endereço). No envio de XML usa-se a empresa da (primeira) nota
   incluída; no e-mail de teste, a primeira empresa cadastrada. **O cadastro não tem e-mail nem site** (por isso não aparecem no
   rodapé) **nem logotipo**.
-- Logotipo: arquivo configurado por `MAIL_LOGO_PATH` (padrão `./storage/email/logo.png`, pasta fora do git). Formatos PNG, JPG ou
-  GIF (SVG não funciona em e-mail), até 512 KB, de preferência quadrado ou pouco largo (exibido em 56 px de altura, sobre um
-  quadro branco). Se o arquivo não existir, o e-mail sai com o nome da empresa em texto.
+- Logotipo: por padrão `src/main/resources/images/email-logo.png` (classpath, vai dentro do jar), versão leve (216x240, ~50 KB) da
+  logo oficial Charme Jóias (`images/logo_charme.png`, a mesma do relatório de pedido, que permanece intacta). `MAIL_LOGO_PATH`
+  é um override opcional (arquivo PNG, JPG ou GIF até 512 KB; SVG não funciona em e-mail), exibido em 56 px de altura sobre
+  um quadro branco. Se a imagem não puder ser lida, o e-mail sai com o nome da empresa em texto.
 
 ## Como acrescentar um novo e-mail
 

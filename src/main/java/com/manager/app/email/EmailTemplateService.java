@@ -46,6 +46,7 @@ public class EmailTemplateService {
     static final String FONTE = "font-family:Arial,Helvetica,sans-serif;";
 
     private static final Pattern URL = Pattern.compile("https?://[^\\s<>\"]+");
+    static final String LOGO_CLASSPATH = "/images/email-logo.png";
     private static final long LOGO_TAMANHO_MAXIMO = 512 * 1024;
 
     public record EmpresaEmail(String nome, String razaoSocial, String cnpj, String telefone, String endereco) {}
@@ -62,7 +63,7 @@ public class EmailTemplateService {
     private final String caminhoLogo;
 
     public EmailTemplateService(EmpresaRepository empresaRepository,
-                                @Value("${app.mail.logo-path:./storage/email/logo.png}") String caminhoLogo) {
+                                @Value("${app.mail.logo-path:}") String caminhoLogo) {
         this.empresaRepository = empresaRepository;
         this.caminhoLogo = caminhoLogo;
     }
@@ -113,7 +114,7 @@ public class EmailTemplateService {
 
     public Conteudo montar(Modelo modelo){
         byte[] logo = lerLogo();
-        String logoTipo = logo != null ? tipoDaImagem(caminhoLogo) : null;
+        String logoTipo = logo == null ? null : (caminhoLogo == null || caminhoLogo.isBlank() ? "image/png" : tipoDaImagem(caminhoLogo));
         return new Conteudo(html(modelo, logo != null), texto(modelo), logo, logoTipo);
     }
 
@@ -127,6 +128,15 @@ public class EmailTemplateService {
     }
 
     private byte[] lerLogo(){
+        if (caminhoLogo == null || caminhoLogo.isBlank()) {
+            // padrao: logo leve (240 px) dentro do jar
+            try (java.io.InputStream in = EmailTemplateService.class.getResourceAsStream(LOGO_CLASSPATH)) {
+                return in != null ? in.readAllBytes() : null;
+            } catch (IOException e) {
+                log.warn("Logotipo padrão do e-mail não pôde ser lido: {}", e.getClass().getSimpleName());
+                return null;
+            }
+        }
         try {
             Path arquivo = Path.of(caminhoLogo);
             if (!Files.isRegularFile(arquivo) || tipoDaImagem(caminhoLogo) == null) return null;
@@ -172,7 +182,7 @@ public class EmailTemplateService {
             h.append("<td width=\"72\" valign=\"middle\" style=\"padding-right:16px;\"><table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr>")
                     .append("<td style=\"background-color:#FFFFFF;border-radius:6px;padding:4px;\">")
                     .append("<img src=\"cid:").append(CID_LOGO).append("\" alt=\"Logotipo de ").append(escapar(empresa.nome()))
-                    .append("\" width=\"56\" height=\"56\" style=\"display:block;width:56px;height:56px;border:0;object-fit:contain;\"></td></tr></table></td>\n");
+                    .append("\" width=\"50\" height=\"56\" style=\"display:block;width:50px;height:56px;border:0;object-fit:contain;\"></td></tr></table></td>\n");
         }
         h.append("<td valign=\"middle\" style=\"").append(FONTE).append("color:").append(DOURADO).append(";font-size:20px;font-weight:bold;line-height:26px;\">")
                 .append(escapar(empresa.nome())).append("</td>\n</tr></table>\n</td></tr>\n");

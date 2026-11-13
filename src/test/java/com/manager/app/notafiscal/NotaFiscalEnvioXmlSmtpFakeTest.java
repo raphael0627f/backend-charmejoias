@@ -53,7 +53,7 @@ class NotaFiscalEnvioXmlSmtpFakeTest {
 
         EmpresaRepository empresaRepository = mock(EmpresaRepository.class);
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
-        EmailTemplateService template = new EmailTemplateService(empresaRepository, "./storage/email/logo.png");
+        EmailTemplateService template = new EmailTemplateService(empresaRepository, "");
 
         EmailConfigEfetiva config = new EmailConfigEfetiva(alvo[0], Integer.parseInt(alvo[1]), null, null, "nfe@empresa.teste", "Fiscal Charme Jóias", false, false, 10000);
         ConfiguracaoEmailService configuracao = mock(ConfiguracaoEmailService.class);

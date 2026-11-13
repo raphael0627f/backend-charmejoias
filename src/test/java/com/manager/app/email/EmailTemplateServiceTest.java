@@ -123,6 +123,15 @@ class EmailTemplateServiceTest {
     }
 
     @Test
+    void logoPadraoVemDoClasspathQuandoNaoHaOverride() {
+        EmailTemplateService.Conteudo c = service("").montar(modelo("oi", empresaCompleta()));
+        assertThat(c.logo()).isNotEmpty();
+        assertThat(c.logo().length).isLessThan(512 * 1024);
+        assertThat(c.logoTipo()).isEqualTo("image/png");
+        assertThat(c.html()).contains("src=\"cid:logo\"");
+    }
+
+    @Test
     void logoDeFormatoNaoSuportadoOuInexistenteEIgnorado() throws Exception {
         Path svg = pasta.resolve("logo.svg");
         Files.writeString(svg, "<svg/>");
