@@ -7,6 +7,8 @@ import com.manager.app.consignacao.ConsignacaoRepository;
 import com.manager.app.endereco.Endereco;
 import com.manager.app.endereco.EnderecoRepository;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaClienteRequestDTO;
+import com.manager.app.planejadorrota.dto.PlanejadorRotaClienteResponseDTO;
+import com.manager.app.planejadorrota.dto.PlanejadorRotaResponseDTO;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaConsignacaoItemRequestDTO;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaRequestDTO;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaResumoDTO;
@@ -28,6 +30,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -41,6 +44,8 @@ public class PlanejadorRotaService {
     private final PlanejadorRotaValidation validation;
     private final UsuarioResumoMapper usuarioResumoMapper;
     private final UsuarioAuditorAware usuarioAuditorAware;
+    private final PlanejadorRotaMapper mapper;
+    private final PlanejadorRotaDetalhes detalhes;
 
     public Page<PlanejadorRota> findAll(String busca, ModoBusca modoBusca, LocalDate dataInicio, LocalDate dataFim, Pageable pageable){
         Specification<PlanejadorRota> spec = comBusca(busca, modoBusca);
@@ -75,6 +80,17 @@ public class PlanejadorRotaService {
     private Specification<PlanejadorRota> comBusca(String busca, ModoBusca modoBusca){
         if (busca == null || busca.isBlank()) return null;
         return (root, query, cb) -> SpecificationUtils.likeIgnoreCase(cb, root.get("nome"), busca, modoBusca);
+    }
+
+    // resposta completa da rota: o mapper monta a estrutura e aqui entram os dados buscados em lote (montagem das consignacoes)
+    public PlanejadorRotaResponseDTO toResponseDTO(PlanejadorRota rota){
+        PlanejadorRotaResponseDTO dto = mapper.toResponseDTO(rota);
+        Map<Long, Long> montagens = detalhes.montagemPorConsignacao(rota);
+        for (PlanejadorRotaClienteResponseDTO item : dto.getItens()) {
+            item.getConsignacoesDeixar().forEach(c -> c.setMontagemId(montagens.get(c.getId())));
+            item.getConsignacoesTrazer().forEach(c -> c.setMontagemId(montagens.get(c.getId())));
+        }
+        return dto;
     }
 
     public PlanejadorRota findById(Long id){

@@ -26,7 +26,6 @@ import java.time.LocalDate;
 public class PlanejadorRotaController {
 
     private final PlanejadorRotaService service;
-    private final PlanejadorRotaMapper mapper;
     private final PlanejadorRotaXlsxService xlsxService;
 
     @GetMapping
@@ -41,7 +40,7 @@ public class PlanejadorRotaController {
 
     @GetMapping(value = "/{id}")
     public ResponseEntity<PlanejadorRotaResponseDTO> findById(@PathVariable Long id){
-        return ResponseEntity.ok(mapper.toResponseDTO(service.findById(id)));
+        return ResponseEntity.ok(service.toResponseDTO(service.findById(id)));
     }
 
     @PostMapping
@@ -49,14 +48,14 @@ public class PlanejadorRotaController {
     public ResponseEntity<PlanejadorRotaResponseDTO> create(@RequestBody @Valid PlanejadorRotaRequestDTO request){
         PlanejadorRota rota = service.create(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(rota.getId()).toUri();
-        return ResponseEntity.created(location).body(mapper.toResponseDTO(rota));
+        return ResponseEntity.created(location).body(service.toResponseDTO(rota));
     }
 
     @PutMapping
     @PreAuthorize("hasAuthority('PLANEJADOR_ROTA_GERENCIAR')")
     public ResponseEntity<PlanejadorRotaResponseDTO> update(@RequestBody @Valid PlanejadorRotaRequestDTO request){
         PlanejadorRota rota = service.update(request);
-        return ResponseEntity.ok(mapper.toResponseDTO(rota));
+        return ResponseEntity.ok(service.toResponseDTO(rota));
     }
 
     @DeleteMapping(value = "/{id}")

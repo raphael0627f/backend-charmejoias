@@ -27,13 +27,13 @@ public interface PlanejadorRotaMapper {
         if (entity == null) return null;
         Consignacao consignacao = entity.getConsignacao();
         return new PlanejadorRotaConsignacaoResumoDTO(consignacao.getId(), consignacao.getDescricao(), consignacao.getQuantidadeTotal(), consignacao.getValorTotal(), entity.getConfirmada(),
-                consignacao.getMostruario() != null ? consignacao.getMostruario().getDescricao() : null);
+                consignacao.getMostruario() != null ? consignacao.getMostruario().getDescricao() : null, null);
     }
 
     default PlanejadorRotaConsignacaoResumoDTO toConsignacaoResumoDTO(PlanejadorRotaConsignacaoTrazer entity){
         if (entity == null) return null;
         Consignacao consignacao = entity.getConsignacao();
         return new PlanejadorRotaConsignacaoResumoDTO(consignacao.getId(), consignacao.getDescricao(), consignacao.getQuantidadeTotal(), consignacao.getValorTotal(), entity.getConfirmada(),
-                consignacao.getMostruario() != null ? consignacao.getMostruario().getDescricao() : null);
+                consignacao.getMostruario() != null ? consignacao.getMostruario().getDescricao() : null, null);
     }
 }
