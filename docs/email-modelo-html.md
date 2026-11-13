@@ -6,8 +6,8 @@ O modelo é o serviço `com.manager.app.email.EmailTemplateService`.
 
 ## Estrutura do e-mail
 
-- **Cabeçalho:** faixa fina dourada + faixa escura (`#1F1F23`) com o **logotipo** (inline por CID, `src="cid:logo"`) e o nome da
-  empresa em dourado. Sem logotipo, só o nome da empresa em texto.
+- **Cabeçalho:** faixa fina dourada + faixa escura (`#1F1F23`) só com o **logotipo** centralizado (inline por CID, `src="cid:logo"`),
+  direto sobre o escuro, 140 px de altura e 24 px de respiro vertical. Sem logotipo, o nome da empresa em texto dourado, centralizado.
 - **Corpo:** título (o assunto), a mensagem do usuário em parágrafos (linha em branco = novo parágrafo; quebra simples = `<br>`),
   e um **quadro de resumo** (título + linhas rótulo/valor).
   - **Envio de XML:** "N nota(s) fiscal(is) em anexo", números (`NF 300, NF 301`), nome e tamanho do zip; notas sem XML aparecem
@@ -44,10 +44,9 @@ esquemas permanecem texto. A pontuação final colada ao link fica fora dele.
 - Empresa: `Empresa` (razão social, nome fantasia, CNPJ, telefone, endereço). No envio de XML usa-se a empresa da (primeira) nota
   incluída; no e-mail de teste, a primeira empresa cadastrada. **O cadastro não tem e-mail nem site** (por isso não aparecem no
   rodapé) **nem logotipo**.
-- Logotipo: por padrão `src/main/resources/images/email-logo.png` (classpath, vai dentro do jar), versão leve (216x240, ~50 KB) da
+- Logotipo: por padrão `src/main/resources/images/email-logo.png` (classpath, vai dentro do jar), versão leve em 2x (252x280, ~65 KB, exibida a 126x140) da
   logo oficial Charme Jóias (`images/logo_charme.png`, a mesma do relatório de pedido, que permanece intacta). `MAIL_LOGO_PATH`
-  é um override opcional (arquivo PNG, JPG ou GIF até 512 KB; SVG não funciona em e-mail), exibido em 56 px de altura sobre
-  um quadro branco. Se a imagem não puder ser lida, o e-mail sai com o nome da empresa em texto.
+  é um override opcional (arquivo PNG, JPG ou GIF até 512 KB; SVG não funciona em e-mail), exibido em 140 px de altura. Se a imagem não puder ser lida, o e-mail sai com o nome da empresa em texto.
 
 ## Como acrescentar um novo e-mail
 

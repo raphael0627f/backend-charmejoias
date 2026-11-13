@@ -106,7 +106,7 @@ class EmailTemplateServiceTest {
     void semLogoUsaONomeDaEmpresaEmTextoESemCid() {
         EmailTemplateService.Conteudo c = service("./nao-existe/logo.png").montar(modelo("oi", empresaCompleta()));
         assertThat(c.logo()).isNull();
-        assertThat(c.html()).doesNotContain("cid:").contains(">Charme Jóias</td>");
+        assertThat(c.html()).doesNotContain("cid:").contains(">Charme Jóias</span>");
     }
 
     @Test
@@ -116,7 +116,7 @@ class EmailTemplateServiceTest {
         EmailTemplateService.Conteudo c = service(png.toString()).montar(modelo("oi", empresaCompleta()));
         assertThat(c.logo()).isNotEmpty();
         assertThat(c.logoTipo()).isEqualTo("image/png");
-        assertThat(c.html()).contains("src=\"cid:logo\"").contains("alt=\"Logotipo de Charme Jóias\"")
+        assertThat(c.html()).contains("src=\"cid:logo\"").contains("alt=\"Logotipo de Charme Jóias\"").contains("height=\"140\"").doesNotContain(">Charme Jóias</")
                 .contains("lang=\"pt-BR\"").contains("name=\"viewport\"").contains("charset=\"UTF-8\"")
                 .contains("#1F1F23").contains("#D4AF37").contains("#F4F4F5").contains("max-width:600px")
                 .doesNotContain("<script").doesNotContain("<link").doesNotContain("http://").doesNotContain("src=\"http");

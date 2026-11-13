@@ -176,16 +176,19 @@ public class EmailTemplateService {
 
         // cabecalho: faixa dourada fina + faixa escura com logotipo (ou nome) e nome da empresa
         h.append("<tr><td style=\"background-color:").append(DOURADO).append(";height:4px;line-height:4px;font-size:0;border-radius:6px 6px 0 0;\">&nbsp;</td></tr>\n");
-        h.append("<tr><td style=\"background-color:").append(CABECALHO).append(";padding:18px 24px;\">\n")
-                .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr>\n");
+        h.append("<tr><td align=\"center\" style=\"background-color:").append(CABECALHO).append(";padding:24px;\">
+");
         if (comLogo) {
-            h.append("<td width=\"72\" valign=\"middle\" style=\"padding-right:16px;\"><table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tr>")
-                    .append("<td style=\"background-color:#FFFFFF;border-radius:6px;padding:4px;\">")
-                    .append("<img src=\"cid:").append(CID_LOGO).append("\" alt=\"Logotipo de ").append(escapar(empresa.nome()))
-                    .append("\" width=\"50\" height=\"56\" style=\"display:block;width:50px;height:56px;border:0;object-fit:contain;\"></td></tr></table></td>\n");
+            // so a logo, centralizada, direto sobre o escuro (imagem 2x para telas retina, exibida a 126x140)
+            h.append("<img src=\"cid:").append(CID_LOGO).append("\" alt=\"Logotipo de ").append(escapar(empresa.nome()))
+                    .append("\" width=\"126\" height=\"140\" style=\"display:block;margin:0 auto;width:126px;height:140px;border:0;\">");
+        } else {
+            h.append("<span style=\"").append(FONTE).append("color:").append(DOURADO).append(";font-size:22px;font-weight:bold;line-height:30px;\">")
+                    .append(escapar(empresa.nome())).append("</span>");
         }
-        h.append("<td valign=\"middle\" style=\"").append(FONTE).append("color:").append(DOURADO).append(";font-size:20px;font-weight:bold;line-height:26px;\">")
-                .append(escapar(empresa.nome())).append("</td>\n</tr></table>\n</td></tr>\n");
+        h.append("
+</td></tr>
+");
 
         // corpo: titulo, mensagem, resumo
         h.append("<tr><td style=\"background-color:#FFFFFF;border-left:1px solid ").append(BORDA).append(";border-right:1px solid ").append(BORDA)
