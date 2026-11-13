@@ -14,6 +14,7 @@ import com.manager.app.pedido.Pedido;
 import com.manager.app.pedido.PedidoRepository;
 import com.manager.app.pedido.StatusPedido;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaPedidoItemRequestDTO;
+import com.manager.app.planejadorrota.dto.PlanejadorRotaPedidoResumoDTO;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaRequestDTO;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaResumoDTO;
 import com.manager.app.shared.ModoBusca;
@@ -100,6 +101,22 @@ public class PlanejadorRotaService {
         }
         detalhes.preencherTotais(dto.getItens().stream().flatMap(i -> i.getPedidosDeixar().stream()).toList());
         return dto;
+    }
+
+    // pedidos SEPARADO do cliente que podem ser escolhidos para deixar na visita (sem "confirmada")
+    public List<PlanejadorRotaPedidoResumoDTO> pedidosParaDeixar(UUID clienteId){
+        resolverCliente(clienteId);
+        List<PlanejadorRotaPedidoResumoDTO> pedidos = pedidoRepository.findByCliente_IdAndStatusOrderById(clienteId, StatusPedido.SEPARADO).stream()
+                .map(pedido -> {
+                    PlanejadorRotaPedidoResumoDTO dto = new PlanejadorRotaPedidoResumoDTO();
+                    dto.setId(pedido.getId());
+                    dto.setStatus(pedido.getStatus());
+                    dto.setObservacao(pedido.getObservacao());
+                    dto.setDataEntrega(pedido.getDataEntrega());
+                    return dto;
+                }).toList();
+        detalhes.preencherTotais(pedidos);
+        return pedidos;
     }
 
     public PlanejadorRota findById(Long id){

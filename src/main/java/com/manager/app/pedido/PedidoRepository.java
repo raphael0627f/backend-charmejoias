@@ -17,6 +17,9 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long>, JpaSpecif
     @Query("select p from Pedido p where p.id = :id")
     Optional<Pedido> findByIdForUpdate(Long id);
 
+    // pedidos do cliente em um status (planejador de rotas: pedidos SEPARADO que podem ser deixados)
+    List<Pedido> findByCliente_IdAndStatusOrderById(UUID clienteId, StatusPedido status);
+
     // pedidos do cliente para uma data de entrega, exceto os de um status (usado ao vincular automaticamente à montagem)
     List<Pedido> findByCliente_IdAndDataEntregaAndStatusNot(UUID clienteId, LocalDate dataEntrega, StatusPedido status);
 }

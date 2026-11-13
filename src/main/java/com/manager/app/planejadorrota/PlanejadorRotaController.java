@@ -1,5 +1,6 @@
 package com.manager.app.planejadorrota;
 
+import com.manager.app.planejadorrota.dto.PlanejadorRotaPedidoResumoDTO;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaRequestDTO;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaResponseDTO;
 import com.manager.app.planejadorrota.dto.PlanejadorRotaResumoDTO;
@@ -17,6 +18,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -36,6 +39,12 @@ public class PlanejadorRotaController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataFim,
             @PageableDefault(size = 20, sort = "id") Pageable pageable){
         return ResponseEntity.ok(service.findAllResumo(busca, modoBusca, dataInicio, dataFim, pageable));
+    }
+
+    // pedidos SEPARADO do cliente que podem ser escolhidos para deixar na visita (GET /pedidos nao filtra por cliente pelo id)
+    @GetMapping(value = "/clientes/{clienteId}/pedidos-para-deixar")
+    public ResponseEntity<List<PlanejadorRotaPedidoResumoDTO>> pedidosParaDeixar(@PathVariable UUID clienteId){
+        return ResponseEntity.ok(service.pedidosParaDeixar(clienteId));
     }
 
     @GetMapping(value = "/{id}")
