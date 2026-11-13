@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class PlanejadorRotaXlsxServiceTest {
 
-    private final PlanejadorRotaXlsxService service = new PlanejadorRotaXlsxService();
+    private final PlanejadorRotaXlsxService service = new PlanejadorRotaXlsxService(org.mockito.Mockito.mock(PlanejadorRotaDetalhes.class));
 
     private Endereco endereco(Long id, String descricao, String logradouro) {
         Endereco e = new Endereco();
@@ -63,7 +63,7 @@ class PlanejadorRotaXlsxServiceTest {
         assertThat(cab.getCell(14).getStringCellValue()).isEqualTo("Referência");
         assertThat(cab.getCell(12).getStringCellValue()).isEqualTo("Notas");
         assertThat(cab.getCell(9).getStringCellValue()).isEqualTo("Endereço");
-        assertThat(cab.getLastCellNum()).isEqualTo((short) 17);
+        assertThat(cab.getLastCellNum()).isEqualTo((short) 19);
     }
 
     @Test
