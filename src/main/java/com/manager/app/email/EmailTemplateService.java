@@ -184,7 +184,7 @@ public class EmailTemplateService {
                 .append(titulo).append("</h1>\n");
         if (naoVazio(m.mensagem())) {
             for (String paragrafo : paragrafos(m.mensagem())) {
-                h.append("<p style=\"margin:0 0 14px 0;").append(FONTE).append("color:").append(TEXTO).append(";font-size:15px;line-height:24px;\">")
+                h.append("<p style=\"margin:0 0 14px 0;").append(FONTE).append("color:").append(TEXTO).append(";font-size:15px;line-height:24px;word-break:break-word;overflow-wrap:anywhere;\">")
                         .append(comLinks(escapar(paragrafo)).replace("\n", "<br>")).append("</p>\n");
             }
         }
@@ -202,7 +202,7 @@ public class EmailTemplateService {
                 h.append("<tr><td valign=\"top\" width=\"32%\" style=\"padding:6px 8px 6px 16px;").append(FONTE).append("color:").append(SECUNDARIO)
                         .append(";font-size:13px;line-height:20px;\">").append(escapar(linha.rotulo())).append("</td>")
                         .append("<td valign=\"top\" style=\"padding:6px 16px 6px 0;").append(FONTE).append("color:").append(TEXTO)
-                        .append(";font-size:14px;line-height:20px;\">").append(escapar(linha.valor()).replace("\n", "<br>")).append("</td></tr>\n");
+                        .append(";font-size:14px;line-height:20px;word-break:break-word;overflow-wrap:anywhere;\">").append(escapar(linha.valor()).replace("\n", "<br>")).append("</td></tr>\n");
             }
             h.append("<tr><td colspan=\"2\" style=\"height:8px;font-size:0;line-height:8px;\">&nbsp;</td></tr>\n</table>\n</td></tr>\n");
         } else {
