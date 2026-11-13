@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 import java.util.regex.Pattern;
 
 // configuracao do SMTP de envio feita pelo usuario (banco, senha criptografada) + resolucao do que usar em cada envio:
@@ -38,12 +39,14 @@ public class ConfiguracaoEmailService {
     private final SegredoCriptografiaService criptografia;
     private final UsuarioAuditorAware usuarioAuditorAware;
     private final UsuarioResumoMapper usuarioResumoMapper;
+    private final EmailTemplateService templateService;
     private final EmailConfigEfetiva ambiente;
 
     public ConfiguracaoEmailService(ConfiguracaoEmailRepository repository,
                                     SegredoCriptografiaService criptografia,
                                     UsuarioAuditorAware usuarioAuditorAware,
                                     UsuarioResumoMapper usuarioResumoMapper,
+                                    EmailTemplateService templateService,
                                     @Value("${app.mail.host:}") String host,
                                     @Value("${app.mail.port:587}") int porta,
                                     @Value("${app.mail.username:}") String usuario,
@@ -56,6 +59,7 @@ public class ConfiguracaoEmailService {
         this.criptografia = criptografia;
         this.usuarioAuditorAware = usuarioAuditorAware;
         this.usuarioResumoMapper = usuarioResumoMapper;
+        this.templateService = templateService;
         String from = remetente != null && !remetente.isBlank() ? remetente.trim() : usuario;
         this.ambiente = host != null && !host.isBlank() && from != null && !from.isBlank()
                 ? new EmailConfigEfetiva(host.trim(), porta, usuario, senha, from.trim(), null, starttls, ssl, timeoutMs)
@@ -179,17 +183,31 @@ public class ConfiguracaoEmailService {
         JavaMailSender sender = paraTeste.criarSender();
         try {
             MimeMessage mensagem = sender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mensagem, false, "UTF-8");
+            MimeMessageHelper helper = new MimeMessageHelper(mensagem, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
             definirRemetente(helper, paraTeste);
             helper.setTo(para);
             helper.setSubject("Teste de configuração de e-mail");
-            helper.setText("Este é um e-mail de teste enviado pelo sistema para confirmar a configuração do envio de e-mails.\n\nNenhuma ação é necessária.", false);
+            templateService.aplicar(helper, templateService.montar(modeloTeste(paraTeste)));
             sender.send(mensagem);
         } catch (MessagingException | MailException | UnsupportedEncodingException e) {
             log.warn("Falha no e-mail de teste: host={}, porta={}, erro={}", paraTeste.host(), paraTeste.porta(), e.getClass().getSimpleName());
             throw new EmailFalhaEnvioException("Não foi possível enviar o e-mail de teste: " + EmailErros.descrever(e), e);
         }
         return new ConfiguracaoEmailTesteResponseDTO(true, "E-mail de teste enviado para " + para + ".");
+    }
+
+    // e-mail de teste: explica que e uma mensagem de teste e mostra servidor/porta/seguranca (nunca a senha)
+    private EmailTemplateService.Modelo modeloTeste(EmailConfigEfetiva c){
+        String seguranca = c.ssl() ? "SSL" : (c.starttls() ? "STARTTLS" : "Sem criptografia");
+        String remetente = c.nomeRemetente() != null && !c.nomeRemetente().isBlank() ? c.nomeRemetente() + " <" + c.remetente() + ">" : c.remetente();
+        List<EmailTemplateService.Linha> linhas = List.of(
+                new EmailTemplateService.Linha("Servidor", c.host() + ":" + c.porta()),
+                new EmailTemplateService.Linha("Segurança", seguranca),
+                new EmailTemplateService.Linha("Autenticação", c.usuario() != null && !c.usuario().isBlank() ? "Com usuário e senha" : "Sem autenticação"),
+                new EmailTemplateService.Linha("Remetente", remetente));
+        return new EmailTemplateService.Modelo("Teste de configuração de e-mail",
+                "Esta é uma mensagem de teste da configuração de e-mail do sistema. Se você a recebeu, o servidor informado está funcionando corretamente para o envio de mensagens.\n\nNenhuma ação é necessária.",
+                "Configuração utilizada", linhas, templateService.empresaPadrao());
     }
 
     public static void definirRemetente(MimeMessageHelper helper, EmailConfigEfetiva config) throws MessagingException, UnsupportedEncodingException {

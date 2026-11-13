@@ -3,6 +3,7 @@ package com.manager.app.notafiscal;
 import com.manager.app.email.ConfiguracaoEmailService;
 import com.manager.app.email.EmailErros;
 import com.manager.app.email.EmailFalhaEnvioException;
+import com.manager.app.email.EmailTemplateService;
 import com.manager.app.notafiscal.dto.EnviarXmlEmailRequestDTO;
 import com.manager.app.notafiscal.dto.EnviarXmlEmailResponseDTO;
 import com.manager.app.security.UsuarioAuditorAware;
@@ -37,15 +38,18 @@ public class NotaFiscalEmailXmlService {
 
     private final NotaFiscalXmlZipService zipService;
     private final ConfiguracaoEmailService configuracaoEmail;
+    private final EmailTemplateService templateService;
     private final UsuarioAuditorAware usuarioAuditorAware;
     private final int maxNotas;
 
     public NotaFiscalEmailXmlService(NotaFiscalXmlZipService zipService,
                                      ConfiguracaoEmailService configuracaoEmail,
+                                     EmailTemplateService templateService,
                                      UsuarioAuditorAware usuarioAuditorAware,
                                      @Value("${app.mail.max-notas:200}") int maxNotas) {
         this.zipService = zipService;
         this.configuracaoEmail = configuracaoEmail;
+        this.templateService = templateService;
         this.usuarioAuditorAware = usuarioAuditorAware;
         this.maxNotas = maxNotas;
     }
@@ -76,9 +80,10 @@ public class NotaFiscalEmailXmlService {
 
         String nomeZip = "nfe-xmls-" + LocalDateTime.now().format(FORMATO_NOME) + ".zip";
         Usuario usuario = usuarioAuditorAware.getCurrentAuditor().orElse(null);
+        EmailTemplateService.Conteudo conteudo = templateService.montar(modeloEmail(request, assunto, xmlZip, nomeZip));
         try {
             MimeMessage mensagem = sender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mensagem, true, "UTF-8");
+            MimeMessageHelper helper = new MimeMessageHelper(mensagem, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
             ConfiguracaoEmailService.definirRemetente(helper, envio.config());
             helper.setTo(para.toArray(new String[0]));
             if (!cc.isEmpty()) {
@@ -88,8 +93,8 @@ public class NotaFiscalEmailXmlService {
                 helper.setReplyTo(usuario.getEmail().trim());
             }
             helper.setSubject(assunto);
-            // texto simples: as quebras de linha do corpo seguem como foram digitadas
-            helper.setText(request.getCorpo(), false);
+            // HTML padronizado + texto simples (multipart/alternative); a mensagem do usuario e escapada no modelo
+            templateService.aplicar(helper, conteudo);
             helper.addAttachment(nomeZip, new ByteArrayResource(xmlZip.conteudo()), "application/zip");
             sender.send(mensagem);
         } catch (MessagingException | MailException | java.io.UnsupportedEncodingException e) {
@@ -104,6 +109,28 @@ public class NotaFiscalEmailXmlService {
         log.info("E-mail com XMLs de notas fiscais enviado: usuario={}, para={}, cc={}, notas={}, ignoradasSemXml={}, zipBytes={}",
                 nomeUsuario(usuario), para, cc, xmlZip.incluidas(), xmlZip.ignoradasSemXml(), xmlZip.conteudo().length);
         return new EnviarXmlEmailResponseDTO(xmlZip.incluidas(), xmlZip.ignoradasSemXml(), xmlZip.conteudo().length, destinatarios);
+    }
+
+    // quadro de resumo: N nota(s) fiscal(is) em anexo, numeros, nome e tamanho do zip (e as que ficaram de fora por falta de XML)
+    private EmailTemplateService.Modelo modeloEmail(EnviarXmlEmailRequestDTO request, String assunto, NotaFiscalXmlZipService.XmlZip zip, String nomeZip){
+        List<EmailTemplateService.Linha> linhas = new ArrayList<>();
+        linhas.add(new EmailTemplateService.Linha("Notas fiscais", numeros(zip.incluidas())));
+        linhas.add(new EmailTemplateService.Linha("Arquivo", nomeZip + " (" + tamanho(zip.conteudo().length) + ")"));
+        if (!zip.ignoradasSemXml().isEmpty()) {
+            linhas.add(new EmailTemplateService.Linha("Sem XML disponível", numeros(zip.ignoradasSemXml()) + " (não incluídas)"));
+        }
+        return new EmailTemplateService.Modelo(assunto, request.getCorpo(), zip.incluidas().size() + " nota(s) fiscal(is) em anexo",
+                linhas, templateService.empresaPorId(zip.empresaId()));
+    }
+
+    private static String numeros(List<Long> numeros){
+        return numeros.stream().map(n -> "NF " + n).collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    static String tamanho(long bytes){
+        if (bytes < 1024) return bytes + " bytes";
+        if (bytes < 1024 * 1024) return String.format(java.util.Locale.forLanguageTag("pt-BR"), "%.1f KB", bytes / 1024.0);
+        return String.format(java.util.Locale.forLanguageTag("pt-BR"), "%.1f MB", bytes / (1024.0 * 1024.0));
     }
 
     private String nomeUsuario(Usuario usuario){

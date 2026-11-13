@@ -40,8 +40,16 @@ class ConfiguracaoEmailServiceTest {
     }
 
     private ConfiguracaoEmailService service(String hostAmbiente) {
-        return new ConfiguracaoEmailService(repository, criptografia, auditor, resumoMapper,
+        return new ConfiguracaoEmailService(repository, criptografia, auditor, resumoMapper, new EmailTemplateService(modeloEmpresaRepo(), "./nao-existe/logo.png"),
                 hostAmbiente, 587, "user-env", "senha-env", "env@empresa.com.br", true, false, 30000);
+    }
+
+
+    private static com.manager.app.empresa.EmpresaRepository modeloEmpresaRepo() {
+        com.manager.app.empresa.EmpresaRepository r = mock(com.manager.app.empresa.EmpresaRepository.class);
+        when(r.findAll(any(org.springframework.data.domain.Pageable.class))).thenReturn(new org.springframework.data.domain.PageImpl<>(java.util.List.of()));
+        when(r.findById(any())).thenReturn(java.util.Optional.empty());
+        return r;
     }
 
     private ConfiguracaoEmailRequestDTO request() {
@@ -200,7 +208,7 @@ class ConfiguracaoEmailServiceTest {
         ConfiguracaoEmailService s = service("");
         s.salvar(request());
         SegredoCriptografiaService outra = new SegredoCriptografiaService("outro-segredo-completamente-diferente-123", "");
-        ConfiguracaoEmailService comOutraChave = new ConfiguracaoEmailService(repository, outra, auditor, resumoMapper,
+        ConfiguracaoEmailService comOutraChave = new ConfiguracaoEmailService(repository, outra, auditor, resumoMapper, new EmailTemplateService(modeloEmpresaRepo(), "./nao-existe/logo.png"),
                 "", 587, "", "", "", true, false, 30000);
         assertThatThrownBy(comOutraChave::resolverParaEnvio).isInstanceOf(EmailNaoConfiguradoException.class)
                 .hasMessageContaining("Informe a senha novamente");

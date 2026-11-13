@@ -32,7 +32,8 @@ public class NotaFiscalXmlZipService {
     @Value("${app.mail.max-zip-bytes:20971520}")
     private long maxZipBytes;
 
-    public record XmlZip(byte[] conteudo, List<Long> incluidas, List<Long> ignoradasSemXml) {}
+    // empresaId: empresa da primeira nota incluida (dados do rodape do e-mail); nulo se nenhuma
+    public record XmlZip(byte[] conteudo, List<Long> incluidas, List<Long> ignoradasSemXml, Long empresaId) {}
 
     @Transactional(readOnly = true)
     public XmlZip montar(List<Long> notaIds){
@@ -51,6 +52,7 @@ public class NotaFiscalXmlZipService {
         List<Long> incluidas = new ArrayList<>();
         List<Long> ignoradas = new ArrayList<>();
         Set<String> pastas = new HashSet<>();
+        Long empresaId = null;
 
         try (ZipOutputStream zip = new ZipOutputStream(saida)) {
             for (NotaFiscal nota : notas) {
@@ -84,6 +86,9 @@ public class NotaFiscalXmlZipService {
 
                 if (algum) {
                     incluidas.add(nota.getNumero());
+                    if (empresaId == null && nota.getEmpresa() != null) {
+                        empresaId = nota.getEmpresa().getId();
+                    }
                 } else {
                     ignoradas.add(nota.getNumero());
                 }
@@ -99,7 +104,7 @@ public class NotaFiscalXmlZipService {
         if (saida.size() > maxZipBytes) {
             throw excedeLimite();
         }
-        return new XmlZip(saida.toByteArray(), incluidas, ignoradas);
+        return new XmlZip(saida.toByteArray(), incluidas, ignoradas, empresaId);
     }
 
     private ItemInvalidoException excedeLimite(){

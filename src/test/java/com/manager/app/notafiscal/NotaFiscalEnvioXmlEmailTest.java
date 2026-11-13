@@ -3,6 +3,7 @@ package com.manager.app.notafiscal;
 import com.manager.app.email.ConfiguracaoEmailService;
 import com.manager.app.email.EmailConfigEfetiva;
 import com.manager.app.email.EmailFalhaEnvioException;
+import com.manager.app.email.EmailTemplateService;
 import com.manager.app.email.EmailNaoConfiguradoException;
 import com.manager.app.notafiscal.dto.EnviarXmlEmailRequestDTO;
 import com.manager.app.notafiscal.dto.EnviarXmlEmailResponseDTO;
@@ -69,7 +70,15 @@ class NotaFiscalEnvioXmlEmailTest {
         u.setUsuario("admin");
         u.setEmail("admin@empresa.com.br");
         when(auditor.getCurrentAuditor()).thenReturn(Optional.of(u));
-        service = new NotaFiscalEmailXmlService(zipService, configuracao, auditor, 200);
+        service = new NotaFiscalEmailXmlService(zipService, configuracao, new EmailTemplateService(modeloEmpresaRepo(), "./nao-existe/logo.png"), auditor, 200);
+    }
+
+
+    private static com.manager.app.empresa.EmpresaRepository modeloEmpresaRepo() {
+        com.manager.app.empresa.EmpresaRepository r = mock(com.manager.app.empresa.EmpresaRepository.class);
+        when(r.findAll(any(org.springframework.data.domain.Pageable.class))).thenReturn(new org.springframework.data.domain.PageImpl<>(java.util.List.of()));
+        when(r.findById(any())).thenReturn(java.util.Optional.empty());
+        return r;
     }
 
     private NotaFiscal nota(Long id, Long numero, StatusNotaFiscal status) {
@@ -172,9 +181,48 @@ class NotaFiscalEnvioXmlEmailTest {
         assertThat(m.getReplyTo()[0].toString()).isEqualTo("admin@empresa.com.br");
         assertThat(m.getSubject()).isEqualTo("XMLs das notas");
         assertThat(m.getContent()).isInstanceOf(MimeMultipart.class);
+        List<String> tipos = new ArrayList<>();
+        tipos(m, tipos);
+        assertThat(tipos).contains("multipart/alternative", "text/plain", "text/html", "application/zip");
+        String html = parteDe(m, "text/html");
+        String texto = parteDe(m, "text/plain");
+        assertThat(html).contains("1 nota(s) fiscal(is) em anexo").contains("NF 100").contains("nfe-xmls-").contains("Linha 1<br>Linha 2");
+        assertThat(texto).contains("Linha 1\nLinha 2").contains("NF 100");
         assertThat(resposta.getEnviadas()).containsExactly(100L);
         assertThat(resposta.getDestinatarios()).containsExactly("cliente@dominio.com.br", "copia@dominio.com.br");
         assertThat(resposta.getTamanhoZipBytes()).isPositive();
+    }
+
+    @Test
+    void corpoComHtmlEScriptDoUsuarioNaoChegaCruNoEmail() throws Exception {
+        NotaFiscal n = nota(1L, 100L, StatusNotaFiscal.AUTORIZADA);
+        storage.salvar(n, "<nfe/>".getBytes(StandardCharsets.UTF_8));
+        EnviarXmlEmailRequestDTO r = request(1L);
+        r.setCorpo("<script>alert(1)</script>Olá <b>você</b>");
+        service.enviar(r);
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(sender).send(captor.capture());
+        captor.getValue().saveChanges();
+        String html = parteDe(captor.getValue(), "text/html");
+        assertThat(html).doesNotContain("<script>alert").doesNotContain("<b>você</b>").contains("&lt;script&gt;alert(1)&lt;/script&gt;Olá &lt;b&gt;você&lt;/b&gt;");
+    }
+
+    private void tipos(jakarta.mail.Part parte, List<String> tipos) throws Exception {
+        tipos.add(parte.getContentType().toLowerCase().split(";")[0].trim());
+        if (parte.getContent() instanceof jakarta.mail.Multipart mp) {
+            for (int i = 0; i < mp.getCount(); i++) tipos(mp.getBodyPart(i), tipos);
+        }
+    }
+
+    private String parteDe(jakarta.mail.Part parte, String tipo) throws Exception {
+        if (parte.getContentType().toLowerCase().startsWith(tipo) && parte.getContent() instanceof String s) return s;
+        if (parte.getContent() instanceof jakarta.mail.Multipart mp) {
+            for (int i = 0; i < mp.getCount(); i++) {
+                String achado = parteDe(mp.getBodyPart(i), tipo);
+                if (achado != null) return achado;
+            }
+        }
+        return null;
     }
 
     @Test
