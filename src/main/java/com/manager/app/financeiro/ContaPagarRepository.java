@@ -25,6 +25,20 @@ public interface ContaPagarRepository extends JpaRepository<ContaPagar, Long>, J
 
     boolean existsByCategoriaId(Long categoriaId);
 
+    List<ContaPagar> findByRecorrenciaIdOrderByOcorrenciaDataAscIdAsc(Long recorrenciaId);
+
+    @Query("select c.ocorrenciaData from ContaPagar c where c.recorrenciaId = :id")
+    List<java.time.LocalDate> ocorrencias(@Param("id") Long recorrenciaId);
+
+    @Query("select c.id from ContaPagar c where c.recorrenciaId = :id order by c.id")
+    List<Long> idsDaRecorrencia(@Param("id") Long recorrenciaId);
+
+    List<ContaPagar> findTop6ByRecorrenciaIdAndSituacaoNotAndVencimentoGreaterThanEqualOrderByVencimentoAscIdAsc(Long recorrenciaId, SituacaoContaPagar situacao, java.time.LocalDate vencimento);
+
+    long countByRecorrenciaId(Long recorrenciaId);
+
+    long countByRecorrenciaIdAndOcorrenciaDataLessThanEqual(Long recorrenciaId, java.time.LocalDate data);
+
     // bloqueio pessimista da linha (SELECT ... FOR UPDATE): serializa baixa, estorno, edição e cancelamento do mesmo título
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from ContaPagar c where c.id = :id")

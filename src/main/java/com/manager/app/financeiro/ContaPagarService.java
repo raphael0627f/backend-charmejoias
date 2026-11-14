@@ -53,6 +53,8 @@ public class ContaPagarService {
     private final ContaPagarRepository repository;
     private final ContaPagarEventoRepository eventoRepository;
     private final ContaPagarBaixaRepository baixaRepository;
+    private final ContaPagarAnexoRepository anexoRepository;
+    private final ContaPagarRecorrenciaService recorrenciaService;
     private final MovimentacaoBancoRepository movimentacaoRepository;
     private final CategoriaDespesaRepository categoriaRepository;
     private final CentroCustoRepository centroCustoRepository;
@@ -64,7 +66,7 @@ public class ContaPagarService {
     @PersistenceContext
     private EntityManager em;
 
-    private record Base(String descricao, String favorecido, CategoriaDespesa categoria, CentroCusto centroCusto, FormaPagamento forma,
+    record Base(String descricao, String favorecido, CategoriaDespesa categoria, CentroCusto centroCusto, FormaPagamento forma,
                         BigDecimal valor, String documento, String observacao) {
     }
 
@@ -80,6 +82,9 @@ public class ContaPagarService {
         List<ContaPagar> titulos = new ArrayList<>();
         UUID grupo = null;
 
+        if (r.recorrencia() != null) {
+            return recorrenciaService.criar(base, r, hoje, emissao);
+        }
         if (r.parcelamento() == null) {
             if (r.vencimento() == null) throw new ItemInvalidoException("O vencimento é obrigatório.");
             String linha = LinhaDigitavel.normalizar(r.linhaDigitavel());
@@ -113,7 +118,7 @@ public class ContaPagarService {
             registrar(titulo, "CRIACAO", detalheCriacao(titulo), usuario);
             resposta.add(mapper.resumo(titulo, hoje));
         }
-        return new ContaPagarCriacaoResponseDTO(grupo, resposta);
+        return new ContaPagarCriacaoResponseDTO(grupo, null, resposta);
     }
 
     private ContaPagar novo(Base b, BigDecimal valor, String descricao, LocalDate emissao, String competenciaInformada, LocalDate vencimento,
@@ -178,7 +183,8 @@ public class ContaPagarService {
         Sort sort = Sort.by(desc ? Sort.Direction.DESC : Sort.Direction.ASC, campo);
         if (!campo.equals("numero")) sort = sort.and(Sort.by(Sort.Direction.ASC, "numero"));
         Page<ContaPagar> resultado = repository.findAll(spec, PageRequest.of(pagina, tamanho, sort));
-        List<ContaPagarResumoDTO> itens = resultado.getContent().stream().map(c -> mapper.resumo(c, hoje)).toList();
+        Map<Long, Integer> anexos = contagemAnexos(resultado.getContent().stream().map(ContaPagar::getId).toList());
+        List<ContaPagarResumoDTO> itens = resultado.getContent().stream().map(c -> mapper.resumo(c, hoje, anexos.getOrDefault(c.getId(), 0))).toList();
         return new ContaPagarListaResponseDTO(itens, pagina, tamanho, resultado.getTotalElements(), resultado.getTotalPages(),
                 new ContaPagarListaResponseDTO.Periodo(de, ate), totais(spec, hoje));
     }
@@ -226,7 +232,16 @@ public class ContaPagarService {
             movimentacaoRepository.findByBaixaIdIn(baixas.stream().map(ContaPagarBaixa::getId).toList()).stream()
                     .filter(m -> m.getOrigem() == OrigemMovimentacao.BAIXA_CONTA_PAGAR).forEach(m -> movimentacoes.put(m.getBaixaId(), m.getId()));
         }
-        return mapper.detalhe(c, LocalDate.now(), baixas, parcelas, eventoRepository.findByContaPagarIdOrderByIdAsc(c.getId()), movimentacoes);
+        List<Long> ids = new java.util.ArrayList<>(parcelas.stream().map(ContaPagar::getId).toList());
+        ids.add(c.getId());
+        return mapper.detalhe(c, LocalDate.now(), baixas, parcelas, eventoRepository.findByContaPagarIdOrderByIdAsc(c.getId()), movimentacoes,
+                contagemAnexos(ids), anexoRepository.findByContaPagarIdOrderByIdAsc(c.getId()), recorrenciaService.resumoDoTitulo(c));
+    }
+
+    private Map<Long, Integer> contagemAnexos(List<Long> ids) {
+        Map<Long, Integer> mapa = new java.util.HashMap<>();
+        if (!ids.isEmpty()) anexoRepository.contarPorTitulos(ids).forEach(l -> mapa.put((Long) l[0], ((Number) l[1]).intValue()));
+        return mapa;
     }
 
     @Transactional(readOnly = true)
@@ -386,7 +401,7 @@ public class ContaPagarService {
         return repository.findByIdForUpdate(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Título não encontrado."));
     }
 
-    private Base validarBase(ContaPagarRequestDTO r) {
+    Base validarBase(ContaPagarRequestDTO r) {
         String descricao = r.descricao() == null ? "" : r.descricao().trim();
         if (descricao.isEmpty()) throw new ItemInvalidoException("A descrição é obrigatória.");
         TextoUtils.validarTexto(descricao, "A descrição", 200);

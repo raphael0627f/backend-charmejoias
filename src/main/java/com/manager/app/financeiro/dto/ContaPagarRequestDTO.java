@@ -23,7 +23,13 @@ public record ContaPagarRequestDTO(
         Long formaPrevistaId,
         @Size(max = 80, message = "A linha digitável excede o tamanho máximo.") String linhaDigitavel,
         @Size(max = 1000, message = "A observação deve ter no máximo 1000 caracteres.") String observacao,
-        Parcelamento parcelamento) {
+        Parcelamento parcelamento,
+        Recorrencia recorrencia) {
+
+    // exclusivo com parcelamento; o vencimento informado é a primeira ocorrência
+    public record Recorrencia(com.manager.app.financeiro.PeriodicidadeRecorrencia periodicidade, LocalDate dataFim) {
+    }
+
 
     public record Parcelamento(Integer quantidade, LocalDate primeiroVencimento, IntervaloParcelamento intervalo,
                                List<LocalDate> datas, List<BigDecimal> valores) {

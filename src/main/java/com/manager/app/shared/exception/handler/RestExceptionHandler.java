@@ -92,6 +92,12 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(status).body(response);
     }
 
+    @ExceptionHandler(com.manager.app.shared.exception.ArquivoMuitoGrandeException.class)
+    private ResponseEntity<RestErrorMenssage> arquivoMuitoGrandeError(com.manager.app.shared.exception.ArquivoMuitoGrandeException exception, WebRequest request){
+        HttpStatus status = HttpStatus.PAYLOAD_TOO_LARGE;
+        return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, exception.getMessage(), request.getDescription(false)));
+    }
+
     @ExceptionHandler(ItemInvalidoException.class)
     private ResponseEntity<RestErrorMenssage> itemInvalido(ItemInvalidoException exception, WebRequest request){
         HttpStatus status = HttpStatus.BAD_REQUEST;
@@ -224,6 +230,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
             case 405 -> "Método não permitido para este recurso.";
             case 406, 415 -> "Formato de conteúdo não suportado.";
             case 404 -> "Recurso não encontrado.";
+            case 413 -> "O arquivo excede o tamanho máximo permitido de 5 MB.";
             case 400 -> "Requisição inválida.";
             default -> statusCode.is5xxServerError() ? "Erro interno. Tente novamente em instantes." : "Não foi possível processar a requisição.";
         };

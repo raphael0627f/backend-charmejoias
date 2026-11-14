@@ -1,6 +1,9 @@
 package com.manager.app.financeiro;
 
+import com.manager.app.financeiro.dto.AnexoDTO;
 import com.manager.app.financeiro.dto.BaixaDTOs;
+import com.manager.app.financeiro.dto.LoteLancamentoDTOs;
+import com.manager.app.financeiro.dto.RecorrenciaDTOs;
 import com.manager.app.financeiro.dto.ContaPagarAcoesDTO;
 import com.manager.app.financeiro.dto.EstornoRequestDTO;
 import com.manager.app.financeiro.dto.ContaPagarCriacaoResponseDTO;
@@ -10,12 +13,20 @@ import com.manager.app.financeiro.dto.ContaPagarRequestDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -31,6 +42,9 @@ public class ContaPagarController {
 
     private final ContaPagarService service;
     private final ContaPagarBaixaService baixaService;
+    private final ContaPagarRecorrenciaService recorrenciaService;
+    private final ContaPagarAnexoService anexoService;
+    private final ContaPagarLoteService loteService;
 
     @PostMapping
     @PreAuthorize(GERENCIA)
@@ -110,6 +124,65 @@ public class ContaPagarController {
     @PreAuthorize(BAIXA)
     public ResponseEntity<BaixaDTOs.ResultadoLote> baixarLote(@RequestBody(required = false) BaixaDTOs.Lote request) {
         return ResponseEntity.ok(baixaService.baixarLote(request));
+    }
+
+    @PostMapping("/lote")
+    @PreAuthorize(GERENCIA)
+    public ResponseEntity<LoteLancamentoDTOs.Resultado> lancarLote(@RequestBody(required = false) LoteLancamentoDTOs.Request request) {
+        return ResponseEntity.ok(loteService.lancar(request));
+    }
+
+    // ---- recorrência ----
+
+    @GetMapping("/recorrencias/{id}")
+    @PreAuthorize(CONSULTA)
+    public ResponseEntity<RecorrenciaDTOs.Regra> obterRecorrencia(@PathVariable Long id) {
+        return ResponseEntity.ok(recorrenciaService.obter(id));
+    }
+
+    @PutMapping("/recorrencias/{id}")
+    @PreAuthorize(GERENCIA)
+    public ResponseEntity<RecorrenciaDTOs.ResultadoReajuste> reajustarRecorrencia(@PathVariable Long id, @Valid @RequestBody RecorrenciaDTOs.Reajuste request) {
+        return ResponseEntity.ok(recorrenciaService.reajustar(id, request));
+    }
+
+    @PostMapping("/recorrencias/{id}/encerrar")
+    @PreAuthorize(GERENCIA)
+    public ResponseEntity<RecorrenciaDTOs.ResultadoEncerramento> encerrarRecorrencia(@PathVariable Long id, @RequestBody(required = false) RecorrenciaDTOs.Encerramento request) {
+        return ResponseEntity.ok(recorrenciaService.encerrar(id, request));
+    }
+
+    // ---- anexos ----
+
+    @PostMapping(value = "/{id}/anexos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize(GERENCIA)
+    public ResponseEntity<AnexoDTO> anexar(@PathVariable Long id, @RequestPart("arquivo") MultipartFile arquivo, @RequestParam("tipo") TipoAnexo tipo) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(anexoService.anexarAoTitulo(id, tipo, arquivo));
+    }
+
+    @PostMapping(value = "/baixas/{baixaId}/anexos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize(BAIXA)
+    public ResponseEntity<AnexoDTO> anexarComprovante(@PathVariable Long baixaId, @RequestPart("arquivo") MultipartFile arquivo) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(anexoService.anexarComprovante(baixaId, arquivo));
+    }
+
+    @GetMapping("/anexos/{id}")
+    @PreAuthorize(CONSULTA)
+    public ResponseEntity<byte[]> baixarAnexo(@PathVariable Long id) {
+        ContaPagarAnexoService.Download d = anexoService.baixar(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(d.tipoConteudo()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(d.nome(), StandardCharsets.UTF_8).build().toString())
+                .header("X-Content-Type-Options", "nosniff")
+                .header(HttpHeaders.CACHE_CONTROL, "private, no-store")
+                .body(d.conteudo());
+    }
+
+    @DeleteMapping("/anexos/{id}")
+    @PreAuthorize("hasAnyAuthority('CONTA_PAGAR_GERENCIAR', 'CONTA_PAGAR_BAIXAR')")
+    public ResponseEntity<Void> removerAnexo(@PathVariable Long id, Authentication authentication) {
+        anexoService.excluir(id, authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet()));
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/cancelar-lote")

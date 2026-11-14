@@ -14,6 +14,10 @@ public interface ContaPagarBaixaRepository extends JpaRepository<ContaPagarBaixa
 
     boolean existsByContaPagarIdAndEstornadaFalse(Long contaPagarId);
 
+    // títulos (entre os informados) que possuem baixa ativa
+    @Query("select distinct b.contaPagar.id from ContaPagarBaixa b where b.contaPagar.id in :ids and b.estornada = false")
+    List<Long> titulosComBaixaAtiva(@Param("ids") java.util.Collection<Long> ids);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select b from ContaPagarBaixa b where b.id = :id")
     Optional<ContaPagarBaixa> findByIdForUpdate(@Param("id") Long id);
