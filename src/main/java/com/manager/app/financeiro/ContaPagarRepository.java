@@ -1,7 +1,9 @@
 package com.manager.app.financeiro;
 
 import org.springframework.data.domain.Pageable;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,4 +24,9 @@ public interface ContaPagarRepository extends JpaRepository<ContaPagar, Long>, J
     List<Object[]> favorecidos(@Param("busca") String busca, Pageable pageable);
 
     boolean existsByCategoriaId(Long categoriaId);
+
+    // bloqueio pessimista da linha (SELECT ... FOR UPDATE): serializa baixa, estorno, edição e cancelamento do mesmo título
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from ContaPagar c where c.id = :id")
+    java.util.Optional<ContaPagar> findByIdForUpdate(@Param("id") Long id);
 }

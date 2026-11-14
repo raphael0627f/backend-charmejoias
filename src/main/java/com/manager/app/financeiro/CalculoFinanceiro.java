@@ -144,6 +144,9 @@ public final class CalculoFinanceiro {
 
     // só transferência e ajuste podem ser estornados (nesta fase), uma única vez
     public static void validarEstornavel(MovimentacaoBanco m) {
+        if (m.getOrigem() == OrigemMovimentacao.BAIXA_CONTA_PAGAR || m.getOrigem() == OrigemMovimentacao.ESTORNO_BAIXA) {
+            throw new ItemInvalidoException("Esta movimentação foi gerada por uma baixa de conta a pagar. Para estornar, utilize o estorno da baixa no título.");
+        }
         if (m.getOrigem() != OrigemMovimentacao.TRANSFERENCIA && m.getOrigem() != OrigemMovimentacao.AJUSTE) {
             throw new ItemInvalidoException("Somente transferências e ajustes podem ser estornados por esta operação.");
         }
@@ -167,7 +170,7 @@ public final class CalculoFinanceiro {
         return inversa;
     }
 
-    private static MovimentacaoBanco movimentacao(Banco banco, LocalDate data, TipoMovimentacao tipo, BigDecimal valor,
+    static MovimentacaoBanco movimentacao(Banco banco, LocalDate data, TipoMovimentacao tipo, BigDecimal valor,
                                                   OrigemMovimentacao origem, String descricao, Usuario usuario) {
         MovimentacaoBanco m = new MovimentacaoBanco();
         m.setBanco(banco);

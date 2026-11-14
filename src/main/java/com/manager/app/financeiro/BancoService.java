@@ -67,7 +67,7 @@ public class BancoService {
 
     @Transactional
     public BancoResponseDTO atualizar(Long id, BancoRequestDTO request) {
-        Banco banco = buscar(id);
+        Banco banco = buscarComLock(id);
         preencher(banco, request);
         if (repository.existsByNomeIgnoreCaseAndIdNot(banco.getNome(), id)) {
             throw new ObjetoExistenteException("Já existe um banco cadastrado com o nome \"" + banco.getNome() + "\".");
@@ -115,6 +115,11 @@ public class BancoService {
         }
         movimentacaoRepository.findFirstByBancoIdAndOrigem(id, OrigemMovimentacao.SALDO_INICIAL).ifPresent(movimentacaoRepository::delete);
         repository.delete(banco);
+    }
+
+    // bloqueia a linha do banco (SELECT ... FOR UPDATE) até o fim da transação
+    public Banco buscarComLock(Long id) {
+        return repository.findByIdForUpdate(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Banco não encontrado."));
     }
 
     public Banco buscar(Long id) {

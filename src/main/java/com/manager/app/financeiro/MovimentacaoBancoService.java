@@ -70,8 +70,18 @@ public class MovimentacaoBancoService {
 
     @Transactional
     public MovimentacaoResultadoDTO transferir(TransferenciaRequestDTO request) {
-        Banco origem = bancoService.buscar(request.bancoOrigemId());
-        Banco destino = bancoService.buscar(request.bancoDestinoId());
+        // bloqueio dos dois bancos em ordem crescente de id (evita impasse com outras operações)
+        Long idOrigem = request.bancoOrigemId();
+        Long idDestino = request.bancoDestinoId();
+        Banco origem;
+        Banco destino;
+        if (idOrigem != null && idDestino != null && idOrigem > idDestino) {
+            destino = bancoService.buscarComLock(idDestino);
+            origem = bancoService.buscarComLock(idOrigem);
+        } else {
+            origem = bancoService.buscarComLock(idOrigem);
+            destino = bancoService.buscarComLock(idDestino);
+        }
         CalculoFinanceiro.ResultadoTransferencia r = CalculoFinanceiro.criarTransferencia(origem, destino, request.valor(), request.data(),
                 request.descricao(), usuarioAtual(), LocalDate.now());
         transferenciaRepository.save(r.transferencia());
@@ -82,7 +92,7 @@ public class MovimentacaoBancoService {
 
     @Transactional
     public MovimentacaoResultadoDTO ajustar(AjusteRequestDTO request) {
-        Banco banco = bancoService.buscar(request.bancoId());
+        Banco banco = bancoService.buscarComLock(request.bancoId());
         MovimentacaoBanco ajuste = CalculoFinanceiro.criarAjuste(banco, request.tipo(), request.valor(), request.data(),
                 request.motivo(), usuarioAtual(), LocalDate.now());
         repository.save(ajuste);
@@ -91,6 +101,8 @@ public class MovimentacaoBancoService {
 
     @Transactional
     public MovimentacaoResultadoDTO estornar(Long id, EstornoRequestDTO request) {
+        // bloqueia os bancos envolvidos (ordem crescente de id) ANTES de reler a movimentação, para enxergar o estado já confirmado
+        repository.bancosEnvolvidos(id).stream().sorted().forEach(bancoService::buscarComLock);
         MovimentacaoBanco original = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Movimentação não encontrada."));
         String motivo = CalculoFinanceiro.validarMotivo(request == null ? null : request.motivo());
         CalculoFinanceiro.validarEstornavel(original);
@@ -134,7 +146,7 @@ public class MovimentacaoBancoService {
     }
 
     // saldo negativo é permitido: apenas informa
-    private String avisoSaldoNegativo(List<Banco> bancos) {
+    String avisoSaldoNegativo(List<Banco> bancos) {
         Map<Long, String> avisos = new LinkedHashMap<>();
         for (Banco banco : bancos) {
             if (avisos.containsKey(banco.getId())) continue;

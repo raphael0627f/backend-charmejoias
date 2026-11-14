@@ -26,4 +26,12 @@ public interface MovimentacaoBancoRepository extends JpaRepository<MovimentacaoB
     Optional<MovimentacaoBanco> findFirstByBancoIdAndOrigem(Long bancoId, OrigemMovimentacao origem);
 
     List<MovimentacaoBanco> findByTransferenciaIdOrderByIdAsc(Long transferenciaId);
+
+    // ids dos bancos de uma movimentação (e da outra ponta, se for transferência), sem carregar entidades: usado para bloquear antes de reler
+    @org.springframework.data.jpa.repository.Query("select distinct m.banco.id from MovimentacaoBanco m where m.id = :id or (m.transferencia is not null and m.transferencia.id = (select x.transferencia.id from MovimentacaoBanco x where x.id = :id))")
+    List<Long> bancosEnvolvidos(@org.springframework.data.repository.query.Param("id") Long id);
+
+    List<MovimentacaoBanco> findByBaixaIdIn(java.util.Collection<Long> baixaIds);
+
+    List<MovimentacaoBanco> findByBaixaIdAndOrigem(Long baixaId, OrigemMovimentacao origem);
 }
