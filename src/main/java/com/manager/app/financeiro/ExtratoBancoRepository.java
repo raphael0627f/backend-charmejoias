@@ -25,7 +25,7 @@ public class ExtratoBancoRepository {
     private static final String COLUNAS = """
             select * from (
               select m.id, m.banco_id, b.nome as banco_nome, m.data, m.tipo, m.valor, m.origem, m.descricao, m.transferencia_id,
-                     m.estornada, m.estorno_de_id, m.motivo_estorno, m.estornada_em,
+                     m.estornada, m.estorno_de_id, m.motivo_estorno, m.estornada_em, m.baixa_id, cp.id as titulo_id, cp.numero as titulo_numero,
                      ep.id as ep_id, ep.usuario as ep_usuario, ep.primeiro_nome as ep_nome, ep.sobrenome as ep_sobrenome,
                      u.id as u_id, u.usuario as u_usuario, u.primeiro_nome as u_nome, u.sobrenome as u_sobrenome, m.criado_em,
                      sum(case when m.tipo = 'ENTRADA' then m.valor else -m.valor end)
@@ -34,6 +34,8 @@ public class ExtratoBancoRepository {
               join banco b on b.id = m.banco_id
               left join usuarios u on u.id = m.usuario_id
               left join usuarios ep on ep.id = m.estornada_por_id
+              left join conta_pagar_baixa cb on cb.id = m.baixa_id
+              left join conta_pagar cp on cp.id = cb.conta_pagar_id
               where (cast(:bancoId as bigint) is null or m.banco_id = cast(:bancoId as bigint))
             ) x
             where (cast(:inicio as date) is null or x.data >= cast(:inicio as date))
@@ -87,6 +89,11 @@ public class ExtratoBancoRepository {
         java.sql.Timestamp estornadaEm = rs.getTimestamp("estornada_em");
         java.sql.Timestamp criadoEm = rs.getTimestamp("criado_em");
         BigDecimal saldoApos = comSaldoApos ? rs.getBigDecimal("saldo_apos") : null;
+        long baixa = rs.getLong("baixa_id");
+        boolean semBaixa = rs.wasNull();
+        long titulo = rs.getLong("titulo_id");
+        boolean semTitulo = rs.wasNull();
+        long tituloNumero = rs.getLong("titulo_numero");
         return new MovimentacaoResponseDTO(rs.getLong("id"), rs.getLong("banco_id"), rs.getString("banco_nome"),
                 rs.getObject("data", LocalDate.class), TipoMovimentacao.valueOf(rs.getString("tipo")),
                 CalculoFinanceiro.arredondar(rs.getBigDecimal("valor")), OrigemMovimentacao.valueOf(rs.getString("origem")),
@@ -94,7 +101,8 @@ public class ExtratoBancoRepository {
                 semEstornoDe ? null : estornoDe, rs.getString("motivo_estorno"),
                 estornadaEm == null ? null : estornadaEm.toLocalDateTime(),
                 resumo(rs, "ep"), resumo(rs, "u"), criadoEm == null ? null : criadoEm.toLocalDateTime(),
-                saldoApos == null ? null : CalculoFinanceiro.arredondar(saldoApos));
+                saldoApos == null ? null : CalculoFinanceiro.arredondar(saldoApos), semTitulo ? null : titulo,
+                semTitulo ? null : tituloNumero, semBaixa ? null : baixa);
     }
 
     private static UsuarioResumoDTO resumo(ResultSet rs, String prefixo) throws SQLException {

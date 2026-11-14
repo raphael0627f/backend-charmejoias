@@ -1,6 +1,8 @@
 package com.manager.app.financeiro;
 
+import com.manager.app.financeiro.dto.BaixaDTOs;
 import com.manager.app.financeiro.dto.ContaPagarAcoesDTO;
+import com.manager.app.financeiro.dto.EstornoRequestDTO;
 import com.manager.app.financeiro.dto.ContaPagarCriacaoResponseDTO;
 import com.manager.app.financeiro.dto.ContaPagarDetalheDTO;
 import com.manager.app.financeiro.dto.ContaPagarListaResponseDTO;
@@ -23,9 +25,12 @@ import java.util.List;
 public class ContaPagarController {
 
     private static final String CONSULTA = "hasAnyAuthority('CONTA_PAGAR_VISUALIZAR', 'CONTA_PAGAR_GERENCIAR', 'CONTA_PAGAR_BAIXAR')";
+    private static final String BAIXA = "hasAuthority('CONTA_PAGAR_BAIXAR')";
+    private static final String ESTORNO = "hasAuthority('CONTA_PAGAR_ESTORNAR')";
     private static final String GERENCIA = "hasAuthority('CONTA_PAGAR_GERENCIAR')";
 
     private final ContaPagarService service;
+    private final ContaPagarBaixaService baixaService;
 
     @PostMapping
     @PreAuthorize(GERENCIA)
@@ -87,6 +92,24 @@ public class ContaPagarController {
     @PreAuthorize(GERENCIA)
     public ResponseEntity<ContaPagarDetalheDTO> cancelar(@PathVariable Long id, @RequestBody(required = false) ContaPagarAcoesDTO.Cancelar request) {
         return ResponseEntity.ok(service.cancelar(id, request));
+    }
+
+    @PostMapping("/{id}/baixas")
+    @PreAuthorize(BAIXA)
+    public ResponseEntity<BaixaDTOs.Resultado> baixar(@PathVariable Long id, @Valid @RequestBody BaixaDTOs.Request request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(baixaService.baixar(id, request));
+    }
+
+    @PostMapping("/baixas/{baixaId}/estornar")
+    @PreAuthorize(ESTORNO)
+    public ResponseEntity<BaixaDTOs.Resultado> estornarBaixa(@PathVariable Long baixaId, @RequestBody(required = false) EstornoRequestDTO request) {
+        return ResponseEntity.ok(baixaService.estornar(baixaId, request));
+    }
+
+    @PostMapping("/baixas-lote")
+    @PreAuthorize(BAIXA)
+    public ResponseEntity<BaixaDTOs.ResultadoLote> baixarLote(@RequestBody(required = false) BaixaDTOs.Lote request) {
+        return ResponseEntity.ok(baixaService.baixarLote(request));
     }
 
     @PostMapping("/cancelar-lote")

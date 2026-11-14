@@ -28,6 +28,6 @@ public record ContaPagarDetalheDTO(Long id, Long numero, String descricao, Strin
     public record Baixa(Long id, LocalDate dataPagamento, BigDecimal valorPrincipal, BigDecimal juros, BigDecimal multa, BigDecimal desconto,
                         BigDecimal valorTotal, ContaPagarResumoDTO.Ref banco, ContaPagarResumoDTO.Ref formaPagamento, String observacao,
                         boolean estornada, String estornoMotivo, LocalDateTime estornadaEm, UsuarioResumoDTO estornadaPor,
-                        LocalDateTime createdAt, UsuarioResumoDTO createdBy) {
+                        LocalDateTime createdAt, UsuarioResumoDTO createdBy, Long movimentacaoId) {
     }
 }

@@ -53,6 +53,7 @@ public class ContaPagarService {
     private final ContaPagarRepository repository;
     private final ContaPagarEventoRepository eventoRepository;
     private final ContaPagarBaixaRepository baixaRepository;
+    private final MovimentacaoBancoRepository movimentacaoRepository;
     private final CategoriaDespesaRepository categoriaRepository;
     private final CentroCustoRepository centroCustoRepository;
     private final FormaPagamentoRepository formaPagamentoRepository;
@@ -216,11 +217,16 @@ public class ContaPagarService {
         return detalhe(buscar(id));
     }
 
-    private ContaPagarDetalheDTO detalhe(ContaPagar c) {
+    public ContaPagarDetalheDTO detalhe(ContaPagar c) {
         List<ContaPagar> parcelas = c.getGrupoParcelamentoId() == null ? List.of()
                 : repository.findByGrupoParcelamentoIdOrderByParcelaNumeroAscIdAsc(c.getGrupoParcelamentoId());
-        return mapper.detalhe(c, LocalDate.now(), baixaRepository.findByContaPagarIdOrderByIdAsc(c.getId()), parcelas,
-                eventoRepository.findByContaPagarIdOrderByIdAsc(c.getId()));
+        List<ContaPagarBaixa> baixas = baixaRepository.findByContaPagarIdOrderByIdAsc(c.getId());
+        Map<Long, Long> movimentacoes = new java.util.HashMap<>();
+        if (!baixas.isEmpty()) {
+            movimentacaoRepository.findByBaixaIdIn(baixas.stream().map(ContaPagarBaixa::getId).toList()).stream()
+                    .filter(m -> m.getOrigem() == OrigemMovimentacao.BAIXA_CONTA_PAGAR).forEach(m -> movimentacoes.put(m.getBaixaId(), m.getId()));
+        }
+        return mapper.detalhe(c, LocalDate.now(), baixas, parcelas, eventoRepository.findByContaPagarIdOrderByIdAsc(c.getId()), movimentacoes);
     }
 
     @Transactional(readOnly = true)
@@ -237,7 +243,7 @@ public class ContaPagarService {
 
     @Transactional
     public ContaPagarDetalheDTO atualizar(Long id, ContaPagarRequestDTO r) {
-        ContaPagar c = buscar(id);
+        ContaPagar c = buscarComLock(id);
         if (c.getSituacao() == SituacaoContaPagar.CANCELADO) {
             throw new ItemInvalidoException("O título cancelado não pode ser editado.");
         }
@@ -304,7 +310,7 @@ public class ContaPagarService {
 
     @Transactional
     public ContaPagarDetalheDTO alterarVencimento(Long id, ContaPagarAcoesDTO.Vencimento r) {
-        ContaPagar c = buscar(id);
+        ContaPagar c = buscarComLock(id);
         if (c.getSituacao() == SituacaoContaPagar.PAGO || c.getSituacao() == SituacaoContaPagar.CANCELADO) {
             throw new ItemInvalidoException("Não é possível alterar o vencimento de um título pago ou cancelado.");
         }
@@ -354,7 +360,7 @@ public class ContaPagarService {
     }
 
     private ContaPagar cancelarTitulo(Long id, String motivo) {
-        ContaPagar c = buscar(id);
+        ContaPagar c = buscarComLock(id);
         if (c.getSituacao() == SituacaoContaPagar.CANCELADO) throw new ItemInvalidoException("O título já está cancelado.");
         if (baixaRepository.existsByContaPagarIdAndEstornadaFalse(id)) {
             throw new ItemInvalidoException("O título possui baixas ativas. Estorne as baixas antes de cancelar.");
@@ -373,6 +379,11 @@ public class ContaPagarService {
 
     public ContaPagar buscar(Long id) {
         return repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Título não encontrado."));
+    }
+
+    // bloqueia a linha do título (SELECT ... FOR UPDATE) até o fim da transação: usado por quem altera o título ou o seu valor pago
+    public ContaPagar buscarComLock(Long id) {
+        return repository.findByIdForUpdate(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Título não encontrado."));
     }
 
     private Base validarBase(ContaPagarRequestDTO r) {
