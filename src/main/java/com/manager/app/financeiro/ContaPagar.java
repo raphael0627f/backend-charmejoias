@@ -61,8 +61,9 @@ public class ContaPagar extends AuditoriaFinanceira {
     private Integer parcelaNumero;
     private Integer parcelaTotal;
 
-    // sem chave estrangeira: a tabela de recorrência vem na fase 4
     private Long recorrenciaId;
+    // data original da ocorrência na série (não muda ao remarcar o vencimento): base da idempotência da geração
+    private LocalDate ocorrenciaData;
 
     private String cancelamentoMotivo;
     private LocalDateTime cancelamentoEm;
