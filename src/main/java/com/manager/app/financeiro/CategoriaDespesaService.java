@@ -123,6 +123,7 @@ public class CategoriaDespesaService {
             throw new ObjetoEmUsoException("Não é possível excluir o grupo \"" + categoria.getNome() + "\", pois ele possui subgrupos. Inative-o.");
         }
         repository.delete(categoria);
+        repository.flush();
     }
 
     public CategoriaDespesa buscar(Long id) {
