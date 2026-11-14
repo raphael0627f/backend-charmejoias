@@ -21,6 +21,9 @@ public final class ContaPagarCalculo {
     public static List<BigDecimal> dividir(BigDecimal total, int quantidade) {
         BigDecimal t = CalculoFinanceiro.arredondar(total);
         BigDecimal base = t.divide(BigDecimal.valueOf(quantidade), CalculoFinanceiro.ESCALA, RoundingMode.DOWN);
+        if (base.signum() <= 0) {
+            throw new ItemInvalidoException("O valor total é insuficiente para ser dividido em " + quantidade + " parcelas.");
+        }
         List<BigDecimal> valores = new ArrayList<>();
         for (int i = 0; i < quantidade - 1; i++) valores.add(base);
         valores.add(t.subtract(base.multiply(BigDecimal.valueOf(quantidade - 1L))));

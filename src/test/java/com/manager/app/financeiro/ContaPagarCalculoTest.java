@@ -33,6 +33,13 @@ class ContaPagarCalculoTest {
     }
 
     @Test
+    void valorTotalMenorQueUmCentavoPorParcelaEhRecusado() {
+        assertThatThrownBy(() -> ContaPagarCalculo.dividir(v("0.05"), 12)).isInstanceOf(ItemInvalidoException.class)
+                .hasMessageContaining("insuficiente");
+        assertThat(ContaPagarCalculo.dividir(v("0.12"), 12)).allSatisfy(x -> assertThat(x).isEqualByComparingTo("0.01"));
+    }
+
+    @Test
     void divisaoExataNaoGeraDiferenca() {
         List<BigDecimal> p = ContaPagarCalculo.dividir(v("100.00"), 4);
         assertThat(p).allSatisfy(x -> assertThat(x).isEqualByComparingTo("25.00"));
