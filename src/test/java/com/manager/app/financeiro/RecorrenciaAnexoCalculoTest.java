@@ -74,13 +74,16 @@ class RecorrenciaAnexoCalculoTest {
     }
 
     @Test
+    void primeiroVencimentoAlemDaJanelaGeraAoMenosAPrimeiraOcorrencia() {
+        assertThat(RecorrenciaCalculo.validarCriacao(ANUAL, d("2028-02-29"), null, d("2026-11-14"))).containsExactly(d("2028-02-29"));
+    }
+
+    @Test
     void criacaoRecusaDadosInvalidos() {
         assertThatThrownBy(() -> RecorrenciaCalculo.validarCriacao(null, d("2026-12-05"), null, d("2026-11-14"))).isInstanceOf(ItemInvalidoException.class);
         assertThatThrownBy(() -> RecorrenciaCalculo.validarCriacao(MENSAL, null, null, d("2026-11-14"))).isInstanceOf(ItemInvalidoException.class);
         assertThatThrownBy(() -> RecorrenciaCalculo.validarCriacao(MENSAL, d("2026-12-05"), d("2026-12-04"), d("2026-11-14")))
                 .hasMessageContaining("anterior ao primeiro vencimento");
-        // primeiro vencimento muito além da janela não gera nada
-        assertThatThrownBy(() -> RecorrenciaCalculo.validarCriacao(MENSAL, d("2029-01-01"), null, d("2026-11-14"))).hasMessageContaining("nenhuma ocorrência");
         // semanal desde 2010 passa de 520 ocorrências
         assertThatThrownBy(() -> RecorrenciaCalculo.validarCriacao(SEMANAL, d("2010-01-04"), null, d("2026-11-14"))).hasMessageContaining("mais de 520");
     }

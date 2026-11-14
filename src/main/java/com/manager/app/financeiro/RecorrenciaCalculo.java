@@ -59,7 +59,8 @@ public final class RecorrenciaCalculo {
             throw new ItemInvalidoException("A data de término não pode ser anterior ao primeiro vencimento.");
         }
         List<LocalDate> datas = datas(periodicidade, primeiroVencimento, limiteJanela(hoje, dataFim));
-        if (datas.isEmpty()) throw new ItemInvalidoException("A recorrência não geraria nenhuma ocorrência no período informado.");
+        // primeiro vencimento além da janela: gera ao menos a primeira ocorrência (a rotina diária completa o restante quando a janela alcançar)
+        if (datas.isEmpty()) return List.of(primeiroVencimento);
         if (datas.size() > MAXIMO_OCORRENCIAS) {
             throw new ItemInvalidoException("A recorrência geraria mais de " + MAXIMO_OCORRENCIAS + " ocorrências. Informe uma data de início mais recente ou uma data de término.");
         }
