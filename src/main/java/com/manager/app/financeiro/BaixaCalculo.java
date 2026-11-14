@@ -27,6 +27,7 @@ public final class BaixaCalculo {
         if (valor.stripTrailingZeros().scale() > CalculoFinanceiro.ESCALA) {
             throw new ItemInvalidoException("O valor de " + nome + " deve ter no máximo duas casas decimais.");
         }
+        CalculoFinanceiro.validarTeto(valor, nome);
         return CalculoFinanceiro.arredondar(valor);
     }
 

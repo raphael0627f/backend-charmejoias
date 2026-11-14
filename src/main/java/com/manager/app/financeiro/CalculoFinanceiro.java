@@ -67,6 +67,15 @@ public final class CalculoFinanceiro {
         return m;
     }
 
+    // teto de qualquer valor monetário informado (título, baixa, ajuste, transferência, saldo inicial)
+    public static final BigDecimal VALOR_MAXIMO = new BigDecimal("9999999.99");
+
+    public static void validarTeto(BigDecimal valor, String nome) {
+        if (valor != null && valor.abs().compareTo(VALOR_MAXIMO) > 0) {
+            throw new ItemInvalidoException((nome == null ? "O valor" : "O valor de " + nome) + " não pode ser superior a R$ 9.999.999,99.");
+        }
+    }
+
     public static BigDecimal validarValorPositivo(BigDecimal valor) {
         if (valor == null || arredondar(valor).signum() <= 0) {
             throw new ItemInvalidoException("O valor deve ser maior que zero.");
@@ -74,6 +83,7 @@ public final class CalculoFinanceiro {
         if (valor.stripTrailingZeros().scale() > ESCALA) {
             throw new ItemInvalidoException("O valor deve ter no máximo duas casas decimais.");
         }
+        validarTeto(valor, null);
         return arredondar(valor);
     }
 

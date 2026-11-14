@@ -161,6 +161,7 @@ public class BancoService {
         if (r.saldoInicial() != null && r.saldoInicial().stripTrailingZeros().scale() > CalculoFinanceiro.ESCALA) {
             throw new ItemInvalidoException("O saldo inicial deve ter no máximo duas casas decimais.");
         }
+        CalculoFinanceiro.validarTeto(r.saldoInicial(), "saldo inicial");
         banco.setNome(nome);
         banco.setTipo(r.tipo());
         banco.setCodigoBanco(vazioParaNulo(r.codigoBanco()));

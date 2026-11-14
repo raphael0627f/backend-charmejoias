@@ -113,6 +113,20 @@ class BaixaCalculoTest {
     }
 
     @Test
+    void valoresAcimaDoTetoSaoRecusados() {
+        assertThat(CalculoFinanceiro.validarValorPositivo(v("9999999.99"))).isEqualByComparingTo("9999999.99");
+        assertThatThrownBy(() -> CalculoFinanceiro.validarValorPositivo(v("10000000.00"))).isInstanceOf(ItemInvalidoException.class).hasMessageContaining("9.999.999,99");
+        assertThatThrownBy(() -> CalculoFinanceiro.validarValorPositivo(v("999999999999.99"))).hasMessageContaining("não pode ser superior");
+        assertThatThrownBy(() -> CalculoFinanceiro.validarTeto(v("-10000000"), "saldo inicial")).hasMessageContaining("saldo inicial");
+        CalculoFinanceiro.validarTeto(v("-9999999.99"), "saldo inicial");
+        ContaPagar t = titulo("9999999.99");
+        assertThatThrownBy(() -> baixar(t, "100", "10000000", null, null)).hasMessageContaining("juros");
+        assertThatThrownBy(() -> baixar(t, "100", null, "10000000", null)).hasMessageContaining("multa");
+        assertThatThrownBy(() -> baixar(t, "100", null, null, "10000000")).hasMessageContaining("desconto");
+        assertThat(baixar(t, "9999999.99", null, null, null).baixa().getValorTotal()).isEqualByComparingTo("9999999.99");
+    }
+
+    @Test
     void tituloCanceladoOuPagoNaoRecebeBaixa() {
         ContaPagar cancelado = titulo("100");
         cancelado.setSituacao(SituacaoContaPagar.CANCELADO);
