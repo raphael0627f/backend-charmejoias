@@ -27,9 +27,11 @@ Migration: `V65__financeiro-contas-pagar.sql`. Baixa, estorno, recorrência, ane
   "valor": 1500.00, "valorPago": 0.00, "valorAberto": 1500.00,
   "emissao": "2026-11-14", "competencia": "2026-12", "vencimento": "2026-12-10", "documento": "NF 123",
   "situacao": "ABERTO", "situacaoExibicao": "ABERTO",
-  "grupoParcelamentoId": "e0b1...", "parcelaNumero": 2, "parcelaTotal": 12 }
+  "grupoParcelamentoId": "e0b1...", "parcelaNumero": 2, "parcelaTotal": 12,
+  "motivoCancelamento": null, "dataCancelamento": null }
 ```
 `centroCusto`, `formaPrevista`, `favorecido`, `documento` e os campos de parcela são `null` quando não se aplicam.
+`motivoCancelamento` e `dataCancelamento` (data e hora) só vêm preenchidos em título `CANCELADO` (use no tooltip do ícone de cancelado); nos demais são `null`.
 `categoria.grupoId/grupoNome` vêm `null` quando a categoria escolhida é um grupo (sem pai).
 
 ## `POST /contas-pagar` (201)
