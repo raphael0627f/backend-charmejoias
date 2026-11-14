@@ -8,9 +8,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 // subcategorias só vem preenchido na árvore (GET /categorias-despesa); na lista plana o campo é omitido
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record CategoriaDespesaResponseDTO(Long id, String nome, Long paiId, String paiNome, TipoCategoriaDespesa tipo, int ordem,
                                           boolean ativo, LocalDateTime createdAt, LocalDateTime updatedAt,
                                           UsuarioResumoDTO createdBy, UsuarioResumoDTO updatedBy,
-                                          List<CategoriaDespesaResponseDTO> subcategorias) {
+                                          @JsonInclude(JsonInclude.Include.NON_NULL) List<CategoriaDespesaResponseDTO> subcategorias) {
 }

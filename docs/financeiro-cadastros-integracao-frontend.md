@@ -53,7 +53,7 @@ Response (`saldoAtual` é somente leitura — soma das movimentações):
   "saldoAtual": 1500.00, "createdAt": "...", "updatedAt": "...", "createdBy": {...}, "updatedBy": {...} }
 ```
 Regras:
-- `nome` e `tipo` obrigatórios. `saldoInicial` opcional (zero); pode ser negativo. `dataSaldoInicial` opcional na criação (assume hoje);
+- `nome` e `tipo` obrigatórios. `saldoInicial` opcional (zero na criação; omitido no PUT = mantém o atual); pode ser negativo. `dataSaldoInicial` opcional na criação (assume hoje);
   **não pode ser futura**.
 - Ao criar com saldo inicial diferente de zero, é gerada a movimentação `SALDO_INICIAL` (ENTRADA se positivo, SAIDA se negativo).
   Saldo inicial zero não gera movimentação.
@@ -71,7 +71,7 @@ Tipos (`tipo`): `CUSTO`, `DESPESA_FIXA`, `DESPESA_VARIAVEL`, `IMPOSTO`, `PESSOAL
 - `GET /categorias-despesa` → **árvore**: grupos (nível 1) ordenados por `ordem`/nome, cada um com `subcategorias` (nível 2).
   `?ativo=true` filtra também os subgrupos; um grupo inativo some junto com os seus subgrupos.
 - `GET /categorias-despesa/plana` → **lista plana** (grupos e subgrupos juntos; cada item com `paiId` e `paiNome`; sem `subcategorias`).
-  Ordenada por grupo e depois subgrupo; aceita `?ativo=` e `?busca=`.
+  Ordenada por grupo e depois subgrupo; aceita `?ativo=` e `?busca=`. Nos grupos `paiId` e `paiNome` vêm `null`.
 - `GET /categorias-despesa/{id}`.
 
 Request (POST/PUT): `{ "nome": "Aluguel", "paiId": 2, "tipo": "DESPESA_FIXA", "ordem": 1 }` (`paiId` nulo = grupo; `ordem` opcional, padrão 0).
