@@ -148,3 +148,15 @@ Até **100 linhas** (mais: 400 para a requisição inteira; lista vazia: 400). C
 | Arquivo acima de 5 MB | 413 |
 
 Exemplo: `{ "timestamp": "...", "status": "409 CONFLICT", "menssage": "O título já possui o número máximo de 10 anexos.", "path": "..." }`.
+
+## Teto de valores (atualização)
+
+Nenhum valor monetário informado pode ultrapassar **R$ 9.999.999,99**. Acima disso a resposta é **400** com mensagem formal, por exemplo
+`"O valor não pode ser superior a R$ 9.999.999,99."` (ou `"O valor de juros não pode ser superior a R$ 9.999.999,99."`).
+Vale para: valor do título (simples, parcelado, recorrência, lote e edição, inclusive o reajuste da recorrência), valores personalizados de parcelas,
+principal, juros, multa e desconto da baixa, ajuste, transferência e saldo inicial do banco (em módulo). O front pode limitar o campo a esse teto.
+
+## Resumo do título na lista: `recorrenciaId`
+
+O resumo de cada título (lista e demais respostas que usam o resumo) agora traz `recorrenciaId` (nulo quando o título não nasceu de uma recorrência),
+para o ícone de recorrente. Categoria: no lançamento simples, no lote e na recorrência a categoria pode ser **grupo ou subgrupo** (mesmo comportamento).

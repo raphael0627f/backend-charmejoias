@@ -27,7 +27,7 @@ public class ContaPagarMapper {
                 ContaPagarCalculo.valorAberto(c.getSituacao(), c.getValor(), c.getValorPago()), c.getEmissao(), c.getCompetencia(),
                 c.getVencimento(), c.getDocumento(), c.getSituacao(),
                 ContaPagarCalculo.situacaoExibicao(c.getSituacao(), c.getVencimento(), hoje), c.getGrupoParcelamentoId(),
-                c.getParcelaNumero(), c.getParcelaTotal(), c.getCancelamentoMotivo(), c.getCancelamentoEm(), quantidadeAnexos);
+                c.getParcelaNumero(), c.getParcelaTotal(), c.getCancelamentoMotivo(), c.getCancelamentoEm(), quantidadeAnexos, c.getRecorrenciaId());
     }
 
     public ContaPagarDetalheDTO detalhe(ContaPagar c, LocalDate hoje, List<ContaPagarBaixa> baixas, List<ContaPagar> parcelas,

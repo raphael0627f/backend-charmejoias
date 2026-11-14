@@ -12,7 +12,8 @@ public record ContaPagarResumoDTO(Long id, Long numero, String descricao, String
                                   Ref formaPrevista, BigDecimal valor, BigDecimal valorPago, BigDecimal valorAberto, LocalDate emissao,
                                   String competencia, LocalDate vencimento, String documento, SituacaoContaPagar situacao,
                                   SituacaoExibicaoContaPagar situacaoExibicao, UUID grupoParcelamentoId, Integer parcelaNumero,
-                                  Integer parcelaTotal, String motivoCancelamento, LocalDateTime dataCancelamento, int quantidadeAnexos) {
+                                  Integer parcelaTotal, String motivoCancelamento, LocalDateTime dataCancelamento, int quantidadeAnexos,
+                                  Long recorrenciaId) {
 
     public record Ref(Long id, String nome) {
     }

@@ -106,3 +106,10 @@ Operações que alteram dinheiro usam **bloqueio pessimista de linha** (`SELECT 
 | Título, banco, forma ou baixa inexistentes | 404 (baixa/título na URL) ou 400 (banco/forma no corpo) |
 
 Exemplo: `{ "timestamp": "...", "status": "400 BAD_REQUEST", "menssage": "O valor principal não pode ser superior ao valor em aberto (R$ 500,00).", "path": "..." }`.
+
+## Teto de valores (atualização)
+
+Nenhum valor monetário informado pode ultrapassar **R$ 9.999.999,99**. Acima disso a resposta é **400** com mensagem formal, por exemplo
+`"O valor não pode ser superior a R$ 9.999.999,99."` (ou `"O valor de juros não pode ser superior a R$ 9.999.999,99."`).
+Vale para: valor do título (simples, parcelado, recorrência, lote e edição, inclusive o reajuste da recorrência), valores personalizados de parcelas,
+principal, juros, multa e desconto da baixa, ajuste, transferência e saldo inicial do banco (em módulo). O front pode limitar o campo a esse teto.
