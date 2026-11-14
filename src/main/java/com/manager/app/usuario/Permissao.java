@@ -31,5 +31,13 @@ public enum Permissao {
     MONTAGEM_GERENCIAR,
     AGENDA_GERENCIAR,
     // só existe para a tela de perfis: o backend não a verifica (o GET da agenda exige apenas login)
-    AGENDA_VISUALIZAR
+    AGENDA_VISUALIZAR,
+    // financeiro 6.0 (contas a pagar, cadastros financeiros e movimentação de contas): concedidas só ao perfil ADMIN na V64
+    CONTA_PAGAR_VISUALIZAR,
+    CONTA_PAGAR_GERENCIAR,
+    CONTA_PAGAR_BAIXAR,
+    CONTA_PAGAR_ESTORNAR,
+    CADASTRO_FINANCEIRO_GERENCIAR,
+    MOVIMENTACAO_VISUALIZAR,
+    MOVIMENTACAO_GERENCIAR
 }
