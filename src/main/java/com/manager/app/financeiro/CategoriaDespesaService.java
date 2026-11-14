@@ -120,7 +120,7 @@ public class CategoriaDespesaService {
     public void excluir(Long id) {
         CategoriaDespesa categoria = buscar(id);
         if (repository.existsByPaiId(id)) {
-            throw new ObjetoEmUsoException("Não é possível excluir o grupo \"" + categoria.getNome() + "\", pois ele possui subgrupos. Inative-o.");
+            throw new ObjetoEmUsoException("Não é possível excluir o grupo \"" + categoria.getNome() + "\", pois ele possui subgrupos. Exclua ou inative os subgrupos primeiro.");
         }
         repository.delete(categoria);
         repository.flush();
