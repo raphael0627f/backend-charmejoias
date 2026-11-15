@@ -58,7 +58,7 @@ Definições (data de referência = hoje; considera só títulos `ABERTO` e `REC
 ### `GET /contas-receber/clientes/{clienteId}/situacao?recebimentoDe=&recebimentoAte=`
 `recebimentoDe`/`recebimentoAte` (padrão: últimos 12 meses até hoje) delimitam `recebidoNoPeriodo`. Cliente inexistente: 404; cliente desativado também é consultável.
 ```json
-{ "cliente": { "id": "uuid", "nome": "Maria", "documento": "123.456.789-00", "cidade": "Campinas" },
+{ "cliente": { "id": "uuid", "nome": "Maria", "documento": "12345678900", "cidade": "Campinas" },
   "emAberto": { "valor": 1500.00, "quantidade": 4 },
   "vencido": { "valor": 400.00, "quantidade": 1 },
   "vencemEm7Dias": { "valor": 300.00, "quantidade": 1 },

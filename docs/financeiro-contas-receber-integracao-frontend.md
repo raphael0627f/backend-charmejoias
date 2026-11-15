@@ -35,7 +35,7 @@ Leitura aceita qualquer uma das três primeiras. Sem permissão: **403 antes de 
 
 ### Resumo do título (lista, criação, parcelas)
 ```json
-{ "id": 1, "numero": 1, "descricao": "...", "cliente": { "id": "uuid", "nome": "Maria", "documento": "123.456.789-00" },
+{ "id": 1, "numero": 1, "descricao": "...", "cliente": { "id": "uuid", "nome": "Maria", "documento": "12345678900" },
   "categoria": { "id": 2, "nome": "Vendas de joias", "grupoId": 1, "grupoNome": "Vendas" }, "centroCusto": null, "formaPrevista": { "id": 3, "nome": "Boleto" },
   "valor": 500.00, "valorRecebido": 0.00, "valorAberto": 500.00, "emissao": "2026-11-16", "competencia": "2026-12", "vencimento": "2026-12-10",
   "documento": "NF 123", "situacao": "ABERTO", "situacaoExibicao": "ABERTO", "grupoParcelamentoId": "uuid", "parcelaNumero": 1, "parcelaTotal": 3,
@@ -55,7 +55,7 @@ Parâmetros (todos opcionais): `vencimentoDe`, `vencimentoAte`, `emissaoDe`, `em
   Os totais valem para todo o filtro; `valorTotal` e `valorAberto` desconsideram os cancelados; `valorVencido` = parte do aberto com vencimento anterior a hoje.
 
 ### `GET /contas-receber/{id}` — detalhe
-Resumo completo e, além dele: `observacao`, `cancelamento` (`motivo`, `em`, `por`), `recebimentos` (**lista vazia até a fase 3**), `anexos` (**lista vazia até a fase 4**),
+Resumo completo e, além dele: `observacao`, `cancelamento` (`motivo`, `em`, `por`) e, também no nível raiz como na lista, `motivoCancelamento`, `dataCancelamento` e `canceladoPor` (nulos se o título não foi cancelado), `recebimentos` (**lista vazia até a fase 3**), `anexos` (**lista vazia até a fase 4**),
 `parcelas` (resumos do grupo de parcelamento, vazio se não parcelado), `eventos` (`id`, `evento`, `detalhe`, `usuario`, `dataHora`), `createdAt`, `updatedAt`, `createdBy`, `updatedBy`.
 404 se o título não existir.
 
@@ -77,7 +77,7 @@ Recusado em título já cancelado e em título com recebimento ativo (400: estor
 Cada título em transação própria: `{ "cancelados": 2, "recusados": 1, "resultados": [ { "id", "numero", "cancelado": true|false, "menssage": null|"..." } ] }`. Lista vazia, ids nulos, mais de 200 ou motivo curto → 400 para o pedido inteiro.
 
 ### `GET /contas-receber/clientes?busca=maria` — seletor de clientes
-Até **20** clientes **ativos**, por nome ou CPF/documento (contém, sem diferenciar maiúsculas): `[ { "id": "uuid", "nome": "Maria", "documento": "123.456.789-00", "cidade": "Campinas" } ]`
+Até **20** clientes **ativos**, por nome ou CPF/documento (contém, sem diferenciar maiúsculas; o documento é devolvido e guardado **sem máscara**, mas a busca aceita a entrada mascarada, p. ex. `111.444.777-35` ou `12.345.678/0001-95`, e encontra o mesmo cliente que `11144477735`; vale também para o filtro `busca` da lista `/contas-receber` e da visão geral `/contas-receber/clientes/situacao`): `[ { "id": "uuid", "nome": "Maria", "documento": "12345678900", "cidade": "Campinas" } ]`
 (`cidade` = município do endereço principal). Acessível com `CONTA_RECEBER_VISUALIZAR`, `GERENCIAR` ou `RECEBER`, **sem exigir permissão de cliente**. Sem `busca`, devolve os primeiros 20 por nome.
 
 ### Duplicar
