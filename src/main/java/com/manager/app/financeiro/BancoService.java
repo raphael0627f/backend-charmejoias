@@ -111,7 +111,7 @@ public class BancoService {
     public void excluir(Long id) {
         Banco banco = buscar(id);
         if (movimentacaoRepository.existsByBancoIdAndOrigemNot(id, OrigemMovimentacao.SALDO_INICIAL)) {
-            throw new ObjetoEmUsoException("Não é possível excluir o banco \"" + banco.getNome() + "\", pois ele possui movimentações. Inative o banco.");
+            throw new ObjetoEmUsoException("Não é possível excluir o banco \"" + banco.getNome() + "\", pois ele possui movimentações. Desative o banco.");
         }
         movimentacaoRepository.findFirstByBancoIdAndOrigem(id, OrigemMovimentacao.SALDO_INICIAL).ifPresent(movimentacaoRepository::delete);
         repository.delete(banco);

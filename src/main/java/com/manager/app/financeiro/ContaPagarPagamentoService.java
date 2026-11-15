@@ -122,7 +122,7 @@ public class ContaPagarPagamentoService {
         CalculoFinanceiro.validarBancoAtivo(bancoInicial);
         FormaPagamento formaInicial = formaPagamentoRepository.findById(r.formaPagamentoId())
                 .orElseThrow(() -> new ItemInvalidoException("A forma de pagamento informada não foi encontrada."));
-        if (!formaInicial.isAtivo()) throw new ItemInvalidoException("A forma de pagamento \"" + formaInicial.getNome() + "\" está inativa.");
+        if (!formaInicial.isAtivo()) throw new ItemInvalidoException("A forma de pagamento \"" + formaInicial.getNome() + "\" está desativada.");
 
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         List<PagamentoDTOs.ItemLote> itens = new ArrayList<>();

@@ -143,7 +143,7 @@ class PagamentoCalculoTest {
         assertThatThrownBy(() -> PagamentoCalculo.pagar(titulo("100"), banco(false), forma(true), HOJE, v("10"), null, null, null, null, null, HOJE))
                 .isInstanceOf(ItemInvalidoException.class);
         assertThatThrownBy(() -> PagamentoCalculo.pagar(titulo("100"), banco(true), forma(false), HOJE, v("10"), null, null, null, null, null, HOJE))
-                .isInstanceOf(ItemInvalidoException.class).hasMessageContaining("inativa");
+                .isInstanceOf(ItemInvalidoException.class).hasMessageContaining("desativada");
     }
 
     @Test

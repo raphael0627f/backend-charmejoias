@@ -93,7 +93,7 @@ public final class PagamentoCalculo {
         if (banco == null) throw new ItemInvalidoException("Informe o banco.");
         if (forma == null) throw new ItemInvalidoException("Informe a forma de pagamento.");
         CalculoFinanceiro.validarBancoAtivo(banco);
-        if (!forma.isAtivo()) throw new ItemInvalidoException("A forma de pagamento \"" + forma.getNome() + "\" está inativa.");
+        if (!forma.isAtivo()) throw new ItemInvalidoException("A forma de pagamento \"" + forma.getNome() + "\" está desativada.");
 
         BigDecimal aberto = ContaPagarCalculo.valorAberto(titulo.getSituacao(), titulo.getValor(), titulo.getValorPago());
         if (p.compareTo(aberto) > 0) {
@@ -135,7 +135,7 @@ public final class PagamentoCalculo {
     }
 
     // estorno: marca o pagamento e a movimentação original, reduz o valor pago do título pelo principal e devolve a movimentação inversa (ENTRADA).
-    // Permitido com banco inativo (corrige o histórico).
+    // Permitido com banco desativado (corrige o histórico).
     public static MovimentacaoBanco estornar(ContaPagarPagamento pagamento, MovimentacaoBanco original, String motivo, Usuario usuario,
                                              LocalDate hoje, LocalDateTime agora) {
         if (pagamento.isEstornada()) throw new ItemInvalidoException("Este pagamento já foi estornado.");

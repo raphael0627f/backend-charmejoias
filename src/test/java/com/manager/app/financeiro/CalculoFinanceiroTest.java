@@ -165,9 +165,9 @@ class CalculoFinanceiroTest {
         assertThatThrownBy(() -> CalculoFinanceiro.criarTransferencia(a, b, v("10.00"), HOJE.plusDays(1), null, null, HOJE))
                 .isInstanceOf(ItemInvalidoException.class).hasMessageContaining("posterior");
         assertThatThrownBy(() -> CalculoFinanceiro.criarTransferencia(a, inativo, v("10.00"), HOJE, null, null, HOJE))
-                .isInstanceOf(ItemInvalidoException.class).hasMessageContaining("inativo");
+                .isInstanceOf(ItemInvalidoException.class).hasMessageContaining("desativado");
         assertThatThrownBy(() -> CalculoFinanceiro.criarTransferencia(inativo, b, v("10.00"), HOJE, null, null, HOJE))
-                .isInstanceOf(ItemInvalidoException.class).hasMessageContaining("inativo");
+                .isInstanceOf(ItemInvalidoException.class).hasMessageContaining("desativado");
     }
 
     @Test
@@ -208,7 +208,7 @@ class CalculoFinanceiroTest {
         assertThatThrownBy(() -> CalculoFinanceiro.criarAjuste(ativo, TipoMovimentacao.SAIDA, v("1.00"), HOJE.plusDays(1), "motivo válido", null, HOJE))
                 .isInstanceOf(ItemInvalidoException.class);
         assertThatThrownBy(() -> CalculoFinanceiro.criarAjuste(inativo, TipoMovimentacao.SAIDA, v("1.00"), HOJE, "motivo válido", null, HOJE))
-                .isInstanceOf(ItemInvalidoException.class).hasMessageContaining("inativo");
+                .isInstanceOf(ItemInvalidoException.class).hasMessageContaining("desativado");
     }
 
     // ---------- estorno ----------
@@ -270,7 +270,7 @@ class CalculoFinanceiroTest {
         MovimentacaoBanco ajuste = CalculoFinanceiro.criarAjuste(b, TipoMovimentacao.ENTRADA, v("5.00"), HOJE, "Ajuste inicial", null, HOJE);
         b.setAtivo(false);
         assertThatThrownBy(() -> CalculoFinanceiro.estornar(ajuste, "Motivo do estorno", null, HOJE, AGORA))
-                .isInstanceOf(ItemInvalidoException.class).hasMessageContaining("inativo");
+                .isInstanceOf(ItemInvalidoException.class).hasMessageContaining("desativado");
         assertThat(ajuste.isEstornada()).isFalse();
     }
 

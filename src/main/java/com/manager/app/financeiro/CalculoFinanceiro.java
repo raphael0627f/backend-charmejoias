@@ -105,7 +105,7 @@ public final class CalculoFinanceiro {
 
     public static void validarBancoAtivo(Banco banco) {
         if (!banco.isAtivo()) {
-            throw new ItemInvalidoException("O banco \"" + banco.getNome() + "\" está inativo e não pode receber movimentações.");
+            throw new ItemInvalidoException("O banco \"" + banco.getNome() + "\" está desativado e não pode receber movimentações.");
         }
     }
 

@@ -425,16 +425,16 @@ public class ContaPagarService {
         BigDecimal valor = CalculoFinanceiro.validarValorPositivo(r.valor());
         CategoriaDespesa categoria = categoriaRepository.findById(r.categoriaId())
                 .orElseThrow(() -> new ItemInvalidoException("A categoria informada não foi encontrada."));
-        if (!categoria.isAtivo()) throw new ItemInvalidoException("A categoria \"" + categoria.getNome() + "\" está inativa.");
+        if (!categoria.isAtivo()) throw new ItemInvalidoException("A categoria \"" + categoria.getNome() + "\" está desativada.");
         CentroCusto centro = null;
         if (r.centroCustoId() != null) {
             centro = centroCustoRepository.findById(r.centroCustoId()).orElseThrow(() -> new ItemInvalidoException("O centro de custo informado não foi encontrado."));
-            if (!centro.isAtivo()) throw new ItemInvalidoException("O centro de custo \"" + centro.getNome() + "\" está inativo.");
+            if (!centro.isAtivo()) throw new ItemInvalidoException("O centro de custo \"" + centro.getNome() + "\" está desativado.");
         }
         FormaPagamento forma = null;
         if (r.formaPrevistaId() != null) {
             forma = formaPagamentoRepository.findById(r.formaPrevistaId()).orElseThrow(() -> new ItemInvalidoException("A forma de pagamento informada não foi encontrada."));
-            if (!forma.isAtivo()) throw new ItemInvalidoException("A forma de pagamento \"" + forma.getNome() + "\" está inativa.");
+            if (!forma.isAtivo()) throw new ItemInvalidoException("A forma de pagamento \"" + forma.getNome() + "\" está desativada.");
         }
         return new Base(descricao, BancoService.vazioParaNulo(r.favorecido()), categoria, centro, forma, valor,
                 BancoService.vazioParaNulo(r.documento()), BancoService.vazioParaNulo(r.observacao()));

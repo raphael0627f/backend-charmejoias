@@ -25,7 +25,7 @@ public class CategoriaDespesaService {
     private final CategoriaDespesaRepository repository;
     private final FinanceiroMapper mapper;
 
-    // árvore: grupos com suas subcategorias; com ativo=true um grupo inativo some junto com os subgrupos
+    // árvore: grupos com suas subcategorias; com ativo=true um grupo desativado some junto com os subgrupos
     @Transactional(readOnly = true)
     public List<CategoriaDespesaResponseDTO> arvore(Boolean ativo) {
         List<CategoriaDespesa> todas = repository.findAll();
@@ -98,7 +98,7 @@ public class CategoriaDespesaService {
     public CategoriaDespesaResponseDTO ativar(Long id) {
         CategoriaDespesa categoria = buscar(id);
         if (categoria.getPai() != null && !categoria.getPai().isAtivo()) {
-            throw new ObjetoEmUsoException("Não é possível ativar o subgrupo, pois o grupo \"" + categoria.getPai().getNome() + "\" está inativo. Ative o grupo antes de ativar o subgrupo.");
+            throw new ObjetoEmUsoException("Não é possível reativar o subgrupo, pois o grupo \"" + categoria.getPai().getNome() + "\" está desativado. Reative o grupo antes de reativar o subgrupo.");
         }
         categoria.setAtivo(true);
         repository.save(categoria);
@@ -109,7 +109,7 @@ public class CategoriaDespesaService {
     public CategoriaDespesaResponseDTO inativar(Long id) {
         CategoriaDespesa categoria = buscar(id);
         if (repository.existsByPaiIdAndAtivoTrue(id)) {
-            throw new ObjetoEmUsoException("Não é possível inativar o grupo \"" + categoria.getNome() + "\", pois ele possui subgrupos ativos. Inative os subgrupos primeiro.");
+            throw new ObjetoEmUsoException("Não é possível desativar o grupo \"" + categoria.getNome() + "\", pois ele possui subgrupos ativos. Desative os subgrupos primeiro.");
         }
         categoria.setAtivo(false);
         repository.save(categoria);
@@ -120,7 +120,7 @@ public class CategoriaDespesaService {
     public void excluir(Long id) {
         CategoriaDespesa categoria = buscar(id);
         if (repository.existsByPaiId(id)) {
-            throw new ObjetoEmUsoException("Não é possível excluir o grupo \"" + categoria.getNome() + "\", pois ele possui subgrupos. Exclua ou inative os subgrupos primeiro.");
+            throw new ObjetoEmUsoException("Não é possível excluir o grupo \"" + categoria.getNome() + "\", pois ele possui subgrupos. Exclua ou desative os subgrupos primeiro.");
         }
         repository.delete(categoria);
         repository.flush();
@@ -139,7 +139,7 @@ public class CategoriaDespesaService {
             throw new ItemInvalidoException("São permitidos no máximo dois níveis: o pai deve ser um grupo, e não um subgrupo.");
         }
         if (propriaId == null && !pai.isAtivo()) {
-            throw new ItemInvalidoException("O grupo \"" + pai.getNome() + "\" está inativo.");
+            throw new ItemInvalidoException("O grupo \"" + pai.getNome() + "\" está desativado.");
         }
         return pai;
     }
