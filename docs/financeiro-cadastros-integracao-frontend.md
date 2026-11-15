@@ -4,7 +4,7 @@ Contrato para o Frontend. Sem prefixo `/api`. Erros no padrão do projeto (`Rest
 com mensagens em tom formal. Datas em `yyyy-MM-dd`; valores monetários em número JSON com 2 casas (`1234.56`).
 
 Migration: `V64__financeiro-cadastros-movimentacao.sql` (tabelas novas, sementes e permissões). Esta fase **não** inclui contas a pagar,
-baixas, anexos nem recorrências (fase 2).
+pagamentos, anexos nem recorrências (fase 2).
 
 ## Permissões (novas; concedidas somente ao perfil ADMIN — é preciso **sair e entrar de novo** para o token trazer as novas)
 
@@ -12,13 +12,13 @@ baixas, anexos nem recorrências (fase 2).
 |---|---|
 | `CONTA_PAGAR_VISUALIZAR` | Consultar contas a pagar e os cadastros financeiros (fase 2 usa para a lista) |
 | `CONTA_PAGAR_GERENCIAR` | Lançar, editar, cancelar títulos (fase 2) |
-| `CONTA_PAGAR_BAIXAR` | Baixar títulos (fase 2) |
-| `CONTA_PAGAR_ESTORNAR` | Estornar baixas (fase 2) |
+| `CONTA_PAGAR_PAGAR` | Pagar títulos (fase 2) |
+| `CONTA_PAGAR_ESTORNAR` | Estornar pagamentos (fase 2) |
 | `CADASTRO_FINANCEIRO_GERENCIAR` | Criar, editar, ativar/inativar e excluir bancos, categorias, formas de pagamento e centros de custo |
 | `MOVIMENTACAO_VISUALIZAR` | Ver extrato e saldos |
 | `MOVIMENTACAO_GERENCIAR` | Transferência, ajuste e estorno de movimentação |
 
-**Quem consulta (GET) os cadastros:** qualquer um entre `CONTA_PAGAR_VISUALIZAR`, `CONTA_PAGAR_GERENCIAR`, `CONTA_PAGAR_BAIXAR`,
+**Quem consulta (GET) os cadastros:** qualquer um entre `CONTA_PAGAR_VISUALIZAR`, `CONTA_PAGAR_GERENCIAR`, `CONTA_PAGAR_PAGAR`,
 `CADASTRO_FINANCEIRO_GERENCIAR`. `GET /bancos` aceita também `MOVIMENTACAO_VISUALIZAR` e `MOVIMENTACAO_GERENCIAR` (a tela de
 movimentação precisa listar os bancos). Sem a permissão: **403** `"Acesso negado."`.
 Escrita (POST/PUT/PATCH/DELETE) nos cadastros: `CADASTRO_FINANCEIRO_GERENCIAR`.
@@ -96,7 +96,7 @@ Centros de custo: sem semente.
 
 ## Movimentação de contas — `/movimentacoes-banco`
 
-Origens (`origem`): `SALDO_INICIAL`, `BAIXA_CONTA_PAGAR` e `ESTORNO_BAIXA` (fase 2), `TRANSFERENCIA`, `AJUSTE`, `ESTORNO_MANUAL`.
+Origens (`origem`): `SALDO_INICIAL`, `PAGAMENTO_CONTA_PAGAR` e `ESTORNO_PAGAMENTO` (fase 2), `TRANSFERENCIA`, `AJUSTE`, `ESTORNO_MANUAL`.
 Tipos (`tipo`): `ENTRADA`, `SAIDA`. O saldo do banco é a soma das movimentações (entrada soma, saída subtrai). Movimentações nunca são
 alteradas nem apagadas: o **estorno** gera uma movimentação inversa.
 
@@ -170,4 +170,4 @@ Exemplo: `{ "timestamp": "...", "status": 400, "menssage": "Informe o motivo com
 Nenhum valor monetário informado pode ultrapassar **R$ 9.999.999,99**. Acima disso a resposta é **400** com mensagem formal, por exemplo
 `"O valor não pode ser superior a R$ 9.999.999,99."` (ou `"O valor de juros não pode ser superior a R$ 9.999.999,99."`).
 Vale para: valor do título (simples, parcelado, recorrência, lote e edição, inclusive o reajuste da recorrência), valores personalizados de parcelas,
-principal, juros, multa e desconto da baixa, ajuste, transferência e saldo inicial do banco (em módulo). O front pode limitar o campo a esse teto.
+principal, juros, multa e desconto do pagamento, ajuste, transferência e saldo inicial do banco (em módulo). O front pode limitar o campo a esse teto.

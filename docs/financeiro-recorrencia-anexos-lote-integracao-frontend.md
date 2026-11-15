@@ -8,9 +8,9 @@ Datas `yyyy-MM-dd`; valores com 2 casas. **Migration V66.** Complementa os docum
 | Ação | Permissão |
 |---|---|
 | Criar recorrência, reajustar, encerrar, lançamento em lote, anexar documento/boleto | `CONTA_PAGAR_GERENCIAR` |
-| Anexar comprovante em baixa | `CONTA_PAGAR_BAIXAR` |
-| Consultar regra, baixar (download) anexo | `CONTA_PAGAR_VISUALIZAR`, `GERENCIAR` ou `BAIXAR` |
-| Remover anexo | a mesma permissão de quem anexa: `GERENCIAR` (documento/boleto) ou `BAIXAR` (comprovante) |
+| Anexar comprovante em pagamento | `CONTA_PAGAR_PAGAR` |
+| Consultar regra, fazer o download do anexo | `CONTA_PAGAR_VISUALIZAR`, `GERENCIAR` ou `PAGAR` |
+| Remover anexo | a mesma permissão de quem anexa: `GERENCIAR` (documento/boleto) ou `PAGAR` (comprovante) |
 
 Sem permissão: **403**.
 
@@ -30,7 +30,7 @@ Sem permissão: **403**.
   passadas também são geradas. Limite de 520 ocorrências por geração (400 acima disso).
 - Datas: **mensal** mantém o dia original e ajusta o fim de mês sem derivar (31/01, 28/02, 31/03, 30/04…); **anual** em 29/02 cai em 28/02 nos anos
   não bissextos (e volta a 29/02 nos bissextos); **semanal** a cada 7 dias.
-- Cada ocorrência é um título comum (situação, baixa, edição, cancelamento como qualquer outro), **sem sufixo n/N** na descrição, com `recorrenciaId`;
+- Cada ocorrência é um título comum (situação, pagamento, edição, cancelamento como qualquer outro), **sem sufixo n/N** na descrição, com `recorrenciaId`;
   competência = mês do vencimento; categoria, centro, forma, favorecido, documento e observação vêm da regra.
 - Resposta (201): igual à criação comum, com o campo novo `recorrenciaId`:
 ```json
@@ -62,7 +62,7 @@ e regras encerradas. Registra `ultimaGeracao`. Não há endpoint para ela. Pode 
 ```
 `aPartirDe` e `valor` são obrigatórios; os demais campos, **quando omitidos (null), mantêm o valor atual da regra** (não há como limpar um campo por aqui).
 Atualiza a regra (que vale para as próximas gerações) e **somente** as ocorrências com vencimento **maior ou igual a `aPartirDe`**, situação `ABERTO`
-e sem baixa; as demais (pagas, parciais, canceladas, anteriores) ficam intactas.
+e sem pagamento; as demais (pagas, parciais, canceladas, anteriores) ficam intactas.
 Resposta: `{ "atualizadas": 8, "regra": { ...mesmo formato do GET... } }`. Regra encerrada: 400. Evento `RECORRENCIA_REAJUSTADA` na regra e em cada título atualizado.
 
 ### `POST /contas-pagar/recorrencias/{id}/encerrar`
@@ -70,7 +70,7 @@ Resposta: `{ "atualizadas": 8, "regra": { ...mesmo formato do GET... } }`. Regra
 { "cancelarFuturas": true, "motivo": "Contrato rescindido" }
 ```
 Desativa a regra (para de gerar). Com `cancelarFuturas: true` o `motivo` é obrigatório (mínimo 5 caracteres) e são canceladas as ocorrências
-**futuras** (vencimento de hoje em diante) em `ABERTO` e sem baixa; ocorrências com baixa nunca são tocadas.
+**futuras** (vencimento de hoje em diante) em `ABERTO` e sem pagamento; ocorrências com pagamento nunca são tocadas.
 Resposta: `{ "canceladas": 11, "regra": {...} }`. Regra já encerrada: 400. Evento `RECORRENCIA_ENCERRADA` na regra e nos títulos cancelados.
 
 ### Detalhe do título
@@ -84,15 +84,15 @@ Resposta: `{ "canceladas": 11, "regra": {...} }`. Regra já encerrada: 400. Even
 
 ## 2. Anexos
 
-Tipos de anexo: `DOCUMENTO`, `BOLETO` (no título) e `COMPROVANTE` (na baixa).
+Tipos de anexo: `DOCUMENTO`, `BOLETO` (no título) e `COMPROVANTE` (no pagamento).
 
 ### Upload
 - `POST /contas-pagar/{id}/anexos` — `multipart/form-data` com `arquivo` (arquivo) e `tipo` (`DOCUMENTO` ou `BOLETO`). Exige `CONTA_PAGAR_GERENCIAR`.
-- `POST /contas-pagar/baixas/{baixaId}/anexos` — `multipart/form-data` com `arquivo` (o tipo é sempre `COMPROVANTE`). Exige `CONTA_PAGAR_BAIXAR`.
+- `POST /contas-pagar/pagamentos/{pagamentoId}/anexos` — `multipart/form-data` com `arquivo` (o tipo é sempre `COMPROVANTE`). Exige `CONTA_PAGAR_PAGAR`.
 
 Resposta 201:
 ```json
-{ "id": 9, "tipo": "BOLETO", "nome": "boleto-novembro.pdf", "tipoConteudo": "application/pdf", "tamanho": 48213, "baixaId": null,
+{ "id": 9, "tipo": "BOLETO", "nome": "boleto-novembro.pdf", "tipoConteudo": "application/pdf", "tamanho": 48213, "pagamentoId": null,
   "createdAt": "2026-11-14T10:20:00", "createdBy": { "id": "...", "usuario": "admin", "primeiroNome": "..." } }
 ```
 
@@ -100,22 +100,22 @@ Regras e limites:
 - **5 MB** por arquivo (acima: **413**); arquivo vazio: 400.
 - **PDF, JPG ou PNG**. O tipo é conferido pelo **conteúdo** do arquivo (assinatura), não só pela extensão: extensão falsa ou tipo diferente: **400**.
   O `tipoConteudo` devolvido é o detectado. O nome é higienizado (sem caminho nem caracteres especiais; máximo de 120 caracteres).
-- No máximo **10 anexos por título**, somando os do título e os das suas baixas: o 11º é recusado com **409**.
-- Título `PAGO` aceita anexos. Título `CANCELADO` **não** aceita novos (400), mas o download continua permitido. Baixa estornada: o comprovante existente pode ser visto, mas **não se anexa novo** (400).
+- No máximo **10 anexos por título**, somando os do título e os dos seus pagamentos: o 11º é recusado com **409**.
+- Título `PAGO` aceita anexos. Título `CANCELADO` **não** aceita novos (400), mas o download continua permitido. Pagamento estornado: o comprovante existente pode ser visto, mas **não se anexa novo** (400).
 - Eventos `ANEXO_ADICIONADO` e `ANEXO_REMOVIDO` no histórico do título.
 
 ### Download: `GET /contas-pagar/anexos/{id}`
 Requer o token (`Authorization: Bearer`) como as demais rotas. Responde com o arquivo (bytes), `Content-Type` do arquivo,
 `Content-Disposition: attachment; filename="..."; filename*=UTF-8''...` e `X-Content-Type-Options: nosniff`.
-Como exige o cabeçalho de autorização, baixe com `fetch`/axios (`responseType: blob`) e crie um link temporário (`URL.createObjectURL`); não use `<a href>` direto.
+Como exige o cabeçalho de autorização, faça o download com `fetch`/axios (`responseType: blob`) e crie um link temporário (`URL.createObjectURL`); não use `<a href>` direto.
 Para exibir inline (ex.: imagem), use o mesmo blob. 404 se o anexo não existir.
 
 ### Remoção: `DELETE /contas-pagar/anexos/{id}` → 204
-Exige a mesma permissão de escrita do tipo (`GERENCIAR` para documento/boleto, `BAIXAR` para comprovante; 403 caso contrário). Título cancelado: 400.
+Exige a mesma permissão de escrita do tipo (`GERENCIAR` para documento/boleto, `PAGAR` para comprovante; 403 caso contrário). Título cancelado: 400.
 O arquivo é apagado e o evento `ANEXO_REMOVIDO` é registrado.
 
 ### Consultas
-- `GET /contas-pagar/{id}`: novo campo `anexos` (lista, mesmo formato do upload, inclui os comprovantes das baixas, identificados por `baixaId`).
+- `GET /contas-pagar/{id}`: novo campo `anexos` (lista, mesmo formato do upload, inclui os comprovantes dos pagamentos, identificados por `pagamentoId`).
 - `GET /contas-pagar` (lista): cada resumo traz `quantidadeAnexos` (inteiro).
 
 ---
@@ -143,7 +143,7 @@ Até **100 linhas** (mais: 400 para a requisição inteira; lista vazia: 400). C
 |---|---|
 | Validações, recorrência com parcelamento, arquivo inválido/vazio/de tipo não permitido, título cancelado em anexo, regra encerrada, motivo curto | 400 |
 | Sem permissão | 403 |
-| Título, regra, baixa ou anexo inexistentes | 404 |
+| Título, regra, pagamento ou anexo inexistentes | 404 |
 | 11º anexo do título | 409 |
 | Arquivo acima de 5 MB | 413 |
 
@@ -154,7 +154,7 @@ Exemplo: `{ "timestamp": "...", "status": "409 CONFLICT", "menssage": "O título
 Nenhum valor monetário informado pode ultrapassar **R$ 9.999.999,99**. Acima disso a resposta é **400** com mensagem formal, por exemplo
 `"O valor não pode ser superior a R$ 9.999.999,99."` (ou `"O valor de juros não pode ser superior a R$ 9.999.999,99."`).
 Vale para: valor do título (simples, parcelado, recorrência, lote e edição, inclusive o reajuste da recorrência), valores personalizados de parcelas,
-principal, juros, multa e desconto da baixa, ajuste, transferência e saldo inicial do banco (em módulo). O front pode limitar o campo a esse teto.
+principal, juros, multa e desconto do pagamento, ajuste, transferência e saldo inicial do banco (em módulo). O front pode limitar o campo a esse teto.
 
 ## Resumo do título na lista: `recorrenciaId`
 

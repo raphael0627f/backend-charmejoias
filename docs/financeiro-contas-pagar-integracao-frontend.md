@@ -2,11 +2,11 @@
 
 Contrato para o Frontend. Sem prefixo `/api`. Erros no padrão do projeto (`RestErrorMenssage`, campo **`menssage`**), mensagens formais.
 Datas `yyyy-MM-dd`; valores monetários em número JSON com 2 casas; `competencia` em texto `yyyy-MM`.
-Migration: `V65__financeiro-contas-pagar.sql`. Baixa, estorno, recorrência, anexos e lançamento em lote **não** fazem parte desta fase.
+Migration: `V65__financeiro-contas-pagar.sql`. Pagamento, estorno, recorrência, anexos e lançamento em lote **não** fazem parte desta fase.
 
 ## Permissões
 
-- Leitura (GET): `CONTA_PAGAR_VISUALIZAR`, `CONTA_PAGAR_GERENCIAR` ou `CONTA_PAGAR_BAIXAR`.
+- Leitura (GET): `CONTA_PAGAR_VISUALIZAR`, `CONTA_PAGAR_GERENCIAR` ou `CONTA_PAGAR_PAGAR`.
 - Escrita (POST/PUT/PATCH): `CONTA_PAGAR_GERENCIAR`.
 - Sem permissão: **403** `"Acesso negado."`.
 - **Não existe exclusão física** de título: o título é **cancelado** (fica registrado).
@@ -16,7 +16,7 @@ Migration: `V65__financeiro-contas-pagar.sql`. Baixa, estorno, recorrência, ane
 - `situacao` (gravada): `ABERTO`, `PAGO_PARCIAL`, `PAGO`, `CANCELADO`.
 - `situacaoExibicao`: as mesmas mais **`VENCIDO`** (calculada: `ABERTO` ou `PAGO_PARCIAL` com vencimento anterior a hoje; nunca gravada).
 - `intervalo` do parcelamento: `MENSAL`, `QUINZENAL`, `SEMANAL`, `PERSONALIZADO`.
-- `evento` do histórico: `CRIACAO`, `EDICAO`, `VENCIMENTO_ALTERADO`, `CANCELAMENTO` (a fase 3 acrescenta os de baixa).
+- `evento` do histórico: `CRIACAO`, `EDICAO`, `VENCIMENTO_ALTERADO`, `CANCELAMENTO` (a fase 3 acrescenta os de pagamento).
 
 ## Item da lista / resumo (`ContaPagarResumoDTO`)
 
@@ -72,9 +72,9 @@ Resposta (simples ou parcelado):
 ## `GET /contas-pagar` (lista paginada)
 
 Parâmetros (todos opcionais; os de data em `yyyy-MM-dd`):
-`vencimentoDe`, `vencimentoAte`, `emissaoDe`, `emissaoAte`, `pagamentoDe`, `pagamentoAte` (datas das baixas ativas; sem baixas ainda, devolve vazio),
+`vencimentoDe`, `vencimentoAte`, `emissaoDe`, `emissaoAte`, `pagamentoDe`, `pagamentoAte` (datas dos pagamentos ativos; sem pagamentos ainda, devolve vazio),
 `situacao` (repetível: `situacao=ABERTO&situacao=VENCIDO`), `busca` (descrição, documento, favorecido ou **número**), `categoriaId`
-(se for um grupo, **inclui os subgrupos**), `centroCustoId`, `formaPrevistaId`, `bancoId` (banco das baixas ativas), `valorMin`, `valorMax`,
+(se for um grupo, **inclui os subgrupos**), `centroCustoId`, `formaPrevistaId`, `bancoId` (banco dos pagamentos ativos), `valorMin`, `valorMax`,
 `ordenar` (`vencimento` padrão, `valor`, `numero`, `favorecido`, `situacao`), `direcao` (`asc` padrão, `desc`), `page` (0), `size` (20, máx. 200).
 
 - **Período padrão:** se nenhum filtro de data (vencimento, emissão ou pagamento), `busca` nem `situacao` for informado, aplica-se o **mês atual** no vencimento.
@@ -101,18 +101,18 @@ dos títulos `ABERTO`/`PAGO_PARCIAL`; `valorVencido` = parte do aberto com venci
   "situacao": "ABERTO", "situacaoExibicao": "VENCIDO",
   "grupoParcelamentoId": "...", "parcelaNumero": 2, "parcelaTotal": 12, "recorrenciaId": null,
   "cancelamento": { "motivo": "...", "em": "2026-11-14T10:00:00", "por": {usuario} },
-  "baixas": [], "parcelas": [ {ResumoDTO das parcelas do mesmo grupo, em ordem} ],
+  "pagamentos": [], "parcelas": [ {ResumoDTO das parcelas do mesmo grupo, em ordem} ],
   "eventos": [ { "id": 1, "evento": "CRIACAO", "detalhe": "...", "usuario": {...}, "dataHora": "..." } ],
   "createdAt": "...", "updatedAt": "...", "createdBy": {...}, "updatedBy": {...} }
 ```
-`cancelamento` é `null` se o título não foi cancelado. `baixas` vem **vazia** nesta fase (a fase 3 define o formato de cada item). `parcelas` vem vazia para título sem grupo.
+`cancelamento` é `null` se o título não foi cancelado. `pagamentos` vem **vazio** nesta fase (a fase 3 define o formato de cada item). `parcelas` vem vazia para título sem grupo.
 `linhaDigitavel` é devolvida **normalizada** (somente dígitos). `eventos` em ordem cronológica.
 
 ## `PUT /contas-pagar/{id}`
 
 Mesmo corpo do POST simples (sem `parcelamento`). Regras:
-- Sem baixas: edição livre.
-- Com baixa (parcial): `valor` não pode ficar abaixo do valor já pago (400). Se o novo valor igualar o pago, o título passa a `PAGO`.
+- Sem pagamentos: edição livre.
+- Com pagamento (parcial): `valor` não pode ficar abaixo do valor já pago (400). Se o novo valor igualar o pago, o título passa a `PAGO`.
 - `PAGO`: só a `observacao` pode mudar; qualquer outro campo diferente → 400. `CANCELADO` não pode ser editado (400).
 - Editar uma parcela não altera as demais. Cada edição gera evento `EDICAO` com os campos alterados (antes → depois).
 
@@ -123,7 +123,7 @@ mesma data (400). Gera evento `VENCIMENTO_ALTERADO` (data antiga, nova e motivo)
 
 ## `POST /contas-pagar/{id}/cancelar`
 
-`{ "motivo": "Lançamento em duplicidade" }` (mínimo 5). Só título **sem baixas ativas** (400: estorne antes) e não cancelado. Fica `CANCELADO`, com motivo, data e usuário.
+`{ "motivo": "Lançamento em duplicidade" }` (mínimo 5). Só título **sem pagamentos ativos** (400: estorne antes) e não cancelado. Fica `CANCELADO`, com motivo, data e usuário.
 Resposta: o detalhe.
 
 ## `POST /contas-pagar/cancelar-lote`
@@ -162,4 +162,4 @@ Exemplo: `{ "timestamp": "...", "status": "400 BAD_REQUEST", "menssage": "A soma
 Nenhum valor monetário informado pode ultrapassar **R$ 9.999.999,99**. Acima disso a resposta é **400** com mensagem formal, por exemplo
 `"O valor não pode ser superior a R$ 9.999.999,99."` (ou `"O valor de juros não pode ser superior a R$ 9.999.999,99."`).
 Vale para: valor do título (simples, parcelado, recorrência, lote e edição, inclusive o reajuste da recorrência), valores personalizados de parcelas,
-principal, juros, multa e desconto da baixa, ajuste, transferência e saldo inicial do banco (em módulo). O front pode limitar o campo a esse teto.
+principal, juros, multa e desconto do pagamento, ajuste, transferência e saldo inicial do banco (em módulo). O front pode limitar o campo a esse teto.
