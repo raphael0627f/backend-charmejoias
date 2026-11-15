@@ -76,6 +76,11 @@ public final class ContaReceberEspecificacao {
         ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), termo, ModoBusca.MEIO));
         ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("cpf"), termo, ModoBusca.MEIO));
         ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("documento"), termo, ModoBusca.MEIO));
+        String digitos = BuscaDocumento.digitos(termo);
+        if (digitos != null) {
+            ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("cpf"), digitos, ModoBusca.MEIO));
+            ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("documento"), digitos, ModoBusca.MEIO));
+        }
         String numero = termo.startsWith("#") ? termo.substring(1) : termo;
         if (!numero.isEmpty() && numero.length() <= 15 && numero.chars().allMatch(Character::isDigit)) {
             ou.add(cb.equal(root.get("numero"), Long.parseLong(numero)));

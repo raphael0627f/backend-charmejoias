@@ -240,14 +240,18 @@ public class ContaReceberService {
     public List<ContaReceberAcoesDTO.Cliente> buscarClientes(String busca) {
         StringBuilder jpql = new StringBuilder("select c from Cliente c where c.ativo = true");
         String padrao = null;
+        String padraoDigitos = BuscaDocumento.padrao(busca);
         if (busca != null && !busca.isBlank()) {
             String termo = busca.trim().toLowerCase().replace("\u0000", "").replace("!", "!!").replace("%", "!%").replace("_", "!_");
             padrao = "%" + termo + "%";
-            jpql.append(" and (lower(c.nome) like :p escape '!' or lower(c.cpf) like :p escape '!' or lower(c.documento) like :p escape '!')");
+            jpql.append(" and (lower(c.nome) like :p escape '!' or lower(c.cpf) like :p escape '!' or lower(c.documento) like :p escape '!'");
+            if (padraoDigitos != null) jpql.append(" or c.cpf like :d or c.documento like :d");
+            jpql.append(")");
         }
         jpql.append(" order by c.nome asc");
         var consulta = em.createQuery(jpql.toString(), Cliente.class).setMaxResults(LIMITE_CLIENTES);
         if (padrao != null) consulta.setParameter("p", padrao);
+        if (padraoDigitos != null) consulta.setParameter("d", padraoDigitos);
         return consulta.getResultList().stream().map(c -> new ContaReceberAcoesDTO.Cliente(c.getId(), c.getNome(),
                 ContaReceberMapper.documentoDe(c), cidade(c))).toList();
     }

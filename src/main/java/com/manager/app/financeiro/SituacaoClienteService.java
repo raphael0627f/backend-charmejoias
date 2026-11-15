@@ -42,7 +42,8 @@ public class SituacaoClienteService {
             join clientes cl on cl.id = c.cliente_id
             where c.situacao in ('ABERTO', 'RECEBIDO_PARCIAL') and c.valor - c.valor_recebido > 0
               and (cast(:busca as text) is null or lower(cl.nome) like cast(:busca as text) escape '!'
-                   or lower(cl.cpf) like cast(:busca as text) escape '!' or lower(cl.documento) like cast(:busca as text) escape '!')
+                   or lower(cl.cpf) like cast(:busca as text) escape '!' or lower(cl.documento) like cast(:busca as text) escape '!'
+                   or cl.cpf like cast(:buscaDigitos as text) or cl.documento like cast(:buscaDigitos as text))
             group by c.cliente_id, cl.nome, cl.cpf, cl.documento
             having (cast(:somenteVencidos as boolean) = false
                     or sum(case when c.vencimento < cast(:hoje as date) then c.valor - c.valor_recebido else 0 end) > 0)
@@ -117,6 +118,7 @@ public class SituacaoClienteService {
             else throw new ItemInvalidoException("Direção inválida. Use asc ou desc.");
         }
         String padrao = padraoBusca(busca);
+        String padraoDigitos = BuscaDocumento.padrao(busca);
         LocalDate hoje = LocalDate.now();
 
         String lista = "with a as (" + AGREGADO + ") select a.*, "
@@ -127,13 +129,13 @@ public class SituacaoClienteService {
                 + "order by r.data_recebimento desc, r.id desc limit 1) ur on true "
                 + "order by " + coluna + (asc ? " asc" : " desc") + ", lower(a.nome) asc, a.cliente_id asc limit :limite offset :deslocamento";
         List<SituacaoClienteDTOs.Linha> itens = jdbc.sql(lista)
-                .param("hoje", hoje).param("busca", padrao).param("somenteVencidos", somenteVencidos)
+                .param("hoje", hoje).param("busca", padrao).param("buscaDigitos", padraoDigitos).param("somenteVencidos", somenteVencidos)
                 .param("limite", tamanho).param("deslocamento", (long) pagina * tamanho)
                 .query(SituacaoClienteService::linha).list();
 
         SituacaoClienteDTOs.Totais totais = jdbc.sql("with a as (" + AGREGADO + ") select coalesce(sum(aberto), 0) as total_aberto, "
                         + "coalesce(sum(vencido), 0) as total_vencido, count(*) filter (where vencido > 0) as com_atraso, count(*) as clientes from a")
-                .param("hoje", hoje).param("busca", padrao).param("somenteVencidos", somenteVencidos)
+                .param("hoje", hoje).param("busca", padrao).param("buscaDigitos", padraoDigitos).param("somenteVencidos", somenteVencidos)
                 .query((rs, n) -> new SituacaoClienteDTOs.Totais(CalculoFinanceiro.arredondar(rs.getBigDecimal("total_aberto")),
                         CalculoFinanceiro.arredondar(rs.getBigDecimal("total_vencido")), rs.getLong("com_atraso"), rs.getLong("clientes"))).single();
         int paginas = (int) ((totais.quantidadeClientes() + tamanho - 1) / tamanho);
