@@ -38,6 +38,19 @@ public class ContaPagarAnexoArmazenamento {
         return relativo;
     }
 
+    // variante com pasta explícita (ex.: "receber/12" para os anexos do Contas a Receber); devolve <pasta>/<uuid>.<extensao>
+    public String salvarEm(String pasta, byte[] conteudo, String extensao) {
+        String relativo = pasta + "/" + UUID.randomUUID() + "." + extensao;
+        Path destino = resolver(relativo);
+        try {
+            Files.createDirectories(destino.getParent());
+            Files.write(destino, conteudo);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Não foi possível gravar o anexo", e);
+        }
+        return relativo;
+    }
+
     public byte[] ler(String relativo) {
         try {
             return Files.readAllBytes(resolver(relativo));

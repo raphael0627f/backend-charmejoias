@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-// anexos seguem vazios até a fase 4 (o frontend já pode contar com o campo)
 public record ContaReceberDetalheDTO(Long id, Long numero, String descricao, ContaReceberResumoDTO.ClienteRef cliente,
                                      ContaReceberResumoDTO.CategoriaRef categoria, ContaReceberResumoDTO.Ref centroCusto,
                                      ContaReceberResumoDTO.Ref formaPrevista, BigDecimal valor, BigDecimal valorRecebido, BigDecimal valorAberto,
@@ -18,7 +17,7 @@ public record ContaReceberDetalheDTO(Long id, Long numero, String descricao, Con
                                      SituacaoContaReceber situacao, SituacaoExibicaoContaReceber situacaoExibicao, UUID grupoParcelamentoId,
                                      Integer parcelaNumero, Integer parcelaTotal, Cancelamento cancelamento, List<Recebimento> recebimentos,
                                      List<ContaReceberResumoDTO> parcelas, List<Evento> eventos, LocalDateTime createdAt, LocalDateTime updatedAt,
-                                     UsuarioResumoDTO createdBy, UsuarioResumoDTO updatedBy, List<Object> anexos) {
+                                     UsuarioResumoDTO createdBy, UsuarioResumoDTO updatedBy, List<ContaReceberAnexoDTO> anexos) {
 
     public record Cancelamento(String motivo, LocalDateTime em, UsuarioResumoDTO por) {
     }
