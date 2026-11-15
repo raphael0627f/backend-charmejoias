@@ -39,7 +39,7 @@ public interface ContaPagarRepository extends JpaRepository<ContaPagar, Long>, J
 
     long countByRecorrenciaIdAndOcorrenciaDataLessThanEqual(Long recorrenciaId, java.time.LocalDate data);
 
-    // bloqueio pessimista da linha (SELECT ... FOR UPDATE): serializa baixa, estorno, edição e cancelamento do mesmo título
+    // bloqueio pessimista da linha (SELECT ... FOR UPDATE): serializa pagamento, estorno, edição e cancelamento do mesmo título
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from ContaPagar c where c.id = :id")
     java.util.Optional<ContaPagar> findByIdForUpdate(@Param("id") Long id);

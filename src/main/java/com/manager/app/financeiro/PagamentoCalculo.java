@@ -7,13 +7,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-// cálculos e regras da baixa e do estorno de baixa sem acesso a banco de dados (testáveis em JUnit puro).
+// cálculos e regras do pagamento e do estorno de pagamento sem acesso a banco de dados (testáveis em JUnit puro).
 // valorTotal = principal + juros + multa - desconto (sai do banco); somente o PRINCIPAL abate o título.
-public final class BaixaCalculo {
+public final class PagamentoCalculo {
 
-    private BaixaCalculo() {}
+    private PagamentoCalculo() {}
 
-    public record ResultadoBaixa(ContaPagarBaixa baixa, MovimentacaoBanco movimentacao) {}
+    public record ResultadoPagamento(ContaPagarPagamento pagamento, MovimentacaoBanco movimentacao) {}
 
     public static BigDecimal valorTotal(BigDecimal principal, BigDecimal juros, BigDecimal multa, BigDecimal desconto) {
         return CalculoFinanceiro.arredondar(principal).add(CalculoFinanceiro.arredondar(juros)).add(CalculoFinanceiro.arredondar(multa))
@@ -31,18 +31,18 @@ public final class BaixaCalculo {
         return CalculoFinanceiro.arredondar(valor);
     }
 
-    // título apto a receber baixa: ABERTO ou PAGO_PARCIAL
+    // título apto a receber pagamento: ABERTO ou PAGO_PARCIAL
     public static void validarTitulo(ContaPagar titulo) {
         if (titulo.getSituacao() == SituacaoContaPagar.CANCELADO) {
-            throw new ItemInvalidoException("O título cancelado não pode receber baixa.");
+            throw new ItemInvalidoException("O título cancelado não pode receber pagamento.");
         }
         if (titulo.getSituacao() == SituacaoContaPagar.PAGO) {
             throw new ItemInvalidoException("O título já está integralmente pago.");
         }
     }
 
-    // valida e aplica a baixa: atualiza valor pago e situação do título e devolve a baixa e a movimentação de SAÍDA (ainda não gravadas)
-    public static ResultadoBaixa baixar(ContaPagar titulo, Banco banco, FormaPagamento forma, LocalDate dataPagamento, BigDecimal principal,
+    // valida e aplica o pagamento: atualiza valor pago e situação do título e devolve o pagamento e a movimentação de SAÍDA (ainda não gravadas)
+    public static ResultadoPagamento pagar(ContaPagar titulo, Banco banco, FormaPagamento forma, LocalDate dataPagamento, BigDecimal principal,
                                         BigDecimal juros, BigDecimal multa, BigDecimal desconto, String observacao, Usuario usuario, LocalDate hoje) {
         validarTitulo(titulo);
         BigDecimal p = CalculoFinanceiro.validarValorPositivo(principal);
@@ -63,29 +63,29 @@ public final class BaixaCalculo {
             throw new ItemInvalidoException("O desconto não pode ser superior à soma do valor principal, dos juros e da multa.");
         }
         BigDecimal total = valorTotal(p, j, m, d);
-        if (total.signum() <= 0) throw new ItemInvalidoException("O valor total da baixa deve ser maior que zero.");
+        if (total.signum() <= 0) throw new ItemInvalidoException("O valor total do pagamento deve ser maior que zero.");
 
-        ContaPagarBaixa baixa = new ContaPagarBaixa();
-        baixa.setContaPagar(titulo);
-        baixa.setDataPagamento(dataPagamento);
-        baixa.setValorPrincipal(p);
-        baixa.setJuros(j);
-        baixa.setMulta(m);
-        baixa.setDesconto(d);
-        baixa.setValorTotal(total);
-        baixa.setBanco(banco);
-        baixa.setFormaPagamento(forma);
-        baixa.setObservacao(observacao == null || observacao.isBlank() ? null : observacao.trim());
+        ContaPagarPagamento pagamento = new ContaPagarPagamento();
+        pagamento.setContaPagar(titulo);
+        pagamento.setDataPagamento(dataPagamento);
+        pagamento.setValorPrincipal(p);
+        pagamento.setJuros(j);
+        pagamento.setMulta(m);
+        pagamento.setDesconto(d);
+        pagamento.setValorTotal(total);
+        pagamento.setBanco(banco);
+        pagamento.setFormaPagamento(forma);
+        pagamento.setObservacao(observacao == null || observacao.isBlank() ? null : observacao.trim());
 
         titulo.setValorPago(CalculoFinanceiro.arredondar(titulo.getValorPago()).add(p));
         titulo.setSituacao(ContaPagarCalculo.situacaoPara(titulo.getValor(), titulo.getValorPago()));
 
         MovimentacaoBanco saida = CalculoFinanceiro.movimentacao(banco, dataPagamento, TipoMovimentacao.SAIDA, total,
-                OrigemMovimentacao.BAIXA_CONTA_PAGAR, "Pagamento do título nº " + titulo.getNumero() + " - " + titulo.getDescricao(), usuario);
-        return new ResultadoBaixa(baixa, saida);
+                OrigemMovimentacao.PAGAMENTO_CONTA_PAGAR, "Pagamento do título nº " + titulo.getNumero() + " - " + titulo.getDescricao(), usuario);
+        return new ResultadoPagamento(pagamento, saida);
     }
 
-    // saldo integral em aberto do título (baixa em lote); zero = nada a pagar
+    // saldo integral em aberto do título (pagamento em lote); zero = nada a pagar
     public static BigDecimal saldoIntegral(ContaPagar titulo) {
         validarTitulo(titulo);
         BigDecimal aberto = ContaPagarCalculo.valorAberto(titulo.getSituacao(), titulo.getValor(), titulo.getValorPago());
@@ -93,18 +93,18 @@ public final class BaixaCalculo {
         return aberto;
     }
 
-    // estorno: marca a baixa e a movimentação original, reduz o valor pago do título pelo principal e devolve a movimentação inversa (ENTRADA).
+    // estorno: marca o pagamento e a movimentação original, reduz o valor pago do título pelo principal e devolve a movimentação inversa (ENTRADA).
     // Permitido com banco inativo (corrige o histórico).
-    public static MovimentacaoBanco estornar(ContaPagarBaixa baixa, MovimentacaoBanco original, String motivo, Usuario usuario,
+    public static MovimentacaoBanco estornar(ContaPagarPagamento pagamento, MovimentacaoBanco original, String motivo, Usuario usuario,
                                              LocalDate hoje, LocalDateTime agora) {
-        if (baixa.isEstornada()) throw new ItemInvalidoException("Esta baixa já foi estornada.");
-        ContaPagar titulo = baixa.getContaPagar();
-        baixa.setEstornada(true);
-        baixa.setEstornoMotivo(motivo);
-        baixa.setEstornadaEm(agora);
-        baixa.setEstornadaPor(usuario);
+        if (pagamento.isEstornada()) throw new ItemInvalidoException("Este pagamento já foi estornado.");
+        ContaPagar titulo = pagamento.getContaPagar();
+        pagamento.setEstornada(true);
+        pagamento.setEstornoMotivo(motivo);
+        pagamento.setEstornadaEm(agora);
+        pagamento.setEstornadaPor(usuario);
 
-        BigDecimal pago = CalculoFinanceiro.arredondar(titulo.getValorPago()).subtract(CalculoFinanceiro.arredondar(baixa.getValorPrincipal()));
+        BigDecimal pago = CalculoFinanceiro.arredondar(titulo.getValorPago()).subtract(CalculoFinanceiro.arredondar(pagamento.getValorPrincipal()));
         titulo.setValorPago(pago.signum() < 0 ? BigDecimal.ZERO.setScale(CalculoFinanceiro.ESCALA) : pago);
         titulo.setSituacao(ContaPagarCalculo.situacaoPara(titulo.getValor(), titulo.getValorPago()));
 
@@ -113,9 +113,9 @@ public final class BaixaCalculo {
         original.setEstornadaEm(agora);
         original.setEstornadaPor(usuario);
         MovimentacaoBanco inversa = CalculoFinanceiro.movimentacao(original.getBanco(), hoje, TipoMovimentacao.ENTRADA, original.getValor(),
-                OrigemMovimentacao.ESTORNO_BAIXA, "Estorno da baixa do título nº " + titulo.getNumero() + " - " + titulo.getDescricao() + ": " + motivo, usuario);
+                OrigemMovimentacao.ESTORNO_PAGAMENTO, "Estorno do pagamento do título nº " + titulo.getNumero() + " - " + titulo.getDescricao() + ": " + motivo, usuario);
         inversa.setEstornoDe(original);
-        inversa.setBaixaId(baixa.getId());
+        inversa.setPagamentoId(pagamento.getId());
         return inversa;
     }
 }

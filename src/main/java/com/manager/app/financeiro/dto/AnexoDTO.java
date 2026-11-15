@@ -5,7 +5,7 @@ import com.manager.app.usuario.dto.UsuarioResumoDTO;
 
 import java.time.LocalDateTime;
 
-// baixaId só vem nos comprovantes de baixa
-public record AnexoDTO(Long id, TipoAnexo tipo, String nome, String tipoConteudo, long tamanho, Long baixaId,
+// pagamentoId só vem nos comprovantes de pagamento
+public record AnexoDTO(Long id, TipoAnexo tipo, String nome, String tipoConteudo, long tamanho, Long pagamentoId,
                        LocalDateTime createdAt, UsuarioResumoDTO createdBy) {
 }

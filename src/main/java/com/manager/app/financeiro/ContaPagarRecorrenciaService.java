@@ -41,7 +41,7 @@ public class ContaPagarRecorrenciaService {
     private final ContaPagarRecorrenciaEventoRepository eventoRegraRepository;
     private final ContaPagarRepository contaPagarRepository;
     private final ContaPagarEventoRepository eventoRepository;
-    private final ContaPagarBaixaRepository baixaRepository;
+    private final ContaPagarPagamentoRepository pagamentoRepository;
     private final CategoriaDespesaRepository categoriaRepository;
     private final CentroCustoRepository centroCustoRepository;
     private final FormaPagamentoRepository formaPagamentoRepository;
@@ -242,7 +242,7 @@ public class ContaPagarRecorrenciaService {
         int atualizadas = 0;
         for (Long tituloId : contaPagarRepository.idsDaRecorrencia(id)) {
             ContaPagar t = contaPagarRepository.findByIdForUpdate(tituloId).orElse(null);
-            if (t == null || !RecorrenciaCalculo.reajustavel(t, r.aPartirDe(), baixaRepository.existsByContaPagarIdAndEstornadaFalse(tituloId))) continue;
+            if (t == null || !RecorrenciaCalculo.reajustavel(t, r.aPartirDe(), pagamentoRepository.existsByContaPagarIdAndEstornadaFalse(tituloId))) continue;
             BigDecimal valorAntes = t.getValor();
             t.setValor(regra.getValor());
             t.setDescricao(regra.getDescricao());
@@ -283,7 +283,7 @@ public class ContaPagarRecorrenciaService {
         if (cancelar) {
             for (Long tituloId : contaPagarRepository.idsDaRecorrencia(id)) {
                 ContaPagar t = contaPagarRepository.findByIdForUpdate(tituloId).orElse(null);
-                if (t == null || !RecorrenciaCalculo.encerravel(t, hoje, baixaRepository.existsByContaPagarIdAndEstornadaFalse(tituloId))) continue;
+                if (t == null || !RecorrenciaCalculo.encerravel(t, hoje, pagamentoRepository.existsByContaPagarIdAndEstornadaFalse(tituloId))) continue;
                 t.setSituacao(SituacaoContaPagar.CANCELADO);
                 t.setCancelamentoMotivo(motivo);
                 t.setCancelamentoEm(LocalDateTime.now());

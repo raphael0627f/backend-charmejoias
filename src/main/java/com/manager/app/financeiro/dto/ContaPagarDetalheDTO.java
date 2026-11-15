@@ -15,7 +15,7 @@ public record ContaPagarDetalheDTO(Long id, Long numero, String descricao, Strin
                                    BigDecimal valorPago, BigDecimal valorAberto, LocalDate emissao, String competencia, LocalDate vencimento,
                                    String documento, String linhaDigitavel, String observacao, SituacaoContaPagar situacao,
                                    SituacaoExibicaoContaPagar situacaoExibicao, UUID grupoParcelamentoId, Integer parcelaNumero,
-                                   Integer parcelaTotal, Long recorrenciaId, Cancelamento cancelamento, List<Baixa> baixas,
+                                   Integer parcelaTotal, Long recorrenciaId, Cancelamento cancelamento, List<Pagamento> pagamentos,
                                    List<ContaPagarResumoDTO> parcelas, List<Evento> eventos, LocalDateTime createdAt, LocalDateTime updatedAt,
                                    UsuarioResumoDTO createdBy, UsuarioResumoDTO updatedBy, RecorrenciaResumo recorrencia, List<AnexoDTO> anexos) {
 
@@ -30,7 +30,7 @@ public record ContaPagarDetalheDTO(Long id, Long numero, String descricao, Strin
     public record Evento(Long id, String evento, String detalhe, UsuarioResumoDTO usuario, LocalDateTime dataHora) {
     }
 
-    public record Baixa(Long id, LocalDate dataPagamento, BigDecimal valorPrincipal, BigDecimal juros, BigDecimal multa, BigDecimal desconto,
+    public record Pagamento(Long id, LocalDate dataPagamento, BigDecimal valorPrincipal, BigDecimal juros, BigDecimal multa, BigDecimal desconto,
                         BigDecimal valorTotal, ContaPagarResumoDTO.Ref banco, ContaPagarResumoDTO.Ref formaPagamento, String observacao,
                         boolean estornada, String estornoMotivo, LocalDateTime estornadaEm, UsuarioResumoDTO estornadaPor,
                         LocalDateTime createdAt, UsuarioResumoDTO createdBy, Long movimentacaoId) {

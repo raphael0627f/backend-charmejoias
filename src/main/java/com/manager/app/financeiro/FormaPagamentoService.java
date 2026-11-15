@@ -72,7 +72,7 @@ public class FormaPagamentoService {
         return mapper.formaPagamento(repository.save(forma));
     }
 
-    // a chave estrangeira das baixas (fase 2) impede excluir forma usada: o handler devolve 409
+    // a chave estrangeira dos pagamentos (fase 2) impede excluir forma usada: o handler devolve 409
     @Transactional
     public void excluir(Long id) {
         repository.delete(buscar(id));

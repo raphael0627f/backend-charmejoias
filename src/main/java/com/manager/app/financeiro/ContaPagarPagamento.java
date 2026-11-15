@@ -14,16 +14,16 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-// baixa (pagamento) de um título; nesta fase só existe a entidade e a leitura (a fase 3 cria as baixas).
+// pagamento de um título; nesta fase só existe a entidade e a leitura (a fase 3 cria os pagamentos).
 // valor_total = valor_principal + juros + multa - desconto
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "conta_pagar_baixa")
+@Table(name = "conta_pagar_pagamento")
 @EqualsAndHashCode(of = "id")
 @Getter
 @Setter
 @NoArgsConstructor
-public class ContaPagarBaixa {
+public class ContaPagarPagamento {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,6 +1,6 @@
 package com.manager.app.financeiro;
 
-import com.manager.app.financeiro.dto.BaixaDTOs;
+import com.manager.app.financeiro.dto.PagamentoDTOs;
 import com.manager.app.financeiro.dto.ContaPagarDetalheDTO;
 import com.manager.app.financeiro.dto.EstornoRequestDTO;
 import com.manager.app.security.UsuarioAuditorAware;
@@ -22,17 +22,17 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 
-// baixa, estorno de baixa e baixa em lote. Concorrência: bloqueio pessimista do título e depois do banco (sempre nessa ordem),
-// para que duas baixas simultâneas nunca paguem o mesmo saldo duas vezes. Regras e cálculos em BaixaCalculo.
+// pagamento, estorno de pagamento e pagamento em lote. Concorrência: bloqueio pessimista do título e depois do banco (sempre nessa ordem),
+// para que dois pagamentos simultâneos nunca paguem o mesmo saldo duas vezes. Regras e cálculos em PagamentoCalculo.
 @Service
 @RequiredArgsConstructor
-public class ContaPagarBaixaService {
+public class ContaPagarPagamentoService {
 
     static final int LOTE_MAXIMO = 200;
 
     private final ContaPagarService contaPagarService;
     private final ContaPagarRepository contaPagarRepository;
-    private final ContaPagarBaixaRepository baixaRepository;
+    private final ContaPagarPagamentoRepository pagamentoRepository;
     private final ContaPagarEventoRepository eventoRepository;
     private final MovimentacaoBancoRepository movimentacaoRepository;
     private final BancoRepository bancoRepository;
@@ -42,70 +42,70 @@ public class ContaPagarBaixaService {
     private final UsuarioAuditorAware auditor;
     private final PlatformTransactionManager transactionManager;
 
-    private record Aplicada(ContaPagarBaixa baixa, MovimentacaoBanco movimentacao) {
+    private record Aplicada(ContaPagarPagamento pagamento, MovimentacaoBanco movimentacao) {
     }
 
-    // ---------- baixa individual ----------
+    // ---------- pagamento individual ----------
 
     @Transactional
-    public BaixaDTOs.Resultado baixar(Long tituloId, BaixaDTOs.Request r) {
+    public PagamentoDTOs.Resultado pagar(Long tituloId, PagamentoDTOs.Request r) {
         TextoUtils.validarTexto(r.observacao(), "A observação", 500);
         ContaPagar titulo = contaPagarService.buscarComLock(tituloId);
         Banco banco = bancoRepository.findByIdForUpdate(r.bancoId()).orElseThrow(() -> new ItemInvalidoException("O banco informado não foi encontrado."));
         FormaPagamento forma = formaPagamentoRepository.findById(r.formaPagamentoId())
                 .orElseThrow(() -> new ItemInvalidoException("A forma de pagamento informada não foi encontrada."));
         Aplicada a = aplicar(titulo, banco, forma, r.dataPagamento(), r.valorPrincipal(), r.juros(), r.multa(), r.desconto(), r.observacao());
-        return new BaixaDTOs.Resultado(mapper.baixa(a.baixa(), a.movimentacao().getId()), contaPagarService.detalhe(titulo),
+        return new PagamentoDTOs.Resultado(mapper.pagamento(a.pagamento(), a.movimentacao().getId()), contaPagarService.detalhe(titulo),
                 movimentacaoService.avisoSaldoNegativo(List.of(banco)));
     }
 
     private Aplicada aplicar(ContaPagar titulo, Banco banco, FormaPagamento forma, LocalDate data, BigDecimal principal, BigDecimal juros,
                              BigDecimal multa, BigDecimal desconto, String observacao) {
         Usuario usuario = auditor.getCurrentAuditor().orElse(null);
-        BaixaCalculo.ResultadoBaixa r = BaixaCalculo.baixar(titulo, banco, forma, data, principal, juros, multa, desconto, observacao, usuario, LocalDate.now());
-        ContaPagarBaixa baixa = baixaRepository.save(r.baixa());
+        PagamentoCalculo.ResultadoPagamento r = PagamentoCalculo.pagar(titulo, banco, forma, data, principal, juros, multa, desconto, observacao, usuario, LocalDate.now());
+        ContaPagarPagamento pagamento = pagamentoRepository.save(r.pagamento());
         MovimentacaoBanco mov = r.movimentacao();
-        mov.setBaixaId(baixa.getId());
+        mov.setPagamentoId(pagamento.getId());
         movimentacaoRepository.save(mov);
         contaPagarRepository.save(titulo);
-        registrar(titulo, "BAIXA", "Baixa de " + MovimentacaoBancoService.moeda(baixa.getValorTotal()) + " em " + TextoUtils.data(data)
-                + " (principal " + MovimentacaoBancoService.moeda(baixa.getValorPrincipal()) + ", juros " + MovimentacaoBancoService.moeda(baixa.getJuros())
-                + ", multa " + MovimentacaoBancoService.moeda(baixa.getMulta()) + ", desconto " + MovimentacaoBancoService.moeda(baixa.getDesconto())
+        registrar(titulo, "PAGAMENTO_REGISTRADO", "Pagamento de " + MovimentacaoBancoService.moeda(pagamento.getValorTotal()) + " em " + TextoUtils.data(data)
+                + " (principal " + MovimentacaoBancoService.moeda(pagamento.getValorPrincipal()) + ", juros " + MovimentacaoBancoService.moeda(pagamento.getJuros())
+                + ", multa " + MovimentacaoBancoService.moeda(pagamento.getMulta()) + ", desconto " + MovimentacaoBancoService.moeda(pagamento.getDesconto())
                 + "), banco \"" + banco.getNome() + "\", forma \"" + forma.getNome() + "\".", usuario);
-        return new Aplicada(baixa, mov);
+        return new Aplicada(pagamento, mov);
     }
 
     // ---------- estorno ----------
 
     @Transactional
-    public BaixaDTOs.Resultado estornar(Long baixaId, EstornoRequestDTO request) {
+    public PagamentoDTOs.Resultado estornar(Long pagamentoId, EstornoRequestDTO request) {
         String motivo = CalculoFinanceiro.validarMotivo(request == null ? null : request.motivo());
-        Long tituloId = baixaRepository.findContaPagarIdById(baixaId).orElseThrow(() -> new ObjetoNaoEncontradoException("Baixa não encontrada."));
+        Long tituloId = pagamentoRepository.findContaPagarIdById(pagamentoId).orElseThrow(() -> new ObjetoNaoEncontradoException("Pagamento não encontrado."));
         ContaPagar titulo = contaPagarService.buscarComLock(tituloId);
-        ContaPagarBaixa baixa = baixaRepository.findByIdForUpdate(baixaId).orElseThrow(() -> new ObjetoNaoEncontradoException("Baixa não encontrada."));
-        if (baixa.isEstornada()) throw new ItemInvalidoException("Esta baixa já foi estornada.");
-        MovimentacaoBanco original = movimentacaoRepository.findByBaixaIdAndOrigem(baixaId, OrigemMovimentacao.BAIXA_CONTA_PAGAR).stream().findFirst()
-                .orElseThrow(() -> new ItemInvalidoException("A movimentação bancária desta baixa não foi localizada."));
+        ContaPagarPagamento pagamento = pagamentoRepository.findByIdForUpdate(pagamentoId).orElseThrow(() -> new ObjetoNaoEncontradoException("Pagamento não encontrado."));
+        if (pagamento.isEstornada()) throw new ItemInvalidoException("Este pagamento já foi estornado.");
+        MovimentacaoBanco original = movimentacaoRepository.findByPagamentoIdAndOrigem(pagamentoId, OrigemMovimentacao.PAGAMENTO_CONTA_PAGAR).stream().findFirst()
+                .orElseThrow(() -> new ItemInvalidoException("A movimentação bancária deste pagamento não foi localizada."));
         bancoRepository.findByIdForUpdate(original.getBanco().getId());
 
         Usuario usuario = auditor.getCurrentAuditor().orElse(null);
-        MovimentacaoBanco inversa = BaixaCalculo.estornar(baixa, original, motivo, usuario, LocalDate.now(), LocalDateTime.now());
+        MovimentacaoBanco inversa = PagamentoCalculo.estornar(pagamento, original, motivo, usuario, LocalDate.now(), LocalDateTime.now());
         movimentacaoRepository.save(inversa);
-        baixaRepository.save(baixa);
+        pagamentoRepository.save(pagamento);
         contaPagarRepository.save(titulo);
-        registrar(titulo, "ESTORNO_BAIXA", "Estorno da baixa nº " + baixa.getId() + " no valor total de " + MovimentacaoBancoService.moeda(baixa.getValorTotal())
-                + " (principal " + MovimentacaoBancoService.moeda(baixa.getValorPrincipal()) + "), realizada em " + TextoUtils.data(baixa.getDataPagamento())
+        registrar(titulo, "PAGAMENTO_ESTORNADO", "Estorno do pagamento nº " + pagamento.getId() + " no valor total de " + MovimentacaoBancoService.moeda(pagamento.getValorTotal())
+                + " (principal " + MovimentacaoBancoService.moeda(pagamento.getValorPrincipal()) + "), realizado em " + TextoUtils.data(pagamento.getDataPagamento())
                 + ". Motivo: " + motivo, usuario);
-        return new BaixaDTOs.Resultado(mapper.baixa(baixa, original.getId()), contaPagarService.detalhe(titulo), null);
+        return new PagamentoDTOs.Resultado(mapper.pagamento(pagamento, original.getId()), contaPagarService.detalhe(titulo), null);
     }
 
-    // ---------- baixa em lote ----------
+    // ---------- pagamento em lote ----------
 
     // paga o saldo integral de cada título, cada um em transação própria; um título recusado nunca derruba o lote
-    public BaixaDTOs.ResultadoLote baixarLote(BaixaDTOs.Lote r) {
+    public PagamentoDTOs.ResultadoLote pagarLote(PagamentoDTOs.Lote r) {
         if (r == null || r.ids() == null || r.ids().isEmpty()) throw new ItemInvalidoException("Selecione ao menos um título.");
         if (r.ids().stream().anyMatch(Objects::isNull)) throw new ItemInvalidoException("A lista de títulos contém um identificador inválido.");
-        if (r.ids().size() > LOTE_MAXIMO) throw new ItemInvalidoException("A baixa em lote aceita no máximo " + LOTE_MAXIMO + " títulos.");
+        if (r.ids().size() > LOTE_MAXIMO) throw new ItemInvalidoException("O pagamento em lote aceita no máximo " + LOTE_MAXIMO + " títulos.");
         if (r.dataPagamento() == null) throw new ItemInvalidoException("A data do pagamento é obrigatória.");
         if (r.bancoId() == null) throw new ItemInvalidoException("O banco é obrigatório.");
         if (r.formaPagamentoId() == null) throw new ItemInvalidoException("A forma de pagamento é obrigatória.");
@@ -118,31 +118,31 @@ public class ContaPagarBaixaService {
         if (!formaInicial.isAtivo()) throw new ItemInvalidoException("A forma de pagamento \"" + formaInicial.getNome() + "\" está inativa.");
 
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
-        List<BaixaDTOs.ItemLote> itens = new ArrayList<>();
+        List<PagamentoDTOs.ItemLote> itens = new ArrayList<>();
         BigDecimal totalPago = BigDecimal.ZERO.setScale(CalculoFinanceiro.ESCALA);
-        int baixados = 0;
+        int pagos = 0;
         for (Long id : new LinkedHashSet<>(r.ids())) {
             try {
-                BaixaDTOs.ItemLote item = tx.execute(status -> baixarIntegral(id, r));
+                PagamentoDTOs.ItemLote item = tx.execute(status -> pagarIntegral(id, r));
                 itens.add(item);
-                baixados++;
-                totalPago = totalPago.add(item.valorBaixado());
+                pagos++;
+                totalPago = totalPago.add(item.valorPago());
             } catch (ItemInvalidoException | ObjetoNaoEncontradoException e) {
-                itens.add(new BaixaDTOs.ItemLote(id, numeroOuNulo(id), false, null, null, null, null, e.getMessage()));
+                itens.add(new PagamentoDTOs.ItemLote(id, numeroOuNulo(id), false, null, null, null, null, e.getMessage()));
             }
         }
-        String aviso = baixados == 0 ? null : movimentacaoService.avisoSaldoNegativo(List.of(bancoInicial));
-        return new BaixaDTOs.ResultadoLote(baixados, itens.size() - baixados, totalPago, itens, aviso);
+        String aviso = pagos == 0 ? null : movimentacaoService.avisoSaldoNegativo(List.of(bancoInicial));
+        return new PagamentoDTOs.ResultadoLote(pagos, itens.size() - pagos, totalPago, itens, aviso);
     }
 
-    private BaixaDTOs.ItemLote baixarIntegral(Long id, BaixaDTOs.Lote r) {
+    private PagamentoDTOs.ItemLote pagarIntegral(Long id, PagamentoDTOs.Lote r) {
         ContaPagar titulo = contaPagarService.buscarComLock(id);
         Banco banco = bancoRepository.findByIdForUpdate(r.bancoId()).orElseThrow(() -> new ItemInvalidoException("O banco informado não foi encontrado."));
         FormaPagamento forma = formaPagamentoRepository.findById(r.formaPagamentoId())
                 .orElseThrow(() -> new ItemInvalidoException("A forma de pagamento informada não foi encontrada."));
-        BigDecimal saldo = BaixaCalculo.saldoIntegral(titulo);
+        BigDecimal saldo = PagamentoCalculo.saldoIntegral(titulo);
         Aplicada a = aplicar(titulo, banco, forma, r.dataPagamento(), saldo, null, null, null, r.observacao());
-        return new BaixaDTOs.ItemLote(id, titulo.getNumero(), true, a.baixa().getId(), a.baixa().getValorTotal(),
+        return new PagamentoDTOs.ItemLote(id, titulo.getNumero(), true, a.pagamento().getId(), a.pagamento().getValorTotal(),
                 ContaPagarCalculo.valorAberto(titulo.getSituacao(), titulo.getValor(), titulo.getValorPago()), titulo.getSituacao().name(), null);
     }
 

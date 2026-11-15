@@ -52,7 +52,7 @@ public class ContaPagarService {
 
     private final ContaPagarRepository repository;
     private final ContaPagarEventoRepository eventoRepository;
-    private final ContaPagarBaixaRepository baixaRepository;
+    private final ContaPagarPagamentoRepository pagamentoRepository;
     private final ContaPagarAnexoRepository anexoRepository;
     private final ContaPagarRecorrenciaService recorrenciaService;
     private final MovimentacaoBancoRepository movimentacaoRepository;
@@ -226,15 +226,15 @@ public class ContaPagarService {
     public ContaPagarDetalheDTO detalhe(ContaPagar c) {
         List<ContaPagar> parcelas = c.getGrupoParcelamentoId() == null ? List.of()
                 : repository.findByGrupoParcelamentoIdOrderByParcelaNumeroAscIdAsc(c.getGrupoParcelamentoId());
-        List<ContaPagarBaixa> baixas = baixaRepository.findByContaPagarIdOrderByIdAsc(c.getId());
+        List<ContaPagarPagamento> pagamentos = pagamentoRepository.findByContaPagarIdOrderByIdAsc(c.getId());
         Map<Long, Long> movimentacoes = new java.util.HashMap<>();
-        if (!baixas.isEmpty()) {
-            movimentacaoRepository.findByBaixaIdIn(baixas.stream().map(ContaPagarBaixa::getId).toList()).stream()
-                    .filter(m -> m.getOrigem() == OrigemMovimentacao.BAIXA_CONTA_PAGAR).forEach(m -> movimentacoes.put(m.getBaixaId(), m.getId()));
+        if (!pagamentos.isEmpty()) {
+            movimentacaoRepository.findByPagamentoIdIn(pagamentos.stream().map(ContaPagarPagamento::getId).toList()).stream()
+                    .filter(m -> m.getOrigem() == OrigemMovimentacao.PAGAMENTO_CONTA_PAGAR).forEach(m -> movimentacoes.put(m.getPagamentoId(), m.getId()));
         }
         List<Long> ids = new java.util.ArrayList<>(parcelas.stream().map(ContaPagar::getId).toList());
         ids.add(c.getId());
-        return mapper.detalhe(c, LocalDate.now(), baixas, parcelas, eventoRepository.findByContaPagarIdOrderByIdAsc(c.getId()), movimentacoes,
+        return mapper.detalhe(c, LocalDate.now(), pagamentos, parcelas, eventoRepository.findByContaPagarIdOrderByIdAsc(c.getId()), movimentacoes,
                 contagemAnexos(ids), anexoRepository.findByContaPagarIdOrderByIdAsc(c.getId()), recorrenciaService.resumoDoTitulo(c));
     }
 
@@ -278,7 +278,7 @@ public class ContaPagarService {
                     || !Objects.equals(c.getCompetencia(), competencia) || !Objects.equals(c.getDocumento(), base.documento())
                     || !Objects.equals(c.getLinhaDigitavel(), linha);
             if (outrosCampos) {
-                throw new ItemInvalidoException("O título pago permite alterar apenas a observação. Para alterar os demais dados, estorne a baixa antes.");
+                throw new ItemInvalidoException("O título pago permite alterar apenas a observação. Para alterar os demais dados, estorne o pagamento antes.");
             }
             diff(alteracoes, "observação", c.getObservacao(), base.observacao());
             c.setObservacao(base.observacao());
@@ -377,8 +377,8 @@ public class ContaPagarService {
     private ContaPagar cancelarTitulo(Long id, String motivo) {
         ContaPagar c = buscarComLock(id);
         if (c.getSituacao() == SituacaoContaPagar.CANCELADO) throw new ItemInvalidoException("O título já está cancelado.");
-        if (baixaRepository.existsByContaPagarIdAndEstornadaFalse(id)) {
-            throw new ItemInvalidoException("O título possui baixas ativas. Estorne as baixas antes de cancelar.");
+        if (pagamentoRepository.existsByContaPagarIdAndEstornadaFalse(id)) {
+            throw new ItemInvalidoException("O título possui pagamentos ativos. Estorne os pagamentos antes de cancelar.");
         }
         Usuario usuario = usuarioAtual();
         c.setSituacao(SituacaoContaPagar.CANCELADO);

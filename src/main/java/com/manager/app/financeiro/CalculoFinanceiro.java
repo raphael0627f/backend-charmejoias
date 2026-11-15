@@ -67,7 +67,7 @@ public final class CalculoFinanceiro {
         return m;
     }
 
-    // teto de qualquer valor monetário informado (título, baixa, ajuste, transferência, saldo inicial)
+    // teto de qualquer valor monetário informado (título, pagamento, ajuste, transferência, saldo inicial)
     public static final BigDecimal VALOR_MAXIMO = new BigDecimal("9999999.99");
 
     public static void validarTeto(BigDecimal valor, String nome) {
@@ -154,8 +154,8 @@ public final class CalculoFinanceiro {
 
     // só transferência e ajuste podem ser estornados (nesta fase), uma única vez
     public static void validarEstornavel(MovimentacaoBanco m) {
-        if (m.getOrigem() == OrigemMovimentacao.BAIXA_CONTA_PAGAR || m.getOrigem() == OrigemMovimentacao.ESTORNO_BAIXA) {
-            throw new ItemInvalidoException("Esta movimentação foi gerada por uma baixa de conta a pagar. Para estornar, utilize o estorno da baixa no título.");
+        if (m.getOrigem() == OrigemMovimentacao.PAGAMENTO_CONTA_PAGAR || m.getOrigem() == OrigemMovimentacao.ESTORNO_PAGAMENTO) {
+            throw new ItemInvalidoException("Esta movimentação foi gerada por um pagamento de conta a pagar. Para estornar, utilize o estorno do pagamento no título.");
         }
         if (m.getOrigem() != OrigemMovimentacao.TRANSFERENCIA && m.getOrigem() != OrigemMovimentacao.AJUSTE) {
             throw new ItemInvalidoException("Somente transferências e ajustes podem ser estornados por esta operação.");

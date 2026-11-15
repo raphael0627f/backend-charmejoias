@@ -67,21 +67,21 @@ public final class RecorrenciaCalculo {
         return datas;
     }
 
-    // ocorrência alterável pelo reajuste: aberta, sem baixa e com vencimento a partir da data informada
-    public static boolean reajustavel(ContaPagar titulo, LocalDate aPartirDe, boolean comBaixaAtiva) {
-        return titulo.getSituacao() == SituacaoContaPagar.ABERTO && !comBaixaAtiva && !titulo.getVencimento().isBefore(aPartirDe);
+    // ocorrência alterável pelo reajuste: aberta, sem pagamento e com vencimento a partir da data informada
+    public static boolean reajustavel(ContaPagar titulo, LocalDate aPartirDe, boolean comPagamentoAtivo) {
+        return titulo.getSituacao() == SituacaoContaPagar.ABERTO && !comPagamentoAtivo && !titulo.getVencimento().isBefore(aPartirDe);
     }
 
-    // ocorrência cancelável no encerramento: futura (vencimento de hoje em diante), aberta e sem baixa
-    public static boolean encerravel(ContaPagar titulo, LocalDate hoje, boolean comBaixaAtiva) {
-        return reajustavel(titulo, hoje, comBaixaAtiva);
+    // ocorrência cancelável no encerramento: futura (vencimento de hoje em diante), aberta e sem pagamento
+    public static boolean encerravel(ContaPagar titulo, LocalDate hoje, boolean comPagamentoAtivo) {
+        return reajustavel(titulo, hoje, comPagamentoAtivo);
     }
 
-    public static List<ContaPagar> selecionarReajustaveis(Collection<ContaPagar> titulos, LocalDate aPartirDe, Set<Long> comBaixaAtiva) {
-        return titulos.stream().filter(t -> reajustavel(t, aPartirDe, comBaixaAtiva.contains(t.getId()))).toList();
+    public static List<ContaPagar> selecionarReajustaveis(Collection<ContaPagar> titulos, LocalDate aPartirDe, Set<Long> comPagamentoAtivo) {
+        return titulos.stream().filter(t -> reajustavel(t, aPartirDe, comPagamentoAtivo.contains(t.getId()))).toList();
     }
 
-    public static List<ContaPagar> selecionarEncerraveis(Collection<ContaPagar> titulos, LocalDate hoje, Set<Long> comBaixaAtiva) {
-        return titulos.stream().filter(t -> encerravel(t, hoje, comBaixaAtiva.contains(t.getId()))).toList();
+    public static List<ContaPagar> selecionarEncerraveis(Collection<ContaPagar> titulos, LocalDate hoje, Set<Long> comPagamentoAtivo) {
+        return titulos.stream().filter(t -> encerravel(t, hoje, comPagamentoAtivo.contains(t.getId()))).toList();
     }
 }

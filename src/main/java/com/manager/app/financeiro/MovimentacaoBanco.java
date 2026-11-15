@@ -40,8 +40,8 @@ public class MovimentacaoBanco {
 
     private String descricao;
 
-    // reservado para a baixa de conta a pagar (fase 2); ainda sem chave estrangeira
-    private Long baixaId;
+    // reservado para o pagamento de conta a pagar (fase 2); ainda sem chave estrangeira
+    private Long pagamentoId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transferencia_id")

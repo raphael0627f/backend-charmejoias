@@ -50,16 +50,16 @@ public final class ContaPagarEspecificacao {
                 p.add(cb.or(ou.toArray(new Predicate[0])));
             }
             if (f.pagamentoDe() != null || f.pagamentoAte() != null || f.bancoId() != null) {
-                // baixas ativas (não estornadas) do título
+                // pagamentos ativos (não estornados) do título
                 Subquery<Long> sub = query.subquery(Long.class);
-                Root<ContaPagarBaixa> baixa = sub.from(ContaPagarBaixa.class);
+                Root<ContaPagarPagamento> pagamento = sub.from(ContaPagarPagamento.class);
                 List<Predicate> b = new ArrayList<>();
-                b.add(cb.equal(baixa.get("contaPagar"), root));
-                b.add(cb.isFalse(baixa.get("estornada")));
-                if (f.pagamentoDe() != null) b.add(cb.greaterThanOrEqualTo(baixa.get("dataPagamento"), f.pagamentoDe()));
-                if (f.pagamentoAte() != null) b.add(cb.lessThanOrEqualTo(baixa.get("dataPagamento"), f.pagamentoAte()));
-                if (f.bancoId() != null) b.add(cb.equal(baixa.get("banco").get("id"), f.bancoId()));
-                sub.select(baixa.get("id")).where(b.toArray(new Predicate[0]));
+                b.add(cb.equal(pagamento.get("contaPagar"), root));
+                b.add(cb.isFalse(pagamento.get("estornada")));
+                if (f.pagamentoDe() != null) b.add(cb.greaterThanOrEqualTo(pagamento.get("dataPagamento"), f.pagamentoDe()));
+                if (f.pagamentoAte() != null) b.add(cb.lessThanOrEqualTo(pagamento.get("dataPagamento"), f.pagamentoAte()));
+                if (f.bancoId() != null) b.add(cb.equal(pagamento.get("banco").get("id"), f.bancoId()));
+                sub.select(pagamento.get("id")).where(b.toArray(new Predicate[0]));
                 p.add(cb.exists(sub));
             }
             return cb.and(p.toArray(new Predicate[0]));

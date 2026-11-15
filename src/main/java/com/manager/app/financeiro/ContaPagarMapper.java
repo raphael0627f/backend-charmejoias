@@ -30,7 +30,7 @@ public class ContaPagarMapper {
                 c.getParcelaNumero(), c.getParcelaTotal(), c.getCancelamentoMotivo(), c.getCancelamentoEm(), quantidadeAnexos, c.getRecorrenciaId());
     }
 
-    public ContaPagarDetalheDTO detalhe(ContaPagar c, LocalDate hoje, List<ContaPagarBaixa> baixas, List<ContaPagar> parcelas,
+    public ContaPagarDetalheDTO detalhe(ContaPagar c, LocalDate hoje, List<ContaPagarPagamento> pagamentos, List<ContaPagar> parcelas,
                                         List<ContaPagarEvento> eventos, java.util.Map<Long, Long> movimentacoes, java.util.Map<Long, Integer> anexosPorTitulo,
                                         List<ContaPagarAnexo> anexos, ContaPagarDetalheDTO.RecorrenciaResumo recorrencia) {
         ContaPagarResumoDTO r = resumo(c, hoje, anexosPorTitulo.getOrDefault(c.getId(), 0));
@@ -39,7 +39,7 @@ public class ContaPagarMapper {
         return new ContaPagarDetalheDTO(r.id(), r.numero(), r.descricao(), r.favorecido(), r.categoria(), r.centroCusto(), r.formaPrevista(),
                 r.valor(), r.valorPago(), r.valorAberto(), r.emissao(), r.competencia(), r.vencimento(), r.documento(), c.getLinhaDigitavel(),
                 c.getObservacao(), r.situacao(), r.situacaoExibicao(), r.grupoParcelamentoId(), r.parcelaNumero(), r.parcelaTotal(),
-                c.getRecorrenciaId(), cancelamento, baixas.stream().map(b -> baixa(b, movimentacoes.get(b.getId()))).toList(),
+                c.getRecorrenciaId(), cancelamento, pagamentos.stream().map(b -> pagamento(b, movimentacoes.get(b.getId()))).toList(),
                 parcelas.stream().map(p -> resumo(p, hoje, anexosPorTitulo.getOrDefault(p.getId(), 0))).toList(),
                 eventos.stream().map(e -> new ContaPagarDetalheDTO.Evento(e.getId(), e.getEvento(), e.getDetalhe(),
                         mapper.usuario(e.getUsuario()), e.getDataHora())).toList(),
@@ -47,12 +47,12 @@ public class ContaPagarMapper {
     }
 
     public AnexoDTO anexo(ContaPagarAnexo a) {
-        return new AnexoDTO(a.getId(), a.getTipo(), a.getNomeOriginal(), a.getTipoConteudo(), a.getTamanho(), a.getBaixa() == null ? null : a.getBaixa().getId(),
+        return new AnexoDTO(a.getId(), a.getTipo(), a.getNomeOriginal(), a.getTipoConteudo(), a.getTamanho(), a.getPagamento() == null ? null : a.getPagamento().getId(),
                 a.getCreatedAt(), mapper.usuario(a.getCreatedBy()));
     }
 
-    public ContaPagarDetalheDTO.Baixa baixa(ContaPagarBaixa b, Long movimentacaoId) {
-        return new ContaPagarDetalheDTO.Baixa(b.getId(), b.getDataPagamento(), b.getValorPrincipal(), b.getJuros(), b.getMulta(), b.getDesconto(),
+    public ContaPagarDetalheDTO.Pagamento pagamento(ContaPagarPagamento b, Long movimentacaoId) {
+        return new ContaPagarDetalheDTO.Pagamento(b.getId(), b.getDataPagamento(), b.getValorPrincipal(), b.getJuros(), b.getMulta(), b.getDesconto(),
                 b.getValorTotal(), new ContaPagarResumoDTO.Ref(b.getBanco().getId(), b.getBanco().getNome()),
                 new ContaPagarResumoDTO.Ref(b.getFormaPagamento().getId(), b.getFormaPagamento().getNome()), b.getObservacao(),
                 b.isEstornada(), b.getEstornoMotivo(), b.getEstornadaEm(), mapper.usuario(b.getEstornadaPor()), b.getCreatedAt(),

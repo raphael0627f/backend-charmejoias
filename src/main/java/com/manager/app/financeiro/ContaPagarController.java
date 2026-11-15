@@ -1,7 +1,7 @@
 package com.manager.app.financeiro;
 
 import com.manager.app.financeiro.dto.AnexoDTO;
-import com.manager.app.financeiro.dto.BaixaDTOs;
+import com.manager.app.financeiro.dto.PagamentoDTOs;
 import com.manager.app.financeiro.dto.LoteLancamentoDTOs;
 import com.manager.app.financeiro.dto.RecorrenciaDTOs;
 import com.manager.app.financeiro.dto.ContaPagarAcoesDTO;
@@ -35,13 +35,13 @@ import java.util.List;
 @RequestMapping("/contas-pagar")
 public class ContaPagarController {
 
-    private static final String CONSULTA = "hasAnyAuthority('CONTA_PAGAR_VISUALIZAR', 'CONTA_PAGAR_GERENCIAR', 'CONTA_PAGAR_BAIXAR')";
-    private static final String BAIXA = "hasAuthority('CONTA_PAGAR_BAIXAR')";
+    private static final String CONSULTA = "hasAnyAuthority('CONTA_PAGAR_VISUALIZAR', 'CONTA_PAGAR_GERENCIAR', 'CONTA_PAGAR_PAGAR')";
+    private static final String PAGAMENTO = "hasAuthority('CONTA_PAGAR_PAGAR')";
     private static final String ESTORNO = "hasAuthority('CONTA_PAGAR_ESTORNAR')";
     private static final String GERENCIA = "hasAuthority('CONTA_PAGAR_GERENCIAR')";
 
     private final ContaPagarService service;
-    private final ContaPagarBaixaService baixaService;
+    private final ContaPagarPagamentoService pagamentoService;
     private final ContaPagarRecorrenciaService recorrenciaService;
     private final ContaPagarAnexoService anexoService;
     private final ContaPagarLoteService loteService;
@@ -108,22 +108,22 @@ public class ContaPagarController {
         return ResponseEntity.ok(service.cancelar(id, request));
     }
 
-    @PostMapping("/{id}/baixas")
-    @PreAuthorize(BAIXA)
-    public ResponseEntity<BaixaDTOs.Resultado> baixar(@PathVariable Long id, @Valid @RequestBody BaixaDTOs.Request request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(baixaService.baixar(id, request));
+    @PostMapping("/{id}/pagamentos")
+    @PreAuthorize(PAGAMENTO)
+    public ResponseEntity<PagamentoDTOs.Resultado> pagar(@PathVariable Long id, @Valid @RequestBody PagamentoDTOs.Request request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(pagamentoService.pagar(id, request));
     }
 
-    @PostMapping("/baixas/{baixaId}/estornar")
+    @PostMapping("/pagamentos/{pagamentoId}/estornar")
     @PreAuthorize(ESTORNO)
-    public ResponseEntity<BaixaDTOs.Resultado> estornarBaixa(@PathVariable Long baixaId, @RequestBody(required = false) EstornoRequestDTO request) {
-        return ResponseEntity.ok(baixaService.estornar(baixaId, request));
+    public ResponseEntity<PagamentoDTOs.Resultado> estornarPagamento(@PathVariable Long pagamentoId, @RequestBody(required = false) EstornoRequestDTO request) {
+        return ResponseEntity.ok(pagamentoService.estornar(pagamentoId, request));
     }
 
-    @PostMapping("/baixas-lote")
-    @PreAuthorize(BAIXA)
-    public ResponseEntity<BaixaDTOs.ResultadoLote> baixarLote(@RequestBody(required = false) BaixaDTOs.Lote request) {
-        return ResponseEntity.ok(baixaService.baixarLote(request));
+    @PostMapping("/pagamentos-lote")
+    @PreAuthorize(PAGAMENTO)
+    public ResponseEntity<PagamentoDTOs.ResultadoLote> pagarLote(@RequestBody(required = false) PagamentoDTOs.Lote request) {
+        return ResponseEntity.ok(pagamentoService.pagarLote(request));
     }
 
     @PostMapping("/lote")
@@ -160,10 +160,10 @@ public class ContaPagarController {
         return ResponseEntity.status(HttpStatus.CREATED).body(anexoService.anexarAoTitulo(id, tipo, arquivo));
     }
 
-    @PostMapping(value = "/baixas/{baixaId}/anexos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize(BAIXA)
-    public ResponseEntity<AnexoDTO> anexarComprovante(@PathVariable Long baixaId, @RequestPart("arquivo") MultipartFile arquivo) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(anexoService.anexarComprovante(baixaId, arquivo));
+    @PostMapping(value = "/pagamentos/{pagamentoId}/anexos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize(PAGAMENTO)
+    public ResponseEntity<AnexoDTO> anexarComprovante(@PathVariable Long pagamentoId, @RequestPart("arquivo") MultipartFile arquivo) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(anexoService.anexarComprovante(pagamentoId, arquivo));
     }
 
     @GetMapping("/anexos/{id}")
@@ -179,7 +179,7 @@ public class ContaPagarController {
     }
 
     @DeleteMapping("/anexos/{id}")
-    @PreAuthorize("hasAnyAuthority('CONTA_PAGAR_GERENCIAR', 'CONTA_PAGAR_BAIXAR')")
+    @PreAuthorize("hasAnyAuthority('CONTA_PAGAR_GERENCIAR', 'CONTA_PAGAR_PAGAR')")
     public ResponseEntity<Void> removerAnexo(@PathVariable Long id, Authentication authentication) {
         anexoService.excluir(id, authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet()));
         return ResponseEntity.noContent().build();

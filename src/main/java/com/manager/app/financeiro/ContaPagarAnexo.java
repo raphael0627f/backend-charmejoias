@@ -12,7 +12,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
-// metadados do anexo (documento, boleto ou comprovante de baixa); o conteúdo fica em arquivo no diretório de anexos (campo arquivo)
+// metadados do anexo (documento, boleto ou comprovante de pagamento); o conteúdo fica em arquivo no diretório de anexos (campo arquivo)
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "conta_pagar_anexo")
@@ -31,8 +31,8 @@ public class ContaPagarAnexo {
     private ContaPagar contaPagar;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "baixa_id")
-    private ContaPagarBaixa baixa;
+    @JoinColumn(name = "pagamento_id")
+    private ContaPagarPagamento pagamento;
 
     @Enumerated(EnumType.STRING)
     private TipoAnexo tipo;

@@ -19,7 +19,7 @@ import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
 import java.util.Collection;
 
-// anexos do título (documento, boleto) e comprovantes de baixa. O título é bloqueado (SELECT FOR UPDATE) para que o limite de 10 anexos
+// anexos do título (documento, boleto) e comprovantes de pagamento. O título é bloqueado (SELECT FOR UPDATE) para que o limite de 10 anexos
 // valha mesmo com envios simultâneos.
 @Service
 @RequiredArgsConstructor
@@ -27,7 +27,7 @@ public class ContaPagarAnexoService {
 
     private final ContaPagarAnexoRepository repository;
     private final ContaPagarRepository contaPagarRepository;
-    private final ContaPagarBaixaRepository baixaRepository;
+    private final ContaPagarPagamentoRepository pagamentoRepository;
     private final ContaPagarEventoRepository eventoRepository;
     private final ContaPagarAnexoArmazenamento armazenamento;
     private final ContaPagarMapper mapper;
@@ -39,30 +39,30 @@ public class ContaPagarAnexoService {
     @Transactional
     public AnexoDTO anexarAoTitulo(Long tituloId, TipoAnexo tipo, MultipartFile arquivo) {
         if (tipo == null) throw new ItemInvalidoException("Informe o tipo do anexo: DOCUMENTO ou BOLETO.");
-        if (tipo == TipoAnexo.COMPROVANTE) throw new ItemInvalidoException("O comprovante deve ser anexado diretamente à baixa.");
+        if (tipo == TipoAnexo.COMPROVANTE) throw new ItemInvalidoException("O comprovante deve ser anexado diretamente ao pagamento.");
         AnexoValidacao.Validado v = AnexoValidacao.validar(ler(arquivo), arquivo.getOriginalFilename());
         ContaPagar titulo = contaPagarRepository.findByIdForUpdate(tituloId).orElseThrow(() -> new ObjetoNaoEncontradoException("Título não encontrado."));
         return gravar(titulo, null, tipo, v, ler(arquivo));
     }
 
     @Transactional
-    public AnexoDTO anexarComprovante(Long baixaId, MultipartFile arquivo) {
+    public AnexoDTO anexarComprovante(Long pagamentoId, MultipartFile arquivo) {
         AnexoValidacao.Validado v = AnexoValidacao.validar(ler(arquivo), arquivo.getOriginalFilename());
-        Long tituloId = baixaRepository.findContaPagarIdById(baixaId).orElseThrow(() -> new ObjetoNaoEncontradoException("Baixa não encontrada."));
+        Long tituloId = pagamentoRepository.findContaPagarIdById(pagamentoId).orElseThrow(() -> new ObjetoNaoEncontradoException("Pagamento não encontrado."));
         ContaPagar titulo = contaPagarRepository.findByIdForUpdate(tituloId).orElseThrow(() -> new ObjetoNaoEncontradoException("Título não encontrado."));
-        ContaPagarBaixa baixa = baixaRepository.findById(baixaId).orElseThrow(() -> new ObjetoNaoEncontradoException("Baixa não encontrada."));
-        if (baixa.isEstornada()) throw new ItemInvalidoException("A baixa está estornada e não aceita novos comprovantes.");
-        return gravar(titulo, baixa, TipoAnexo.COMPROVANTE, v, ler(arquivo));
+        ContaPagarPagamento pagamento = pagamentoRepository.findById(pagamentoId).orElseThrow(() -> new ObjetoNaoEncontradoException("Pagamento não encontrado."));
+        if (pagamento.isEstornada()) throw new ItemInvalidoException("O pagamento está estornado e não aceita novos comprovantes.");
+        return gravar(titulo, pagamento, TipoAnexo.COMPROVANTE, v, ler(arquivo));
     }
 
-    private AnexoDTO gravar(ContaPagar titulo, ContaPagarBaixa baixa, TipoAnexo tipo, AnexoValidacao.Validado v, byte[] conteudo) {
+    private AnexoDTO gravar(ContaPagar titulo, ContaPagarPagamento pagamento, TipoAnexo tipo, AnexoValidacao.Validado v, byte[] conteudo) {
         if (titulo.getSituacao() == SituacaoContaPagar.CANCELADO) throw new ItemInvalidoException("O título cancelado não aceita novos anexos.");
         if (repository.countByContaPagarId(titulo.getId()) >= AnexoValidacao.MAXIMO_POR_TITULO) {
             throw new ObjetoEmUsoException("O título já possui o número máximo de " + AnexoValidacao.MAXIMO_POR_TITULO + " anexos.");
         }
         ContaPagarAnexo a = new ContaPagarAnexo();
         a.setContaPagar(titulo);
-        a.setBaixa(baixa);
+        a.setPagamento(pagamento);
         a.setTipo(tipo);
         a.setNomeOriginal(v.nome());
         a.setTipoConteudo(v.tipoConteudo());
@@ -78,7 +78,7 @@ public class ContaPagarAnexoService {
             }
         });
         evento(titulo, "ANEXO_ADICIONADO", "Anexo \"" + a.getNomeOriginal() + "\" (" + tipo.name().toLowerCase(java.util.Locale.ROOT) + ", "
-                + a.getTamanho() + " bytes) adicionado" + (baixa == null ? "" : " à baixa nº " + baixa.getId()) + ".");
+                + a.getTamanho() + " bytes) adicionado" + (pagamento == null ? "" : " ao pagamento nº " + pagamento.getId()) + ".");
         return mapper.anexo(a);
     }
 
@@ -88,11 +88,11 @@ public class ContaPagarAnexoService {
         return new Download(a.getNomeOriginal(), a.getTipoConteudo(), armazenamento.ler(a.getArquivo()));
     }
 
-    // comprovante exige a permissão de baixa; documento e boleto, a de gerência
+    // comprovante exige a permissão de pagamento; documento e boleto, a de gerência
     @Transactional
     public void excluir(Long id, Collection<String> permissoes) {
         ContaPagarAnexo encontrado = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Anexo não encontrado."));
-        String exigida = encontrado.getTipo() == TipoAnexo.COMPROVANTE ? "CONTA_PAGAR_BAIXAR" : "CONTA_PAGAR_GERENCIAR";
+        String exigida = encontrado.getTipo() == TipoAnexo.COMPROVANTE ? "CONTA_PAGAR_PAGAR" : "CONTA_PAGAR_GERENCIAR";
         if (!permissoes.contains(exigida)) throw new AccessDeniedException("Acesso negado.");
         ContaPagar titulo = contaPagarRepository.findByIdForUpdate(encontrado.getContaPagar().getId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Título não encontrado."));

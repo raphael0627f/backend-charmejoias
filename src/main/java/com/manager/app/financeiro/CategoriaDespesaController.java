@@ -17,7 +17,7 @@ import java.util.List;
 @RequestMapping("/categorias-despesa")
 public class CategoriaDespesaController {
 
-    private static final String CONSULTA = "hasAnyAuthority('CONTA_PAGAR_VISUALIZAR', 'CONTA_PAGAR_GERENCIAR', 'CONTA_PAGAR_BAIXAR', 'CADASTRO_FINANCEIRO_GERENCIAR')";
+    private static final String CONSULTA = "hasAnyAuthority('CONTA_PAGAR_VISUALIZAR', 'CONTA_PAGAR_GERENCIAR', 'CONTA_PAGAR_PAGAR', 'CADASTRO_FINANCEIRO_GERENCIAR')";
     private static final String GERENCIA = "hasAuthority('CADASTRO_FINANCEIRO_GERENCIAR')";
 
     private final CategoriaDespesaService service;
