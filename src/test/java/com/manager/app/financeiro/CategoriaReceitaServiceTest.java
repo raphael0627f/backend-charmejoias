@@ -25,12 +25,14 @@ import static org.mockito.Mockito.when;
 class CategoriaReceitaServiceTest {
 
     private CategoriaReceitaRepository repository;
+    private ContaReceberRepository contaReceberRepository;
     private CategoriaReceitaService service;
 
     @BeforeEach
     void preparar() {
         repository = mock(CategoriaReceitaRepository.class);
-        service = new CategoriaReceitaService(repository, new FinanceiroMapper());
+        contaReceberRepository = mock(ContaReceberRepository.class);
+        service = new CategoriaReceitaService(repository, contaReceberRepository, new FinanceiroMapper());
     }
 
     private static CategoriaReceita categoria(long id, String nome, CategoriaReceita pai, boolean ativo) {
@@ -165,6 +167,17 @@ class CategoriaReceitaServiceTest {
         existe(sub);
         service.excluir(2L);
         verify(repository).delete(sub);
+    }
+
+    @Test
+    void excluirCategoriaEmUsoPorTituloAReceberEhRecusadaMasDesativarEPermitido() {
+        CategoriaReceita sub = categoria(2, "Vendas de joias", categoria(1, "Vendas", null, true), true);
+        existe(sub);
+        when(contaReceberRepository.existsByCategoriaId(2L)).thenReturn(true);
+        assertThatThrownBy(() -> service.excluir(2L)).isInstanceOf(ObjetoEmUsoException.class)
+                .hasMessage("Não é possível excluir a categoria \"Vendas de joias\", pois ela está em uso por títulos a receber. Desative-a.");
+        verify(repository, never()).delete(any());
+        assertThat(service.inativar(2L).ativo()).isFalse();
     }
 
     @Test
