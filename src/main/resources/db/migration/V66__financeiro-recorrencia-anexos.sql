@@ -1,4 +1,4 @@
--- Financeiro 6.0 fase 4: recorrência de contas a pagar e anexos (documento, boleto e comprovante de baixa).
+-- Financeiro 6.0 fase 4: recorrência de contas a pagar e anexos (documento, boleto e comprovante de pagamento).
 
 CREATE TABLE conta_pagar_recorrencia (
     id BIGSERIAL PRIMARY KEY,
@@ -43,7 +43,7 @@ CREATE UNIQUE INDEX uk_conta_pagar_recorrencia_ocorrencia ON conta_pagar (recorr
 CREATE TABLE conta_pagar_anexo (
     id BIGSERIAL PRIMARY KEY,
     conta_pagar_id BIGINT NOT NULL REFERENCES conta_pagar (id),
-    baixa_id BIGINT REFERENCES conta_pagar_baixa (id),
+    pagamento_id BIGINT REFERENCES conta_pagar_pagamento (id),
     tipo VARCHAR(12) NOT NULL CHECK (tipo IN ('DOCUMENTO', 'BOLETO', 'COMPROVANTE')),
     nome_original VARCHAR(120) NOT NULL,
     tipo_conteudo VARCHAR(60) NOT NULL,
@@ -53,4 +53,4 @@ CREATE TABLE conta_pagar_anexo (
     created_by_id UUID REFERENCES usuarios (id)
 );
 CREATE INDEX idx_conta_pagar_anexo_conta ON conta_pagar_anexo (conta_pagar_id, id);
-CREATE INDEX idx_conta_pagar_anexo_baixa ON conta_pagar_anexo (baixa_id);
+CREATE INDEX idx_conta_pagar_anexo_pagamento ON conta_pagar_anexo (pagamento_id);

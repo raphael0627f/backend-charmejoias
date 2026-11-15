@@ -1,5 +1,5 @@
--- Financeiro 6.0, fase 2: núcleo do Contas a Pagar (títulos, histórico e a tabela de baixas, que a fase 3 passa a usar).
--- Aditiva: tabelas novas e uma chave estrangeira em movimentacao_banco.baixa_id (coluna da V64, ainda vazia).
+-- Financeiro 6.0, fase 2: núcleo do Contas a Pagar (títulos, histórico e a tabela de pagamentos, que a fase 3 passa a usar).
+-- Aditiva: tabelas novas e uma chave estrangeira em movimentacao_banco.pagamento_id (coluna da V64, ainda vazia).
 -- A situação VENCIDO é calculada e nunca gravada. recorrencia_id é coluna simples (a tabela de recorrência vem na fase 4).
 
 CREATE SEQUENCE conta_pagar_numero_seq START WITH 1 INCREMENT BY 1;
@@ -50,8 +50,8 @@ CREATE TABLE conta_pagar_evento (
 );
 CREATE INDEX idx_conta_pagar_evento_conta ON conta_pagar_evento (conta_pagar_id, id);
 
--- baixas: só a tabela nesta fase (sem endpoints de escrita); valor_total = principal + juros + multa - desconto
-CREATE TABLE conta_pagar_baixa (
+-- pagamentos: só a tabela nesta fase (sem endpoints de escrita); valor_total = principal + juros + multa - desconto
+CREATE TABLE conta_pagar_pagamento (
     id BIGSERIAL PRIMARY KEY,
     conta_pagar_id BIGINT NOT NULL REFERENCES conta_pagar (id),
     data_pagamento DATE NOT NULL,
@@ -70,8 +70,8 @@ CREATE TABLE conta_pagar_baixa (
     created_at TIMESTAMP,
     created_by_id UUID REFERENCES usuarios (id)
 );
-CREATE INDEX idx_conta_pagar_baixa_conta ON conta_pagar_baixa (conta_pagar_id);
-CREATE INDEX idx_conta_pagar_baixa_banco ON conta_pagar_baixa (banco_id);
+CREATE INDEX idx_conta_pagar_pagamento_conta ON conta_pagar_pagamento (conta_pagar_id);
+CREATE INDEX idx_conta_pagar_pagamento_banco ON conta_pagar_pagamento (banco_id);
 
 ALTER TABLE movimentacao_banco
-    ADD CONSTRAINT fk_movimentacao_banco_baixa FOREIGN KEY (baixa_id) REFERENCES conta_pagar_baixa (id);
+    ADD CONSTRAINT fk_movimentacao_banco_pagamento FOREIGN KEY (pagamento_id) REFERENCES conta_pagar_pagamento (id);

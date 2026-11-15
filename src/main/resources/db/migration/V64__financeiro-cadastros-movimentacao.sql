@@ -1,6 +1,6 @@
 -- Financeiro 6.0, fase 1: cadastros financeiros e movimentacao de contas.
 -- Aditiva: apenas tabelas novas, sementes (categorias, formas de pagamento e o banco "Caixa") e permissoes para o perfil ADMIN.
--- Contas a pagar, baixas, anexos, eventos e recorrencias ficam para a fase 2 (baixa_id em movimentacao_banco ainda nao tem FK).
+-- Contas a pagar, pagamentos, anexos, eventos e recorrencias ficam para a fase 2 (pagamento_id em movimentacao_banco ainda nao tem FK).
 
 CREATE TABLE banco (
     id BIGSERIAL PRIMARY KEY,
@@ -77,9 +77,9 @@ CREATE TABLE movimentacao_banco (
     data DATE NOT NULL,
     tipo VARCHAR(10) NOT NULL CHECK (tipo IN ('ENTRADA', 'SAIDA')),
     valor NUMERIC(15, 2) NOT NULL CHECK (valor > 0),
-    origem VARCHAR(30) NOT NULL CHECK (origem IN ('SALDO_INICIAL', 'BAIXA_CONTA_PAGAR', 'ESTORNO_BAIXA', 'TRANSFERENCIA', 'AJUSTE', 'ESTORNO_MANUAL')),
+    origem VARCHAR(30) NOT NULL CHECK (origem IN ('SALDO_INICIAL', 'PAGAMENTO_CONTA_PAGAR', 'ESTORNO_PAGAMENTO', 'TRANSFERENCIA', 'AJUSTE', 'ESTORNO_MANUAL')),
     descricao VARCHAR(255),
-    baixa_id BIGINT,
+    pagamento_id BIGINT,
     transferencia_id BIGINT REFERENCES transferencia_banco (id),
     estornada BOOLEAN NOT NULL DEFAULT FALSE,
     estorno_de_id BIGINT REFERENCES movimentacao_banco (id),
@@ -167,7 +167,7 @@ INSERT INTO perfis_permissoes (perfil_id, permissao)
 SELECT p.id, perm.nome
 FROM perfis p
 CROSS JOIN (VALUES
-    ('CONTA_PAGAR_VISUALIZAR'), ('CONTA_PAGAR_GERENCIAR'), ('CONTA_PAGAR_BAIXAR'), ('CONTA_PAGAR_ESTORNAR'),
+    ('CONTA_PAGAR_VISUALIZAR'), ('CONTA_PAGAR_GERENCIAR'), ('CONTA_PAGAR_PAGAR'), ('CONTA_PAGAR_ESTORNAR'),
     ('CADASTRO_FINANCEIRO_GERENCIAR'), ('MOVIMENTACAO_VISUALIZAR'), ('MOVIMENTACAO_GERENCIAR')
 ) AS perm (nome)
 WHERE p.nome = 'ADMIN';
