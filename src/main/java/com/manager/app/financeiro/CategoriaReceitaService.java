@@ -23,6 +23,7 @@ public class CategoriaReceitaService {
             .thenComparing(c -> BancoService.semAcento(c.getNome()));
 
     private final CategoriaReceitaRepository repository;
+    private final ContaReceberRepository contaReceberRepository;
     private final FinanceiroMapper mapper;
 
     // árvore: grupos com suas subcategorias; com ativo=true um grupo desativado some junto com os subgrupos
@@ -127,9 +128,9 @@ public class CategoriaReceitaService {
         repository.flush();
     }
 
-    // ponto de ligação do uso por título a receber: na Fase 2 passa a consultar conta_receber (categoria_receita_id); nesta fase não há uso
+    // categoria em uso: há título a receber lançado nela
     private boolean emUso(Long id) {
-        return false;
+        return contaReceberRepository.existsByCategoriaId(id);
     }
 
     public CategoriaReceita buscar(Long id) {
