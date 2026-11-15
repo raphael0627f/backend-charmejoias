@@ -151,7 +151,7 @@ Outro tamanho, ou dígito verificador incorreto → 400 com mensagem formal. Em 
 
 | Situação | HTTP |
 |---|---|
-| Campo obrigatório ausente, valor ≤ 0, categoria/centro/forma inativos ou inexistentes, parcelamento inválido, linha digitável inválida, motivo curto, regra de edição/cancelamento violada | 400 |
+| Campo obrigatório ausente, valor ≤ 0, categoria/centro/forma desativados ou inexistentes, parcelamento inválido, linha digitável inválida, motivo curto, regra de edição/cancelamento violada | 400 |
 | Sem permissão | 403 |
 | Título inexistente | 404 |
 

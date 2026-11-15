@@ -87,7 +87,7 @@ Resposta:
 - Marca o pagamento como estornado (motivo, data/hora e usuário), **reduz o `valorPago`** do título pelo principal do pagamento, recalcula a situação
   (`ABERTO` ou `PAGO_PARCIAL`), cria a movimentação **inversa (ENTRADA, origem `ESTORNO_PAGAMENTO`)** e marca a movimentação original como estornada.
   Registra o evento `PAGAMENTO_ESTORNADO`.
-- **Decisão:** o estorno é **permitido mesmo com o banco inativo** (corrige o histórico). O pagamento nunca é apagado.
+- **Decisão:** o estorno é **permitido mesmo com o banco desativado** (corrige o histórico). O pagamento nunca é apagado.
 - Resposta: `{ "pagamento": {...estornado...}, "titulo": {...detalhe atualizado...} }`.
 
 ## `POST /contas-pagar/pagamentos-lote` (200)
@@ -105,7 +105,7 @@ Um título recusado **nunca interrompe o lote**:
       "menssage": "O título cancelado não pode receber pagamento." } ],
   "aviso": "Atenção: após esta operação, o saldo do banco \"Caixa\" ficou negativo (R$ -300,00)." }
 ```
-Data futura, banco/forma inativos ou inexistentes, motivo/lista vazia ou mais de 200 ids → **400 para a requisição inteira**.
+Data futura, banco/forma desativados ou inexistentes, motivo/lista vazia ou mais de 200 ids → **400 para a requisição inteira**.
 `aviso` (opcional) considera o saldo do banco depois de todo o lote.
 
 ## Consultas enriquecidas
@@ -133,7 +133,7 @@ Operações que alteram dinheiro usam **bloqueio pessimista de linha** (`SELECT 
 
 | Situação | HTTP |
 |---|---|
-| Título cancelado/pago, valor acima do em aberto, data futura, desconto acima do limite, valor total ≤ 0, banco/forma inativos, motivo curto, pagamento já estornado | 400 |
+| Título cancelado/pago, valor acima do em aberto, data futura, desconto acima do limite, valor total ≤ 0, banco/forma desativados, motivo curto, pagamento já estornado | 400 |
 | Sem permissão | 403 |
 | Título, banco, forma ou pagamento inexistentes | 404 (pagamento/título na URL) ou 400 (banco/forma no corpo) |
 

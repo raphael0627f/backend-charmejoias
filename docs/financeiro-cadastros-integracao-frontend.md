@@ -14,7 +14,7 @@ pagamentos, anexos nem recorrências (fase 2).
 | `CONTA_PAGAR_GERENCIAR` | Lançar, editar, cancelar títulos (fase 2) |
 | `CONTA_PAGAR_PAGAR` | Pagar títulos (fase 2) |
 | `CONTA_PAGAR_ESTORNAR` | Estornar pagamentos (fase 2) |
-| `CADASTRO_FINANCEIRO_GERENCIAR` | Criar, editar, ativar/inativar e excluir bancos, categorias, formas de pagamento e centros de custo |
+| `CADASTRO_FINANCEIRO_GERENCIAR` | Criar, editar, reativar/desativar e excluir bancos, categorias, formas de pagamento e centros de custo |
 | `MOVIMENTACAO_VISUALIZAR` | Ver extrato e saldos |
 | `MOVIMENTACAO_GERENCIAR` | Transferência, ajuste e estorno de movimentação |
 
@@ -30,12 +30,12 @@ Os nomes das permissões entram no enum `Permissao` (tela de perfis).
 
 - Nome **único** (sem diferenciar maiúsculas/minúsculas; espaços nas pontas são ignorados). Repetido: **409** `"Já existe ..."`.
 - Rotas por cadastro: `GET /x`, `GET /x/{id}`, `POST /x` (201 + `Location`), `PUT /x/{id}`, `PATCH /x/{id}/ativar`,
-  `PATCH /x/{id}/inativar`, `DELETE /x/{id}` (204).
+  `PATCH /x/{id}/inativar`, `DELETE /x/{id}` (204). No texto exibido ao usuário, a ação é "desativar" e "reativar" (glossário); os nomes técnicos das rotas `ativar` e `inativar` permanecem.
 - `GET /x` aceita `?ativo=true|false` (omitido = todos) e `?busca=` (contém, sem diferenciar maiúsculas) — exceto a árvore de categorias,
   que aceita só `ativo`.
 - Todo item devolve auditoria: `createdAt`, `updatedAt`, `createdBy`, `updatedBy` (`{id, usuario, primeiroNome, sobrenome}`).
-- **Excluir** só é permitido para registro que **não está em uso**; em uso: **409** com mensagem orientando a inativar.
-  Para cadastros já usados, utilize **inativar** (o item some das listas de escolha do front, mas continua nos históricos).
+- **Excluir** só é permitido para registro que **não está em uso**; em uso: **409** com mensagem orientando a desativar.
+  Para cadastros já usados, utilize **desativar** (o item some das listas de escolha do front, mas continua nos históricos).
 
 ## Bancos — `/bancos`
 
@@ -60,7 +60,7 @@ Regras:
 - **Editar o saldo inicial (ou sua data) só é possível enquanto não houver outras movimentações** no banco; depois, **400**:
   `"Não é possível alterar o saldo inicial, pois já existem movimentações neste banco. Utilize um Ajuste."`.
   Demais campos (nome, tipo, agência, etc.) podem ser editados sempre.
-- Banco **inativo** não recebe novas movimentações (transferência, ajuste, estorno → 400).
+- Banco **desativado** não recebe novas movimentações (transferência, ajuste, estorno → 400).
 - Excluir: só banco sem movimentações além do saldo inicial.
 - A semente cria o banco **Caixa** (tipo `CAIXA`, saldo inicial zero).
 
@@ -69,7 +69,7 @@ Regras:
 Tipos (`tipo`): `CUSTO`, `DESPESA_FIXA`, `DESPESA_VARIAVEL`, `IMPOSTO`, `PESSOAL`, `OUTROS`.
 
 - `GET /categorias-despesa` → **árvore**: grupos (nível 1) ordenados por `ordem`/nome, cada um com `subcategorias` (nível 2).
-  `?ativo=true` filtra também os subgrupos; um grupo inativo some junto com os seus subgrupos.
+  `?ativo=true` filtra também os subgrupos; um grupo desativado some junto com os seus subgrupos.
 - `GET /categorias-despesa/plana` → **lista plana** (grupos e subgrupos juntos; cada item com `paiId` e `paiNome`; sem `subcategorias`).
   Ordenada por grupo e depois subgrupo; aceita `?ativo=` e `?busca=`. Nos grupos `paiId` e `paiNome` vêm `null`.
 - `GET /categorias-despesa/{id}`.
@@ -82,8 +82,8 @@ Response:
   "createdAt": "...", "updatedAt": "...", "createdBy": {...}, "updatedBy": {...} }
 ```
 Regras: no máximo **2 níveis** (o pai precisa ser um grupo, senão **400**); nome único **dentro do mesmo pai**; um grupo com
-subgrupos não muda para subgrupo; não é possível inativar um grupo com subgrupos ativos (**409**, inative os subgrupos antes);
-reativar um subgrupo exige o grupo ativo (**409**). Excluir: grupo sem subgrupos e sem uso.
+subgrupos não muda para subgrupo; não é possível desativar um grupo com subgrupos ativos (**409**, desative os subgrupos antes);
+reativar um subgrupo exige o grupo ativo (**409**: "Reative o grupo antes de reativar o subgrupo."). Excluir: grupo sem subgrupos e sem uso.
 
 **Sementes** (editáveis): grupos Despesas com pessoal, Despesas operacionais, Impostos e taxas, Custos de mercadoria, Marketing,
 Despesas financeiras e Outras, com 42 subgrupos (lista completa no relatório da fase e na própria migration).
@@ -122,7 +122,7 @@ Em movimentação estornada: `estornada: true`, `motivoEstorno`, `estornadaEm`, 
 ```json
 { "bancos": [ { "bancoId": 1, "nome": "Caixa", "tipo": "CAIXA", "ativo": true, "saldoAtual": 0.00 } ], "total": 0.00 }
 ```
-`total` soma o saldo de **todos** os bancos listados (ativos e inativos).
+`total` soma o saldo de **todos** os bancos listados (ativos e desativados).
 
 ### `POST /movimentacoes-banco/transferencias` (201)
 
@@ -158,10 +158,10 @@ Apenas movimentações de origem `TRANSFERENCIA` ou `AJUSTE` (nesta fase), motiv
 
 | Situação | HTTP |
 |---|---|
-| Campo obrigatório ausente, valor ≤ 0, data futura, motivo curto, bancos iguais, banco inativo, 3º nível de categoria, saldo inicial com movimentações | 400 |
+| Campo obrigatório ausente, valor ≤ 0, data futura, motivo curto, bancos iguais, banco desativado, 3º nível de categoria, saldo inicial com movimentações | 400 |
 | Sem a permissão | 403 |
 | Registro inexistente | 404 |
-| Nome duplicado, exclusão/inativação de item em uso | 409 |
+| Nome duplicado, exclusão/desativação de item em uso | 409 |
 
 Exemplo: `{ "timestamp": "...", "status": 400, "menssage": "Informe o motivo com pelo menos 5 caracteres.", "path": "..." }`.
 
