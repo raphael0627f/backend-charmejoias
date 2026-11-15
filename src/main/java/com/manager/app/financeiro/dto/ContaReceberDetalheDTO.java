@@ -15,7 +15,8 @@ public record ContaReceberDetalheDTO(Long id, Long numero, String descricao, Con
                                      ContaReceberResumoDTO.Ref formaPrevista, BigDecimal valor, BigDecimal valorRecebido, BigDecimal valorAberto,
                                      LocalDate emissao, String competencia, LocalDate vencimento, String documento, String observacao,
                                      SituacaoContaReceber situacao, SituacaoExibicaoContaReceber situacaoExibicao, UUID grupoParcelamentoId,
-                                     Integer parcelaNumero, Integer parcelaTotal, Cancelamento cancelamento, List<Recebimento> recebimentos,
+                                     Integer parcelaNumero, Integer parcelaTotal, Cancelamento cancelamento, String motivoCancelamento,
+                                     LocalDateTime dataCancelamento, UsuarioResumoDTO canceladoPor, List<Recebimento> recebimentos,
                                      List<ContaReceberResumoDTO> parcelas, List<Evento> eventos, LocalDateTime createdAt, LocalDateTime updatedAt,
                                      UsuarioResumoDTO createdBy, UsuarioResumoDTO updatedBy, List<ContaReceberAnexoDTO> anexos) {
 

@@ -40,6 +40,7 @@ public class ContaReceberMapper {
         return new ContaReceberDetalheDTO(r.id(), r.numero(), r.descricao(), r.cliente(), r.categoria(), r.centroCusto(), r.formaPrevista(),
                 r.valor(), r.valorRecebido(), r.valorAberto(), r.emissao(), r.competencia(), r.vencimento(), r.documento(), c.getObservacao(),
                 r.situacao(), r.situacaoExibicao(), r.grupoParcelamentoId(), r.parcelaNumero(), r.parcelaTotal(), cancelamento,
+                c.getCancelamentoMotivo(), c.getCancelamentoEm(), cancelamento == null ? null : cancelamento.por(),
                 recebimentos.stream().map(b -> recebimento(b, movimentacoes.get(b.getId()))).toList(),
                 parcelas.stream().map(p -> resumo(p, hoje, anexosPorTitulo.getOrDefault(p.getId(), 0))).toList(),
                 eventos.stream().map(e -> new ContaReceberDetalheDTO.Evento(e.getId(), e.getEvento(), e.getDetalhe(),
