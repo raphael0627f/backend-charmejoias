@@ -31,6 +31,46 @@ public final class PagamentoCalculo {
         return CalculoFinanceiro.arredondar(valor);
     }
 
+    public static final String MSG_LOTE_VARIAVEL = "Título de valor variável: confirme o valor da conta no pagamento individual.";
+    public static final String MSG_CONFIRMACAO_INDEVIDA = "Os dados da conta só podem ser confirmados em título de valor variável ainda não confirmado.";
+    public static final String MSG_VALOR_CONTA_OBRIGATORIO = "Informe o valor da conta deste mês para registrar o pagamento.";
+
+    // valores e datas da confirmação, para o histórico
+    public record Confirmacao(BigDecimal valorAntes, BigDecimal valorDepois, LocalDate vencimentoAntes, LocalDate vencimentoDepois) {
+        public String descricao() {
+            return "Dados da conta confirmados: valor de " + MovimentacaoBancoService.moeda(valorAntes) + " para " + MovimentacaoBancoService.moeda(valorDepois)
+                    + "; vencimento de " + com.manager.app.shared.TextoUtils.data(vencimentoAntes) + " para " + com.manager.app.shared.TextoUtils.data(vencimentoDepois) + ".";
+        }
+    }
+
+    // confirmação de valor e vencimento ao pagar. Devolve nulo quando não há o que confirmar (título comum sem os campos).
+    // Só vale para título estimado e sem pagamento ativo; em título estimado o valor da conta é obrigatório.
+    public static Confirmacao confirmar(ContaPagar titulo, BigDecimal valorConta, LocalDate vencimento, boolean comPagamentoAtivo) {
+        boolean informado = valorConta != null || vencimento != null;
+        if (!titulo.isEstimado()) {
+            if (informado) throw new ItemInvalidoException(MSG_CONFIRMACAO_INDEVIDA);
+            return null;
+        }
+        validarTitulo(titulo);
+        if (comPagamentoAtivo) {
+            if (informado) throw new ItemInvalidoException(MSG_CONFIRMACAO_INDEVIDA);
+            return null;
+        }
+        if (valorConta == null) throw new ItemInvalidoException(MSG_VALOR_CONTA_OBRIGATORIO);
+        return aplicarConfirmacao(titulo, valorConta, vencimento);
+    }
+
+    // grava valor e vencimento confirmados no título (vencimento nulo mantém o previsto), recalcula a situação e zera o indicador de estimativa
+    public static Confirmacao aplicarConfirmacao(ContaPagar titulo, BigDecimal valor, LocalDate vencimento) {
+        BigDecimal v = CalculoFinanceiro.validarValorPositivo(valor);
+        Confirmacao c = new Confirmacao(titulo.getValor(), v, titulo.getVencimento(), vencimento == null ? titulo.getVencimento() : vencimento);
+        titulo.setValor(v);
+        titulo.setVencimento(c.vencimentoDepois());
+        titulo.setEstimado(false);
+        titulo.setSituacao(ContaPagarCalculo.situacaoPara(titulo.getValor(), titulo.getValorPago()));
+        return c;
+    }
+
     // título apto a receber pagamento: ABERTO ou PAGO_PARCIAL
     public static void validarTitulo(ContaPagar titulo) {
         if (titulo.getSituacao() == SituacaoContaPagar.CANCELADO) {
@@ -88,6 +128,7 @@ public final class PagamentoCalculo {
     // saldo integral em aberto do título (pagamento em lote); zero = nada a pagar
     public static BigDecimal saldoIntegral(ContaPagar titulo) {
         validarTitulo(titulo);
+        if (titulo.isEstimado()) throw new ItemInvalidoException(MSG_LOTE_VARIAVEL);
         BigDecimal aberto = ContaPagarCalculo.valorAberto(titulo.getSituacao(), titulo.getValor(), titulo.getValorPago());
         if (aberto.signum() <= 0) throw new ItemInvalidoException("O título não possui valor em aberto.");
         return aberto;

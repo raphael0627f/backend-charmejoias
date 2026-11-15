@@ -65,6 +65,9 @@ public class ContaPagar extends AuditoriaFinanceira {
     // data original da ocorrência na série (não muda ao remarcar o vencimento): base da idempotência da geração
     private LocalDate ocorrenciaData;
 
+    // true = valor e vencimento ainda não confirmados (ocorrência de recorrência de valor variável); passa a false na confirmação
+    private boolean estimado;
+
     private String cancelamentoMotivo;
     private LocalDateTime cancelamentoEm;
 

@@ -54,6 +54,13 @@ public class ContaPagarPagamentoService {
         Banco banco = bancoRepository.findByIdForUpdate(r.bancoId()).orElseThrow(() -> new ItemInvalidoException("O banco informado não foi encontrado."));
         FormaPagamento forma = formaPagamentoRepository.findById(r.formaPagamentoId())
                 .orElseThrow(() -> new ItemInvalidoException("A forma de pagamento informada não foi encontrada."));
+        // confirmação do valor e do vencimento reais (título de valor variável) na mesma transação e sob o mesmo bloqueio; falha adiante = rollback de tudo
+        PagamentoCalculo.Confirmacao confirmacao = PagamentoCalculo.confirmar(titulo, r.valorConta(), r.vencimento(),
+                pagamentoRepository.existsByContaPagarIdAndEstornadaFalse(tituloId));
+        if (confirmacao != null) {
+            contaPagarRepository.save(titulo);
+            registrar(titulo, "DADOS_CONFIRMADOS", confirmacao.descricao(), auditor.getCurrentAuditor().orElse(null));
+        }
         Aplicada a = aplicar(titulo, banco, forma, r.dataPagamento(), r.valorPrincipal(), r.juros(), r.multa(), r.desconto(), r.observacao());
         return new PagamentoDTOs.Resultado(mapper.pagamento(a.pagamento(), a.movimentacao().getId()), contaPagarService.detalhe(titulo),
                 movimentacaoService.avisoSaldoNegativo(List.of(banco)));

@@ -67,6 +67,44 @@ public final class RecorrenciaCalculo {
         return datas;
     }
 
+    // indicador de valor variável: no bloco recorrencia ou na raiz do pedido; sem recorrência o indicador é recusado
+    public static boolean valorVariavel(com.manager.app.financeiro.dto.ContaPagarRequestDTO r) {
+        boolean raiz = Boolean.TRUE.equals(r.valorVariavel());
+        boolean bloco = r.recorrencia() != null && Boolean.TRUE.equals(r.recorrencia().valorVariavel());
+        if (raiz && r.recorrencia() == null) {
+            throw new ItemInvalidoException("O indicador de valor variável só pode ser usado em lançamento recorrente.");
+        }
+        return raiz || bloco;
+    }
+
+    // título de uma ocorrência da regra (ainda não gravado); a ocorrência de regra de valor variável nasce estimada
+    // (vale para a criação e para a rotina diária, que usam este mesmo método)
+    public static ContaPagar montarOcorrencia(ContaPagarRecorrencia regra, LocalDate data, LocalDate emissao) {
+        ContaPagar c = new ContaPagar();
+        c.setDescricao(regra.getDescricao());
+        c.setFavorecido(regra.getFavorecido());
+        c.setCategoria(regra.getCategoria());
+        c.setCentroCusto(regra.getCentroCusto());
+        c.setFormaPrevista(regra.getFormaPrevista());
+        c.setValor(regra.getValor());
+        c.setEmissao(emissao);
+        c.setCompetencia(ContaPagarCalculo.competenciaPadrao(data));
+        c.setVencimento(data);
+        c.setDocumento(regra.getDocumento());
+        c.setObservacao(regra.getObservacao());
+        c.setSituacao(SituacaoContaPagar.ABERTO);
+        c.setValorPago(java.math.BigDecimal.ZERO.setScale(CalculoFinanceiro.ESCALA));
+        c.setRecorrenciaId(regra.getId());
+        c.setOcorrenciaData(data);
+        c.setEstimado(regra.isValorVariavel());
+        return c;
+    }
+
+    // reajuste em regra de valor variável: o novo valor é a nova estimativa; ocorrência já confirmada (estimado = false) tem valor real e não é alterada
+    public static boolean reajustavel(ContaPagar titulo, LocalDate aPartirDe, boolean comPagamentoAtivo, boolean regraValorVariavel) {
+        return reajustavel(titulo, aPartirDe, comPagamentoAtivo) && (!regraValorVariavel || titulo.isEstimado());
+    }
+
     // ocorrência alterável pelo reajuste: aberta, sem pagamento e com vencimento a partir da data informada
     public static boolean reajustavel(ContaPagar titulo, LocalDate aPartirDe, boolean comPagamentoAtivo) {
         return titulo.getSituacao() == SituacaoContaPagar.ABERTO && !comPagamentoAtivo && !titulo.getVencimento().isBefore(aPartirDe);

@@ -27,7 +27,7 @@ public class ContaPagarMapper {
                 ContaPagarCalculo.valorAberto(c.getSituacao(), c.getValor(), c.getValorPago()), c.getEmissao(), c.getCompetencia(),
                 c.getVencimento(), c.getDocumento(), c.getSituacao(),
                 ContaPagarCalculo.situacaoExibicao(c.getSituacao(), c.getVencimento(), hoje), c.getGrupoParcelamentoId(),
-                c.getParcelaNumero(), c.getParcelaTotal(), c.getCancelamentoMotivo(), c.getCancelamentoEm(), quantidadeAnexos, c.getRecorrenciaId());
+                c.getParcelaNumero(), c.getParcelaTotal(), c.getCancelamentoMotivo(), c.getCancelamentoEm(), quantidadeAnexos, c.getRecorrenciaId(), c.isEstimado());
     }
 
     public ContaPagarDetalheDTO detalhe(ContaPagar c, LocalDate hoje, List<ContaPagarPagamento> pagamentos, List<ContaPagar> parcelas,
@@ -43,7 +43,7 @@ public class ContaPagarMapper {
                 parcelas.stream().map(p -> resumo(p, hoje, anexosPorTitulo.getOrDefault(p.getId(), 0))).toList(),
                 eventos.stream().map(e -> new ContaPagarDetalheDTO.Evento(e.getId(), e.getEvento(), e.getDetalhe(),
                         mapper.usuario(e.getUsuario()), e.getDataHora())).toList(),
-                c.getCreatedAt(), c.getUpdatedAt(), mapper.usuario(c.getCreatedBy()), mapper.usuario(c.getUpdatedBy()), recorrencia, anexos.stream().map(this::anexo).toList());
+                c.getCreatedAt(), c.getUpdatedAt(), mapper.usuario(c.getCreatedBy()), mapper.usuario(c.getUpdatedBy()), recorrencia, anexos.stream().map(this::anexo).toList(), c.isEstimado());
     }
 
     public AnexoDTO anexo(ContaPagarAnexo a) {

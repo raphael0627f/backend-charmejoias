@@ -127,6 +127,16 @@ public final class ContaPagarCalculo {
         return aberto.signum() < 0 ? BigDecimal.ZERO.setScale(CalculoFinanceiro.ESCALA) : aberto;
     }
 
+    // parte do valor em aberto que ainda é estimativa (título estimado, aberto ou parcial); os cancelados não entram
+    public static BigDecimal valorAbertoEstimado(SituacaoContaPagar situacao, boolean estimado, BigDecimal valor, BigDecimal valorPago) {
+        return estimado ? valorAberto(situacao, valor, valorPago) : BigDecimal.ZERO.setScale(CalculoFinanceiro.ESCALA);
+    }
+
+    // conta na quantidade de estimados: estimado e não cancelado
+    public static boolean contaComoEstimado(SituacaoContaPagar situacao, boolean estimado) {
+        return estimado && situacao != SituacaoContaPagar.CANCELADO;
+    }
+
     public static String competenciaPadrao(LocalDate vencimento) {
         return YearMonth.from(vencimento).toString();
     }

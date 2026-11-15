@@ -69,12 +69,13 @@ public class ContaPagarController {
             @RequestParam(required = false) Long bancoId,
             @RequestParam(required = false) BigDecimal valorMin,
             @RequestParam(required = false) BigDecimal valorMax,
+            @RequestParam(required = false) Boolean estimado,
             @RequestParam(required = false) String ordenar,
             @RequestParam(required = false) String direcao,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         ContaPagarFiltro filtro = new ContaPagarFiltro(vencimentoDe, vencimentoAte, emissaoDe, emissaoAte, pagamentoDe, pagamentoAte, situacao,
-                busca, categoriaId, centroCustoId, formaPrevistaId, bancoId, valorMin, valorMax);
+                busca, categoriaId, centroCustoId, formaPrevistaId, bancoId, valorMin, valorMax, estimado);
         return ResponseEntity.ok(service.listar(filtro, ordenar, direcao, page, size));
     }
 

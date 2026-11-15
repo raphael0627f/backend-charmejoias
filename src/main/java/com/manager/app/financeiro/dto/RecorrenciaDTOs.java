@@ -15,7 +15,7 @@ public final class RecorrenciaDTOs {
 
     private RecorrenciaDTOs() {}
 
-    public record Regra(Long id, PeriodicidadeRecorrencia periodicidade, LocalDate dataInicio, LocalDate dataFim, boolean ativa, String descricao,
+    public record Regra(Long id, PeriodicidadeRecorrencia periodicidade, LocalDate dataInicio, LocalDate dataFim, boolean ativa, boolean valorVariavel, String descricao,
                         String favorecido, ContaPagarResumoDTO.CategoriaRef categoria, ContaPagarResumoDTO.Ref centroCusto,
                         ContaPagarResumoDTO.Ref formaPrevista, BigDecimal valor, String documento, String observacao, LocalDateTime ultimaGeracao,
                         LocalDateTime encerradaEm, long quantidadeGerada, List<ContaPagarResumoDTO> proximas,

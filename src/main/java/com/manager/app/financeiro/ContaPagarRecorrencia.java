@@ -47,6 +47,8 @@ public class ContaPagarRecorrencia extends AuditoriaFinanceira {
 
     private String documento;
     private String observacao;
+    // contas de valor e vencimento diferentes a cada mês: as ocorrências nascem com estimado = true
+    private boolean valorVariavel;
     private boolean ativa = true;
     private LocalDateTime ultimaGeracao;
     private LocalDateTime encerradaEm;

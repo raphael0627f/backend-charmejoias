@@ -17,11 +17,12 @@ public record ContaPagarDetalheDTO(Long id, Long numero, String descricao, Strin
                                    SituacaoExibicaoContaPagar situacaoExibicao, UUID grupoParcelamentoId, Integer parcelaNumero,
                                    Integer parcelaTotal, Long recorrenciaId, Cancelamento cancelamento, List<Pagamento> pagamentos,
                                    List<ContaPagarResumoDTO> parcelas, List<Evento> eventos, LocalDateTime createdAt, LocalDateTime updatedAt,
-                                   UsuarioResumoDTO createdBy, UsuarioResumoDTO updatedBy, RecorrenciaResumo recorrencia, List<AnexoDTO> anexos) {
+                                   UsuarioResumoDTO createdBy, UsuarioResumoDTO updatedBy, RecorrenciaResumo recorrencia, List<AnexoDTO> anexos,
+                                   boolean estimado) {
 
     // posicao = ordem do título na série; totalGerado = ocorrências já geradas
     public record RecorrenciaResumo(Long id, com.manager.app.financeiro.PeriodicidadeRecorrencia periodicidade, boolean ativa,
-                                    LocalDate dataFim, long posicao, long totalGerado) {
+                                    LocalDate dataFim, long posicao, long totalGerado, boolean valorVariavel) {
     }
 
     public record Cancelamento(String motivo, LocalDateTime em, UsuarioResumoDTO por) {

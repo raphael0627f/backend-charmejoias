@@ -24,10 +24,13 @@ public record ContaPagarRequestDTO(
         @Size(max = 80, message = "A linha digitável excede o tamanho máximo.") String linhaDigitavel,
         @Size(max = 1000, message = "A observação deve ter no máximo 1000 caracteres.") String observacao,
         Parcelamento parcelamento,
-        Recorrencia recorrencia) {
+        Recorrencia recorrencia,
+        Boolean valorVariavel,
+        Boolean confirmarDados) {
 
+    // valorVariavel (raiz ou no bloco recorrencia): ocorrências estimadas; confirmarDados: só no PUT, confirma valor/vencimento de título estimado
     // exclusivo com parcelamento; o vencimento informado é a primeira ocorrência
-    public record Recorrencia(com.manager.app.financeiro.PeriodicidadeRecorrencia periodicidade, LocalDate dataFim) {
+    public record Recorrencia(com.manager.app.financeiro.PeriodicidadeRecorrencia periodicidade, LocalDate dataFim, Boolean valorVariavel) {
     }
 
 

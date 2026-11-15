@@ -36,6 +36,7 @@ public final class ContaPagarEspecificacao {
                 Join<CategoriaDespesa, CategoriaDespesa> pai = categoria.join("pai", JoinType.LEFT);
                 p.add(cb.or(cb.equal(categoria.get("id"), f.categoriaId()), cb.equal(pai.get("id"), f.categoriaId())));
             }
+            if (f.estimado() != null) p.add(cb.equal(root.get("estimado"), f.estimado()));
             if (f.temBusca()) p.add(busca(f.busca().trim(), root, cb));
             if (f.temSituacao()) {
                 List<Predicate> ou = new ArrayList<>();

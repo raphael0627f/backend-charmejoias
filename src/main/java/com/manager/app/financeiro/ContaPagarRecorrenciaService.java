@@ -73,11 +73,12 @@ public class ContaPagarRecorrenciaService {
         regra.setFormaPrevista(base.forma());
         regra.setDocumento(base.documento());
         regra.setObservacao(base.observacao());
+        regra.setValorVariavel(RecorrenciaCalculo.valorVariavel(r));
         regra.setAtiva(true);
         regra.setUltimaGeracao(LocalDateTime.now());
         repository.saveAndFlush(regra);
         eventoRegra(regra, "RECORRENCIA_CRIADA", "Recorrência " + rotulo(regra.getPeriodicidade()) + " criada no valor de "
-                + MovimentacaoBancoService.moeda(regra.getValor()) + ", com primeiro vencimento em " + TextoUtils.data(regra.getDataInicio())
+                + MovimentacaoBancoService.moeda(regra.getValor()) + (regra.isValorVariavel() ? " (valor estimado, variável a cada mês)" : "") + ", com primeiro vencimento em " + TextoUtils.data(regra.getDataInicio())
                 + (regra.getDataFim() == null ? "" : " e término em " + TextoUtils.data(regra.getDataFim())) + ". Ocorrências geradas: " + datas.size() + ".", usuario);
 
         List<ContaPagar> titulos = gerar(regra, datas, emissao, usuario);
@@ -89,22 +90,7 @@ public class ContaPagarRecorrenciaService {
     private List<ContaPagar> gerar(ContaPagarRecorrencia regra, List<LocalDate> datas, LocalDate emissao, Usuario usuario) {
         List<ContaPagar> criados = new ArrayList<>();
         for (LocalDate data : datas) {
-            ContaPagar c = new ContaPagar();
-            c.setDescricao(regra.getDescricao());
-            c.setFavorecido(regra.getFavorecido());
-            c.setCategoria(regra.getCategoria());
-            c.setCentroCusto(regra.getCentroCusto());
-            c.setFormaPrevista(regra.getFormaPrevista());
-            c.setValor(regra.getValor());
-            c.setEmissao(emissao);
-            c.setCompetencia(ContaPagarCalculo.competenciaPadrao(data));
-            c.setVencimento(data);
-            c.setDocumento(regra.getDocumento());
-            c.setObservacao(regra.getObservacao());
-            c.setSituacao(SituacaoContaPagar.ABERTO);
-            c.setValorPago(BigDecimal.ZERO.setScale(CalculoFinanceiro.ESCALA));
-            c.setRecorrenciaId(regra.getId());
-            c.setOcorrenciaData(data);
+            ContaPagar c = RecorrenciaCalculo.montarOcorrencia(regra, data, emissao);
             c.setNumero(contaPagarRepository.proximoNumero());
             contaPagarRepository.save(c);
             eventoTitulo(c, "RECORRENCIA_CRIADA", "Título gerado pela recorrência " + rotulo(regra.getPeriodicidade()) + " nº " + regra.getId()
@@ -160,7 +146,7 @@ public class ContaPagarRecorrenciaService {
         long posicao = c.getOcorrenciaData() == null ? 0
                 : contaPagarRepository.countByRecorrenciaIdAndOcorrenciaDataLessThanEqual(regra.getId(), c.getOcorrenciaData());
         return new ContaPagarDetalheDTO.RecorrenciaResumo(regra.getId(), regra.getPeriodicidade(), regra.isAtiva(), regra.getDataFim(), posicao,
-                contaPagarRepository.countByRecorrenciaId(regra.getId()));
+                contaPagarRepository.countByRecorrenciaId(regra.getId()), regra.isValorVariavel());
     }
 
     // ---------- reajuste ----------
@@ -242,7 +228,7 @@ public class ContaPagarRecorrenciaService {
         int atualizadas = 0;
         for (Long tituloId : contaPagarRepository.idsDaRecorrencia(id)) {
             ContaPagar t = contaPagarRepository.findByIdForUpdate(tituloId).orElse(null);
-            if (t == null || !RecorrenciaCalculo.reajustavel(t, r.aPartirDe(), pagamentoRepository.existsByContaPagarIdAndEstornadaFalse(tituloId))) continue;
+            if (t == null || !RecorrenciaCalculo.reajustavel(t, r.aPartirDe(), pagamentoRepository.existsByContaPagarIdAndEstornadaFalse(tituloId), regra.isValorVariavel())) continue;
             BigDecimal valorAntes = t.getValor();
             t.setValor(regra.getValor());
             t.setDescricao(regra.getDescricao());
@@ -318,7 +304,7 @@ public class ContaPagarRecorrenciaService {
                 .limit(PROXIMAS).map(t -> mapper.resumo(t, hoje)).toList();
         List<ContaPagarDetalheDTO.Evento> eventos = eventoRegraRepository.findByRecorrenciaIdOrderByIdAsc(g.getId()).stream()
                 .map(e -> new ContaPagarDetalheDTO.Evento(e.getId(), e.getEvento(), e.getDetalhe(), financeiroMapper.usuario(e.getUsuario()), e.getDataHora())).toList();
-        return new RecorrenciaDTOs.Regra(g.getId(), g.getPeriodicidade(), g.getDataInicio(), g.getDataFim(), g.isAtiva(), g.getDescricao(), g.getFavorecido(),
+        return new RecorrenciaDTOs.Regra(g.getId(), g.getPeriodicidade(), g.getDataInicio(), g.getDataFim(), g.isAtiva(), g.isValorVariavel(), g.getDescricao(), g.getFavorecido(),
                 categoria, g.getCentroCusto() == null ? null : new ContaPagarResumoDTO.Ref(g.getCentroCusto().getId(), g.getCentroCusto().getNome()),
                 g.getFormaPrevista() == null ? null : new ContaPagarResumoDTO.Ref(g.getFormaPrevista().getId(), g.getFormaPrevista().getNome()),
                 CalculoFinanceiro.arredondar(g.getValor()), g.getDocumento(), g.getObservacao(), g.getUltimaGeracao(), g.getEncerradaEm(),

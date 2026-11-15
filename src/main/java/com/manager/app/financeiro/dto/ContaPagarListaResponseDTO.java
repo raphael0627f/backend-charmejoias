@@ -11,6 +11,7 @@ public record ContaPagarListaResponseDTO(List<ContaPagarResumoDTO> content, int 
     public record Periodo(LocalDate de, LocalDate ate) {
     }
 
-    public record Totais(long quantidade, BigDecimal valorTotal, BigDecimal valorPago, BigDecimal valorAberto, BigDecimal valorVencido) {
+    public record Totais(long quantidade, BigDecimal valorTotal, BigDecimal valorPago, BigDecimal valorAberto, BigDecimal valorVencido,
+                         BigDecimal valorAbertoEstimado, long quantidadeEstimados) {
     }
 }

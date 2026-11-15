@@ -82,6 +82,7 @@ public class ContaPagarService {
         List<ContaPagar> titulos = new ArrayList<>();
         UUID grupo = null;
 
+        if (r.recorrencia() == null) RecorrenciaCalculo.valorVariavel(r); // recusa o indicador de valor variável fora de recorrência
         if (r.recorrencia() != null) {
             return recorrenciaService.criar(base, r, hoje, emissao);
         }
@@ -203,14 +204,18 @@ public class ContaPagarService {
         Expression<BigDecimal> total = cb.<BigDecimal>selectCase().when(naoCancelado, valor).otherwise(zero);
         Expression<BigDecimal> aberto = cb.<BigDecimal>selectCase().when(emAberto, cb.diff(valor, pago)).otherwise(zero);
         Expression<BigDecimal> vencido = cb.<BigDecimal>selectCase().when(atrasado, cb.diff(valor, pago)).otherwise(zero);
-        q.multiselect(cb.count(root), cb.sum(total), cb.sum(pago), cb.sum(aberto), cb.sum(vencido)).where(where);
+        Predicate estimado = cb.isTrue(root.get("estimado"));
+        Expression<BigDecimal> abertoEstimado = cb.<BigDecimal>selectCase().when(cb.and(emAberto, estimado), cb.diff(valor, pago)).otherwise(zero);
+        Expression<Long> qtdEstimados = cb.<Long>selectCase().when(cb.and(naoCancelado, estimado), 1L).otherwise(0L);
+        q.multiselect(cb.count(root), cb.sum(total), cb.sum(pago), cb.sum(aberto), cb.sum(vencido), cb.sum(abertoEstimado), cb.sum(qtdEstimados)).where(where);
         Object[] linha = em.createQuery(q).getSingleResult();
         return new ListaTotais(linha).paraDto();
     }
 
     private record ListaTotais(Object[] linha) {
         ContaPagarListaResponseDTO.Totais paraDto() {
-            return new ContaPagarListaResponseDTO.Totais(((Number) linha[0]).longValue(), valor(linha[1]), valor(linha[2]), valor(linha[3]), valor(linha[4]));
+            return new ContaPagarListaResponseDTO.Totais(((Number) linha[0]).longValue(), valor(linha[1]), valor(linha[2]), valor(linha[3]), valor(linha[4]),
+                    valor(linha[5]), linha[6] == null ? 0L : ((Number) linha[6]).longValue());
         }
 
         private static BigDecimal valor(Object o) {
@@ -269,6 +274,7 @@ public class ContaPagarService {
         String linha = LinhaDigitavel.normalizar(r.linhaDigitavel());
 
         List<String> alteracoes = new ArrayList<>();
+        PagamentoCalculo.Confirmacao confirmacao = null;
         if (c.getSituacao() == SituacaoContaPagar.PAGO) {
             boolean outrosCampos = !Objects.equals(c.getDescricao(), base.descricao()) || !Objects.equals(c.getFavorecido(), base.favorecido())
                     || !c.getCategoria().getId().equals(base.categoria().getId())
@@ -283,6 +289,8 @@ public class ContaPagarService {
             diff(alteracoes, "observação", c.getObservacao(), base.observacao());
             c.setObservacao(base.observacao());
         } else {
+            BigDecimal valorAntes = c.getValor();
+            LocalDate vencimentoAntes = c.getVencimento();
             if (base.valor().compareTo(CalculoFinanceiro.arredondar(c.getValorPago())) < 0) {
                 throw new ItemInvalidoException("O valor do título não pode ser inferior ao valor já pago ("
                         + MovimentacaoBancoService.moeda(c.getValorPago()) + ").");
@@ -317,9 +325,15 @@ public class ContaPagarService {
             c.setLinhaDigitavel(linha);
             c.setObservacao(base.observacao());
             c.setSituacao(ContaPagarCalculo.situacaoPara(c.getValor(), c.getValorPago()));
+            // confirmação antecipada: título estimado e sem pagamento ativo passa a ter os dados reais; sem o indicador a edição continua sendo estimativa
+            if (c.isEstimado() && Boolean.TRUE.equals(r.confirmarDados()) && !pagamentoRepository.existsByContaPagarIdAndEstornadaFalse(id)) {
+                c.setEstimado(false);
+                confirmacao = new PagamentoCalculo.Confirmacao(valorAntes, c.getValor(), vencimentoAntes, c.getVencimento());
+            }
         }
         repository.save(c);
         if (!alteracoes.isEmpty()) registrar(c, "EDICAO", String.join("; ", alteracoes) + ".", usuarioAtual());
+        if (confirmacao != null) registrar(c, "DADOS_CONFIRMADOS", confirmacao.descricao(), usuarioAtual());
         return detalhe(c);
     }
 
