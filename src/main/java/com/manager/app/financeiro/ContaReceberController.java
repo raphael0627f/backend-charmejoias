@@ -7,15 +7,25 @@ import com.manager.app.financeiro.dto.ContaReceberListaResponseDTO;
 import com.manager.app.financeiro.dto.ContaReceberRequestDTO;
 import com.manager.app.financeiro.dto.EstornoRequestDTO;
 import com.manager.app.financeiro.dto.RecebimentoDTOs;
+import com.manager.app.financeiro.dto.ContaReceberAnexoDTO;
+import com.manager.app.financeiro.dto.SituacaoClienteDTOs;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -32,6 +42,8 @@ public class ContaReceberController {
 
     private final ContaReceberService service;
     private final ContaReceberRecebimentoService recebimentoService;
+    private final ContaReceberAnexoService anexoService;
+    private final SituacaoClienteService situacaoClienteService;
 
     @PostMapping
     @PreAuthorize(GERENCIA)
@@ -71,6 +83,23 @@ public class ContaReceberController {
     @PreAuthorize(CONSULTA)
     public ResponseEntity<List<ContaReceberAcoesDTO.Cliente>> clientes(@RequestParam(required = false) String busca) {
         return ResponseEntity.ok(service.buscarClientes(busca));
+    }
+
+    // situação financeira do cliente (não exige permissão de cliente)
+    @GetMapping("/clientes/{clienteId}/situacao")
+    @PreAuthorize(CONSULTA)
+    public ResponseEntity<SituacaoClienteDTOs.Situacao> situacaoDoCliente(@PathVariable UUID clienteId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate recebimentoDe,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate recebimentoAte) {
+        return ResponseEntity.ok(situacaoClienteService.situacao(clienteId, recebimentoDe, recebimentoAte));
+    }
+
+    @GetMapping("/clientes/situacao")
+    @PreAuthorize(CONSULTA)
+    public ResponseEntity<SituacaoClienteDTOs.Geral> situacaoGeral(@RequestParam(required = false) String busca,
+            @RequestParam(defaultValue = "false") boolean somenteVencidos, @RequestParam(required = false) String ordenar,
+            @RequestParam(required = false) String direcao, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(situacaoClienteService.geral(busca, somenteVencidos, ordenar, direcao, page, size));
     }
 
     @GetMapping("/{id}")
@@ -119,5 +148,38 @@ public class ContaReceberController {
     @PreAuthorize(RECEBIMENTO)
     public ResponseEntity<RecebimentoDTOs.ResultadoLote> receberLote(@RequestBody(required = false) RecebimentoDTOs.Lote request) {
         return ResponseEntity.ok(recebimentoService.receberLote(request));
+    }
+
+    // ---- anexos ----
+
+    @PostMapping(value = "/{id}/anexos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize(GERENCIA)
+    public ResponseEntity<ContaReceberAnexoDTO> anexar(@PathVariable Long id, @RequestPart("arquivo") MultipartFile arquivo, @RequestParam("tipo") TipoAnexo tipo) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(anexoService.anexarAoTitulo(id, tipo, arquivo));
+    }
+
+    @PostMapping(value = "/recebimentos/{recebimentoId}/anexos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize(RECEBIMENTO)
+    public ResponseEntity<ContaReceberAnexoDTO> anexarComprovante(@PathVariable Long recebimentoId, @RequestPart("arquivo") MultipartFile arquivo) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(anexoService.anexarComprovante(recebimentoId, arquivo));
+    }
+
+    @GetMapping("/anexos/{id}")
+    @PreAuthorize(CONSULTA)
+    public ResponseEntity<byte[]> baixarAnexo(@PathVariable Long id) {
+        ContaReceberAnexoService.Download d = anexoService.baixar(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(d.tipoConteudo()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(d.nome(), StandardCharsets.UTF_8).build().toString())
+                .header("X-Content-Type-Options", "nosniff")
+                .header(HttpHeaders.CACHE_CONTROL, "private, no-store")
+                .body(d.conteudo());
+    }
+
+    @DeleteMapping("/anexos/{id}")
+    @PreAuthorize("hasAnyAuthority('CONTA_RECEBER_GERENCIAR', 'CONTA_RECEBER_RECEBER')")
+    public ResponseEntity<Void> removerAnexo(@PathVariable Long id, Authentication authentication) {
+        anexoService.excluir(id, authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet()));
+        return ResponseEntity.noContent().build();
     }
 }
