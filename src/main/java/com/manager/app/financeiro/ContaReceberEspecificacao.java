@@ -8,6 +8,7 @@ import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
@@ -50,8 +51,19 @@ public final class ContaReceberEspecificacao {
                 }
                 p.add(cb.or(ou.toArray(new Predicate[0])));
             }
-            // período de recebimento e banco dependem dos recebimentos (fase 3): até lá nenhum título atende
-            if (f.temFiltroDeRecebimento()) p.add(cb.disjunction());
+            if (f.temFiltroDeRecebimento()) {
+                // recebimentos ativos (não estornados) do título
+                Subquery<Long> sub = query.subquery(Long.class);
+                Root<ContaReceberRecebimento> recebimento = sub.from(ContaReceberRecebimento.class);
+                List<Predicate> b = new ArrayList<>();
+                b.add(cb.equal(recebimento.get("contaReceber"), root));
+                b.add(cb.isFalse(recebimento.get("estornada")));
+                if (f.recebimentoDe() != null) b.add(cb.greaterThanOrEqualTo(recebimento.get("dataRecebimento"), f.recebimentoDe()));
+                if (f.recebimentoAte() != null) b.add(cb.lessThanOrEqualTo(recebimento.get("dataRecebimento"), f.recebimentoAte()));
+                if (f.bancoId() != null) b.add(cb.equal(recebimento.get("banco").get("id"), f.bancoId()));
+                sub.select(recebimento.get("id")).where(b.toArray(new Predicate[0]));
+                p.add(cb.exists(sub));
+            }
             return cb.and(p.toArray(new Predicate[0]));
         };
     }

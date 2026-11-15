@@ -15,5 +15,6 @@ public record MovimentacaoResponseDTO(Long id, Long bancoId, String bancoNome, L
                                       OrigemMovimentacao origem, String descricao, Long transferenciaId, boolean estornada,
                                       Long estornoDeId, String motivoEstorno, LocalDateTime estornadaEm,
                                       UsuarioResumoDTO estornadaPor, UsuarioResumoDTO usuario, LocalDateTime criadoEm,
-                                      BigDecimal saldoApos, Long tituloId, Long tituloNumero, Long pagamentoId) {
+                                      BigDecimal saldoApos, Long tituloId, Long tituloNumero, Long pagamentoId,
+                                      String tituloTipo, Long recebimentoId) {
 }

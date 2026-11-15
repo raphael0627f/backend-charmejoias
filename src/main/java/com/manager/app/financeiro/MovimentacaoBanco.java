@@ -43,6 +43,10 @@ public class MovimentacaoBanco {
     // reservado para o pagamento de conta a pagar (fase 2); ainda sem chave estrangeira
     private Long pagamentoId;
 
+    // título a receber e recebimento que originaram a movimentação (origens RECEBIMENTO_CONTA_RECEBER e ESTORNO_RECEBIMENTO)
+    private Long contaReceberId;
+    private Long recebimentoId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transferencia_id")
     private TransferenciaBanco transferencia;

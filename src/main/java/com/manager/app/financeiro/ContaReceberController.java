@@ -5,6 +5,8 @@ import com.manager.app.financeiro.dto.ContaReceberCriacaoResponseDTO;
 import com.manager.app.financeiro.dto.ContaReceberDetalheDTO;
 import com.manager.app.financeiro.dto.ContaReceberListaResponseDTO;
 import com.manager.app.financeiro.dto.ContaReceberRequestDTO;
+import com.manager.app.financeiro.dto.EstornoRequestDTO;
+import com.manager.app.financeiro.dto.RecebimentoDTOs;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -24,9 +26,12 @@ import java.util.UUID;
 public class ContaReceberController {
 
     private static final String CONSULTA = "hasAnyAuthority('CONTA_RECEBER_VISUALIZAR', 'CONTA_RECEBER_GERENCIAR', 'CONTA_RECEBER_RECEBER')";
+    private static final String RECEBIMENTO = "hasAuthority('CONTA_RECEBER_RECEBER')";
+    private static final String ESTORNO = "hasAuthority('CONTA_RECEBER_ESTORNAR')";
     private static final String GERENCIA = "hasAuthority('CONTA_RECEBER_GERENCIAR')";
 
     private final ContaReceberService service;
+    private final ContaReceberRecebimentoService recebimentoService;
 
     @PostMapping
     @PreAuthorize(GERENCIA)
@@ -96,5 +101,23 @@ public class ContaReceberController {
     @PreAuthorize(GERENCIA)
     public ResponseEntity<ContaReceberAcoesDTO.ResultadoLote> cancelarLote(@RequestBody(required = false) ContaReceberAcoesDTO.CancelarLote request) {
         return ResponseEntity.ok(service.cancelarLote(request));
+    }
+
+    @PostMapping("/{id}/recebimentos")
+    @PreAuthorize(RECEBIMENTO)
+    public ResponseEntity<RecebimentoDTOs.Resultado> receber(@PathVariable Long id, @Valid @RequestBody RecebimentoDTOs.Request request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(recebimentoService.receber(id, request));
+    }
+
+    @PostMapping("/recebimentos/{recebimentoId}/estornar")
+    @PreAuthorize(ESTORNO)
+    public ResponseEntity<RecebimentoDTOs.Resultado> estornarRecebimento(@PathVariable Long recebimentoId, @RequestBody(required = false) EstornoRequestDTO request) {
+        return ResponseEntity.ok(recebimentoService.estornar(recebimentoId, request));
+    }
+
+    @PostMapping("/recebimentos-lote")
+    @PreAuthorize(RECEBIMENTO)
+    public ResponseEntity<RecebimentoDTOs.ResultadoLote> receberLote(@RequestBody(required = false) RecebimentoDTOs.Lote request) {
+        return ResponseEntity.ok(recebimentoService.receberLote(request));
     }
 }

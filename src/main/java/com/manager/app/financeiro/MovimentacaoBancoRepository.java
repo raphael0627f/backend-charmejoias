@@ -33,5 +33,9 @@ public interface MovimentacaoBancoRepository extends JpaRepository<MovimentacaoB
 
     List<MovimentacaoBanco> findByPagamentoIdIn(java.util.Collection<Long> pagamentoIds);
 
+    List<MovimentacaoBanco> findByRecebimentoIdAndOrigem(Long recebimentoId, OrigemMovimentacao origem);
+
+    List<MovimentacaoBanco> findByRecebimentoIdIn(java.util.Collection<Long> recebimentoIds);
+
     List<MovimentacaoBanco> findByPagamentoIdAndOrigem(Long pagamentoId, OrigemMovimentacao origem);
 }

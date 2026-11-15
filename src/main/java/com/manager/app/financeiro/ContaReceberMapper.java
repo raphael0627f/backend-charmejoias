@@ -26,17 +26,27 @@ public class ContaReceberMapper {
                 c.getParcelaNumero(), c.getParcelaTotal(), c.getCancelamentoMotivo(), c.getCancelamentoEm(), 0);
     }
 
-    public ContaReceberDetalheDTO detalhe(ContaReceber c, LocalDate hoje, List<ContaReceber> parcelas, List<ContaReceberEvento> eventos) {
+    public ContaReceberDetalheDTO detalhe(ContaReceber c, LocalDate hoje, List<ContaReceber> parcelas, List<ContaReceberEvento> eventos,
+                                          List<ContaReceberRecebimento> recebimentos, java.util.Map<Long, Long> movimentacoes) {
         ContaReceberResumoDTO r = resumo(c, hoje);
         ContaReceberDetalheDTO.Cancelamento cancelamento = c.getCancelamentoEm() == null ? null
                 : new ContaReceberDetalheDTO.Cancelamento(c.getCancelamentoMotivo(), c.getCancelamentoEm(), mapper.usuario(c.getCanceladoPor()));
         return new ContaReceberDetalheDTO(r.id(), r.numero(), r.descricao(), r.cliente(), r.categoria(), r.centroCusto(), r.formaPrevista(),
                 r.valor(), r.valorRecebido(), r.valorAberto(), r.emissao(), r.competencia(), r.vencimento(), r.documento(), c.getObservacao(),
-                r.situacao(), r.situacaoExibicao(), r.grupoParcelamentoId(), r.parcelaNumero(), r.parcelaTotal(), cancelamento, List.of(),
+                r.situacao(), r.situacaoExibicao(), r.grupoParcelamentoId(), r.parcelaNumero(), r.parcelaTotal(), cancelamento,
+                recebimentos.stream().map(b -> recebimento(b, movimentacoes.get(b.getId()))).toList(),
                 parcelas.stream().map(p -> resumo(p, hoje)).toList(),
                 eventos.stream().map(e -> new ContaReceberDetalheDTO.Evento(e.getId(), e.getEvento(), e.getDetalhe(),
                         mapper.usuario(e.getUsuario()), e.getDataHora())).toList(),
                 c.getCreatedAt(), c.getUpdatedAt(), mapper.usuario(c.getCreatedBy()), mapper.usuario(c.getUpdatedBy()), List.of());
+    }
+
+    public ContaReceberDetalheDTO.Recebimento recebimento(ContaReceberRecebimento b, Long movimentacaoId) {
+        return new ContaReceberDetalheDTO.Recebimento(b.getId(), b.getDataRecebimento(), b.getValorPrincipal(), b.getJuros(), b.getMulta(), b.getDesconto(),
+                b.getValorTotal(), new ContaReceberResumoDTO.Ref(b.getBanco().getId(), b.getBanco().getNome()),
+                new ContaReceberResumoDTO.Ref(b.getFormaPagamento().getId(), b.getFormaPagamento().getNome()), b.getObservacao(),
+                b.isEstornada() ? "ESTORNADO" : "ATIVO", b.isEstornada(), b.getEstornoMotivo(), b.getEstornadaEm(), mapper.usuario(b.getEstornadaPor()),
+                b.getCreatedAt(), mapper.usuario(b.getCreatedBy()), movimentacaoId);
     }
 
     // documento do cliente: CPF do cadastro ou, na falta dele, o campo documento

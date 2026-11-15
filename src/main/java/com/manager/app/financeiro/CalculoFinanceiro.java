@@ -157,6 +157,9 @@ public final class CalculoFinanceiro {
         if (m.getOrigem() == OrigemMovimentacao.PAGAMENTO_CONTA_PAGAR || m.getOrigem() == OrigemMovimentacao.ESTORNO_PAGAMENTO) {
             throw new ItemInvalidoException("Esta movimentação foi gerada por um pagamento de conta a pagar. Para estornar, utilize o estorno do pagamento no título.");
         }
+        if (m.getOrigem() == OrigemMovimentacao.RECEBIMENTO_CONTA_RECEBER || m.getOrigem() == OrigemMovimentacao.ESTORNO_RECEBIMENTO) {
+            throw new ItemInvalidoException("Esta movimentação foi gerada por um recebimento de conta a receber. Para estornar, utilize o estorno do recebimento no título.");
+        }
         if (m.getOrigem() != OrigemMovimentacao.TRANSFERENCIA && m.getOrigem() != OrigemMovimentacao.AJUSTE) {
             throw new ItemInvalidoException("Somente transferências e ajustes podem ser estornados por esta operação.");
         }

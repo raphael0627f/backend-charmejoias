@@ -60,6 +60,6 @@ public class FinanceiroMapper {
                 CalculoFinanceiro.arredondar(m.getValor()), m.getOrigem(), m.getDescricao(),
                 m.getTransferencia() == null ? null : m.getTransferencia().getId(), m.isEstornada(),
                 m.getEstornoDe() == null ? null : m.getEstornoDe().getId(), m.getMotivoEstorno(), m.getEstornadaEm(),
-                usuario(m.getEstornadaPor()), usuario(m.getUsuario()), m.getCriadoEm(), saldoApos, null, null, m.getPagamentoId());
+                usuario(m.getEstornadaPor()), usuario(m.getUsuario()), m.getCriadoEm(), saldoApos, null, null, m.getPagamentoId(), null, m.getRecebimentoId());
     }
 }

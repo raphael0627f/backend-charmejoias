@@ -57,6 +57,8 @@ public class ContaReceberService {
     private final ContaReceberRepository repository;
     private final ContaReceberEventoRepository eventoRepository;
     private final ClienteRepository clienteRepository;
+    private final ContaReceberRecebimentoRepository recebimentoRepository;
+    private final MovimentacaoBancoRepository movimentacaoRepository;
     private final CategoriaReceitaRepository categoriaRepository;
     private final CentroCustoRepository centroCustoRepository;
     private final FormaPagamentoRepository formaPagamentoRepository;
@@ -213,7 +215,13 @@ public class ContaReceberService {
     public ContaReceberDetalheDTO detalhe(ContaReceber c) {
         List<ContaReceber> parcelas = c.getGrupoParcelamentoId() == null ? List.of()
                 : repository.findByGrupoParcelamentoIdOrderByParcelaNumeroAscIdAsc(c.getGrupoParcelamentoId());
-        return mapper.detalhe(c, LocalDate.now(), parcelas, eventoRepository.findByContaReceberIdOrderByIdAsc(c.getId()));
+        List<ContaReceberRecebimento> recebimentos = recebimentoRepository.findByContaReceberIdOrderByIdAsc(c.getId());
+        Map<Long, Long> movimentacoes = new java.util.HashMap<>();
+        if (!recebimentos.isEmpty()) {
+            movimentacaoRepository.findByRecebimentoIdIn(recebimentos.stream().map(ContaReceberRecebimento::getId).toList()).stream()
+                    .filter(m -> m.getOrigem() == OrigemMovimentacao.RECEBIMENTO_CONTA_RECEBER).forEach(m -> movimentacoes.put(m.getRecebimentoId(), m.getId()));
+        }
+        return mapper.detalhe(c, LocalDate.now(), parcelas, eventoRepository.findByContaReceberIdOrderByIdAsc(c.getId()), recebimentos, movimentacoes);
     }
 
     // seletor de clientes: ativos, por nome ou CPF/documento (contém, sem diferenciar caixa), até 20
