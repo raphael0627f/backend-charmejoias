@@ -145,3 +145,30 @@ Nenhum valor monetário informado pode ultrapassar **R$ 9.999.999,99**. Acima di
 `"O valor não pode ser superior a R$ 9.999.999,99."` (ou `"O valor de juros não pode ser superior a R$ 9.999.999,99."`).
 Vale para: valor do título (simples, parcelado, recorrência, lote e edição, inclusive o reajuste da recorrência), valores personalizados de parcelas,
 principal, juros, multa e desconto do pagamento, ajuste, transferência e saldo inicial do banco (em módulo). O front pode limitar o campo a esse teto.
+
+## Confirmação de valor e vencimento no pagamento (título de valor variável)
+
+`POST /contas-pagar/{id}/pagamentos` ganhou dois campos **opcionais** no corpo: `valorConta` (valor real da conta, > 0, teto R$ 9.999.999,99) e
+`vencimento` (data real, `aaaa-mm-dd`).
+
+```json
+{ "valorConta": 212.35, "vencimento": "2026-12-12", "dataPagamento": "2026-12-11", "valorPrincipal": 212.35,
+  "juros": 0, "multa": 0, "desconto": 0, "bancoId": 3, "formaPagamentoId": 2, "observacao": null }
+```
+
+Regras:
+1. `valorConta` e `vencimento` só são aceitos quando o título está `estimado = true` **e não possui pagamento ativo**; caso contrário **400**
+   ("Os dados da conta só podem ser confirmados em título de valor variável ainda não confirmado.").
+2. Em título `estimado = true`, `valorConta` é **obrigatório** no pagamento individual (**400**: "Informe o valor da conta deste mês para registrar o pagamento.").
+   O `vencimento`, se omitido, mantém o previsto. O vencimento real pode ser anterior ou posterior à data do pagamento; juros e multa continuam informados manualmente.
+3. Tudo ocorre na **mesma transação**, sob o bloqueio do título: atualiza valor e vencimento (recalculando o valor em aberto), `estimado = false`, registra o
+   evento `DADOS_CONFIRMADOS` e em seguida o pagamento. As validações do pagamento (principal ≤ valor em aberto **já atualizado**, data não futura, banco e forma
+   ativos, desconto, total > 0) usam o valor **novo**. Se qualquer validação falhar, **nada é gravado** (inclusive a confirmação).
+4. Título pago por inteiro (principal = `valorConta`) fica `PAGO`; com principal menor fica `PAGO_PARCIAL`.
+5. **Estorno** do pagamento de um título já confirmado: o título volta a `ABERTO` com o **valor confirmado** e `estimado` continua `false` (os dados já foram confirmados).
+   Como a confirmação só acontece junto com o primeiro pagamento ou pela edição antecipada, não existe título estimado com pagamento (ativo ou estornado).
+6. **Permissão:** `CONTA_PAGAR_PAGAR` basta para confirmar valor e vencimento ao pagar (não exige `CONTA_PAGAR_GERENCIAR`). Decisão: quem paga a conta é quem recebe o documento real.
+
+### Pagamento em lote
+Em `POST /contas-pagar/pagamentos-lote`, títulos com `estimado = true` são **recusados por item** (`pago = false`) com a mensagem
+"Título de valor variável: confirme o valor da conta no pagamento individual.", sem derrubar os demais.

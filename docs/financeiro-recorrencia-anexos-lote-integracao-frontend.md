@@ -160,3 +160,41 @@ principal, juros, multa e desconto do pagamento, ajuste, transferência e saldo 
 
 O resumo de cada título (lista e demais respostas que usam o resumo) agora traz `recorrenciaId` (nulo quando o título não nasceu de uma recorrência),
 para o ícone de recorrente. Categoria: no lançamento simples, no lote e na recorrência a categoria pode ser **grupo ou subgrupo** (mesmo comportamento).
+
+## Recorrência de valor e vencimento variáveis (contas de água, luz e telefone)
+
+Cenário: a empresa recebe todo mês uma conta de valor e vencimento diferentes. O usuário cria **uma** recorrência mensal com `valorVariavel = true`;
+as ocorrências nascem com valor **estimado** e vencimento **previsto** (`estimado = true`). Quando a conta chega, o usuário confirma o valor real e o
+vencimento real **no momento do pagamento** (ou antes, pela edição com `confirmarDados`). Mais detalhes do pagamento em
+`financeiro-pagamentos-integracao-frontend.md` (seção "Confirmação de valor e vencimento no pagamento").
+
+### Criação
+`POST /contas-pagar` com o bloco `recorrencia` aceita o campo novo `valorVariavel` (boolean, padrão `false`):
+```json
+{ "descricao": "Conta de água", "categoriaId": 5, "valor": 180.00, "vencimento": "2026-12-10",
+  "recorrencia": { "periodicidade": "MENSAL", "dataFim": null, "valorVariavel": true } }
+```
+- O `valor` é o valor **estimado** e o `vencimento` é o **previsto** da primeira ocorrência (ambos obrigatórios, como hoje).
+- Todas as ocorrências nascem com `estimado = true`, tanto na criação quanto na rotina diária (a rotina herda o indicador da regra).
+- A prévia e as regras de geração (mensal, semanal, anual, fim de mês, janela de 12 meses, data fim) **não mudam**.
+- `valorVariavel` também é aceito no nível raiz do corpo (`"valorVariavel": true`), mas **somente junto com `recorrencia`**; sem o bloco
+  `recorrencia` o valor `true` é recusado com **400** ("O indicador de valor variável só pode ser usado em lançamento recorrente."). Recomenda-se o uso dentro do bloco.
+- Títulos comuns, parcelados e recorrências já existentes: `estimado = false` / `valorVariavel = false`.
+
+### Campos novos nas respostas
+- Resumo do título (lista, criação, parcelas, próximas da regra) e detalhe: `estimado` (boolean).
+- `recorrencia` no detalhe do título (`RecorrenciaResumo`) e `GET /contas-pagar/recorrencias/{id}`: `valorVariavel` (boolean).
+- Lista `GET /contas-pagar`: filtro `estimado=true|false` e, em `totais`, **`valorAbertoEstimado`** (parte do valor em aberto que ainda é estimativa) e
+  **`quantidadeEstimados`** (títulos não cancelados com `estimado = true`). `valorTotal` e `valorAberto` não mudam (continuam somando todos os não cancelados).
+- Evento do histórico do título: **`DADOS_CONFIRMADOS`**, com descrição como "Dados da conta confirmados: valor de R$ 180,00 para R$ 212,35; vencimento de 10/12/2026 para 12/12/2026."
+
+### Confirmação antecipada: `PUT /contas-pagar/{id}` com `confirmarDados`
+Campo novo opcional `confirmarDados` (boolean, padrão `false`):
+- Título `estimado = true` e **sem pagamento ativo** + `confirmarDados = true`: grava o `valor`/`vencimento` enviados, `estimado = false` e registra `DADOS_CONFIRMADOS`.
+- Com `confirmarDados = false` (ou omitido): edita normalmente e o título **continua estimado**.
+- Em título não estimado `confirmarDados` é ignorado. `PATCH /contas-pagar/{id}/vencimento` isolado **não altera** o indicador `estimado`.
+
+### Reajuste e encerramento
+- `PUT /contas-pagar/recorrencias/{id}` e `POST .../encerrar` continuam como estão. Em regra com `valorVariavel`, o novo valor é a **nova estimativa** das
+  ocorrências futuras abertas, sem pagamento **e ainda estimadas** (`estimado = true`, que continuam estimadas); ocorrências já confirmadas não são alteradas pelo reajuste.
+- Cancelar um título estimado funciona normalmente.
