@@ -25,7 +25,7 @@ public class FinanceiroAutorizacaoInterceptor implements HandlerInterceptor, Web
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(this).addPathPatterns("/bancos/**", "/categorias-despesa/**", "/formas-pagamento/**", "/centros-custo/**",
-                "/movimentacoes-banco/**", "/contas-pagar/**");
+                "/movimentacoes-banco/**", "/contas-pagar/**", "/categorias-receita/**", "/contas-receber/**");
     }
 
     @Override

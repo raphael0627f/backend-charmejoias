@@ -17,7 +17,7 @@ import java.util.List;
 @RequestMapping("/formas-pagamento")
 public class FormaPagamentoController {
 
-    private static final String CONSULTA = "hasAnyAuthority('CONTA_PAGAR_VISUALIZAR', 'CONTA_PAGAR_GERENCIAR', 'CONTA_PAGAR_PAGAR', 'CADASTRO_FINANCEIRO_GERENCIAR')";
+    private static final String CONSULTA = "hasAnyAuthority('CONTA_RECEBER_VISUALIZAR', 'CONTA_RECEBER_GERENCIAR', 'CONTA_RECEBER_RECEBER', 'CONTA_PAGAR_VISUALIZAR', 'CONTA_PAGAR_GERENCIAR', 'CONTA_PAGAR_PAGAR', 'CADASTRO_FINANCEIRO_GERENCIAR')";
     private static final String GERENCIA = "hasAuthority('CADASTRO_FINANCEIRO_GERENCIAR')";
 
     private final FormaPagamentoService service;

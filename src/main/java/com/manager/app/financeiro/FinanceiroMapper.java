@@ -3,6 +3,7 @@ package com.manager.app.financeiro;
 import com.manager.app.financeiro.dto.BancoResponseDTO;
 import com.manager.app.financeiro.dto.CadastroSimplesResponseDTO;
 import com.manager.app.financeiro.dto.CategoriaDespesaResponseDTO;
+import com.manager.app.financeiro.dto.CategoriaReceitaResponseDTO;
 import com.manager.app.financeiro.dto.MovimentacaoResponseDTO;
 import com.manager.app.usuario.Usuario;
 import com.manager.app.usuario.dto.UsuarioResumoDTO;
@@ -36,6 +37,12 @@ public class FinanceiroMapper {
         return new CategoriaDespesaResponseDTO(c.getId(), c.getNome(), pai == null ? null : pai.getId(), pai == null ? null : pai.getNome(),
                 c.getTipo(), c.getOrdem(), c.isAtivo(), c.getCreatedAt(), c.getUpdatedAt(), usuario(c.getCreatedBy()), usuario(c.getUpdatedBy()),
                 subcategorias);
+    }
+
+    public CategoriaReceitaResponseDTO categoriaReceita(CategoriaReceita c, List<CategoriaReceitaResponseDTO> subcategorias) {
+        CategoriaReceita pai = c.getPai();
+        return new CategoriaReceitaResponseDTO(c.getId(), c.getNome(), pai == null ? null : pai.getId(), pai == null ? null : pai.getNome(),
+                c.getOrdem(), c.isAtivo(), c.getCreatedAt(), c.getUpdatedAt(), usuario(c.getCreatedBy()), usuario(c.getUpdatedBy()), subcategorias);
     }
 
     public CadastroSimplesResponseDTO formaPagamento(FormaPagamento f) {
