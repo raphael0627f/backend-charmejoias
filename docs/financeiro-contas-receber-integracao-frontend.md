@@ -48,6 +48,7 @@ Leitura aceita qualquer uma das três primeiras. Sem permissão: **403 antes de 
 Parâmetros (todos opcionais): `vencimentoDe`, `vencimentoAte`, `emissaoDe`, `emissaoAte`, `recebimentoDe`, `recebimentoAte`, `situacao` (repetível; aceita `VENCIDO`),
 `busca` (descrição, nome do cliente, documento do título, CPF/documento do cliente e número, com `#` opcional), `clienteId`, `categoriaId` (grupo traz os subgrupos), `centroCustoId`,
 `formaPrevistaId`, `bancoId`, `valorMin`, `valorMax`, `ordenar` (`vencimento` [padrão], `valor`, `numero`, `cliente`, `situacao`), `direcao` (`asc`|`desc`), `page` (0), `size` (20, máximo 200).
+- O filtro `situacao=ABERTO` corresponde à situação gravada (inclui os atrasados, como no Contas a Pagar); `situacao=VENCIDO` retorna só os atrasados. Combine os dois para ver todos os em aberto.
 - Sem filtro de data, de busca nem de situação, o backend aplica o **mês atual** no vencimento; o frontend normalmente envia o período.
 - `recebimentoDe`, `recebimentoAte` e `bancoId` dependem dos recebimentos (fase 3): **nesta fase retornam lista vazia** quando informados.
 - Resposta: `{ "content": [Resumo], "page", "size", "totalElements", "totalPages", "periodoVencimento": {"de","ate"}, "totais": { "quantidade", "valorTotal", "valorRecebido", "valorAberto", "valorVencido" } }`.
@@ -63,6 +64,7 @@ Resumo completo e, além dele: `observacao`, `cancelamento` (`motivo`, `em`, `po
 - Com recebimento (`valorRecebido` > 0, fase 3): o valor não pode ficar abaixo do recebido (400) e **o cliente não pode ser trocado** (400).
 - `RECEBIDO`: só a `observacao` pode mudar (qualquer outro campo diferente → 400).
 - `CANCELADO`: não pode ser editado (400).
+- Campos opcionais omitidos no corpo (`centroCustoId`, `formaPrevistaId`, `documento`, `observacao`) são **limpos**: envie sempre o formulário completo.
 - Os campos omitidos `emissao`, `competencia` e `vencimento` mantêm o valor atual. Evento `TITULO_EDITADO` com as alterações.
 
 ### `PATCH /contas-receber/{id}/vencimento` — alterar vencimento
@@ -82,7 +84,7 @@ Até **20** clientes **ativos**, por nome ou CPF/documento (contém, sem diferen
 Feito no frontend a partir do detalhe (sem endpoint): abre o formulário de novo título com os dados copiados.
 
 ## Histórico (eventos)
-`TITULO_CRIADO`, `TITULO_EDITADO`, `VENCIMENTO_ALTERADO`, `TITULO_CANCELADO` (fase 3 acrescenta os de recebimento). Cada título parcelado registra o seu próprio histórico.
+(nomes diferentes dos do Contas a Pagar, que usa `CRIACAO`, `EDICAO` e `CANCELAMENTO`) `TITULO_CRIADO`, `TITULO_EDITADO`, `VENCIMENTO_ALTERADO`, `TITULO_CANCELADO` (fase 3 acrescenta os de recebimento). Cada título parcelado registra o seu próprio histórico.
 
 ## Categorias de receita em uso
 `DELETE /categorias-receita/{id}` passa a devolver **409** quando há título a receber na categoria
