@@ -174,7 +174,7 @@ public final class CalculoFinanceiro {
         original.setEstornadaEm(agora);
         original.setEstornadaPor(usuario);
         MovimentacaoBanco inversa = movimentacao(original.getBanco(), hoje, original.getTipo().inverso(), original.getValor(),
-                OrigemMovimentacao.ESTORNO_MANUAL, "Estorno: " + motivo, usuario);
+                OrigemMovimentacao.ESTORNO_MANUAL, "Estorno da movimentação: " + motivo, usuario);
         inversa.setEstornoDe(original);
         inversa.setTransferencia(original.getTransferencia());
         return inversa;

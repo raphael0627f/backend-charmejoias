@@ -98,7 +98,7 @@ public class CategoriaDespesaService {
     public CategoriaDespesaResponseDTO ativar(Long id) {
         CategoriaDespesa categoria = buscar(id);
         if (categoria.getPai() != null && !categoria.getPai().isAtivo()) {
-            throw new ObjetoEmUsoException("Não é possível ativar o subgrupo, pois o grupo \"" + categoria.getPai().getNome() + "\" está inativo. Ative o grupo primeiro.");
+            throw new ObjetoEmUsoException("Não é possível ativar o subgrupo, pois o grupo \"" + categoria.getPai().getNome() + "\" está inativo. Ative o grupo antes de ativar o subgrupo.");
         }
         categoria.setAtivo(true);
         repository.save(categoria);

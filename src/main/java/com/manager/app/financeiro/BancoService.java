@@ -80,7 +80,7 @@ public class BancoService {
                 || !novaData.equals(banco.getDataSaldoInicial());
         if (saldoMudou) {
             if (movimentacaoRepository.existsByBancoIdAndOrigemNot(id, OrigemMovimentacao.SALDO_INICIAL)) {
-                throw new ItemInvalidoException("Não é possível alterar o saldo inicial, pois já existem movimentações neste banco. Utilize um Ajuste.");
+                throw new ItemInvalidoException("Não é possível alterar o saldo inicial, pois já existem movimentações neste banco. Utilize um lançamento de ajuste.");
             }
             CalculoFinanceiro.validarDataNaoFutura(novaData, LocalDate.now());
             banco.setSaldoInicial(novoSaldo);
@@ -111,7 +111,7 @@ public class BancoService {
     public void excluir(Long id) {
         Banco banco = buscar(id);
         if (movimentacaoRepository.existsByBancoIdAndOrigemNot(id, OrigemMovimentacao.SALDO_INICIAL)) {
-            throw new ObjetoEmUsoException("Não é possível excluir o banco \"" + banco.getNome() + "\", pois ele possui movimentações. Inative-o.");
+            throw new ObjetoEmUsoException("Não é possível excluir o banco \"" + banco.getNome() + "\", pois ele possui movimentações. Inative o banco.");
         }
         movimentacaoRepository.findFirstByBancoIdAndOrigem(id, OrigemMovimentacao.SALDO_INICIAL).ifPresent(movimentacaoRepository::delete);
         repository.delete(banco);

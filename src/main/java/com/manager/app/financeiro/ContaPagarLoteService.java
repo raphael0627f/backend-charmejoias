@@ -37,7 +37,7 @@ public class ContaPagarLoteService {
         for (int i = 0; i < request.itens().size(); i++) {
             ContaPagarRequestDTO item = request.itens().get(i);
             try {
-                if (item == null) throw new ItemInvalidoException("A linha está vazia.");
+                if (item == null) throw new ItemInvalidoException("A linha do lançamento está vazia.");
                 if (item.parcelamento() != null) throw new ItemInvalidoException("O lançamento em lote não aceita parcelamento.");
                 if (item.recorrencia() != null) throw new ItemInvalidoException("O lançamento em lote não aceita recorrência.");
                 Set<ConstraintViolation<ContaPagarRequestDTO>> violacoes = validator.validate(item);

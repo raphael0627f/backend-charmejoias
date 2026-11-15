@@ -126,7 +126,7 @@ public class ContaPagarRecorrenciaService {
         repository.save(regra);
         if (faltantes.isEmpty()) return 0;
         List<ContaPagar> criados = gerar(regra, faltantes, hoje, null);
-        eventoRegra(regra, "RECORRENCIA_CRIADA", "Geração automática: " + criados.size() + " ocorrência(s) criada(s) até " + TextoUtils.data(limite) + ".", null);
+        eventoRegra(regra, "RECORRENCIA_CRIADA", "Geração automática: " + criados.size() + " ocorrência(s) gerada(s) até " + TextoUtils.data(limite) + ".", null);
         return criados.size();
     }
 
