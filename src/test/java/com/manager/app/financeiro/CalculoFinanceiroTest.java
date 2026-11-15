@@ -241,7 +241,7 @@ class CalculoFinanceiroTest {
         assertThatThrownBy(() -> CalculoFinanceiro.validarEstornavel(inversa)).isInstanceOf(ItemInvalidoException.class);
         assertThatThrownBy(() -> CalculoFinanceiro.validarEstornavel(mov(b, TipoMovimentacao.ENTRADA, "10.00", OrigemMovimentacao.SALDO_INICIAL)))
                 .isInstanceOf(ItemInvalidoException.class).hasMessageContaining("transferências e ajustes");
-        assertThatThrownBy(() -> CalculoFinanceiro.validarEstornavel(mov(b, TipoMovimentacao.SAIDA, "10.00", OrigemMovimentacao.BAIXA_CONTA_PAGAR)))
+        assertThatThrownBy(() -> CalculoFinanceiro.validarEstornavel(mov(b, TipoMovimentacao.SAIDA, "10.00", OrigemMovimentacao.PAGAMENTO_CONTA_PAGAR)))
                 .isInstanceOf(ItemInvalidoException.class);
     }
 

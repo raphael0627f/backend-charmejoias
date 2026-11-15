@@ -125,26 +125,26 @@ class RecorrenciaAnexoCalculoTest {
     // ---------- seleção das ocorrências afetadas ----------
 
     @Test
-    void reajusteAtingeSoFuturasAbertasSemBaixa() {
+    void reajusteAtingeSoFuturasAbertasSemPagamento() {
         ContaPagar passada = titulo(1, SituacaoContaPagar.ABERTO, "2026-12-05");
         ContaPagar aberta = titulo(2, SituacaoContaPagar.ABERTO, "2027-01-05");
-        ContaPagar comBaixa = titulo(3, SituacaoContaPagar.ABERTO, "2027-02-05");
+        ContaPagar comPagamento = titulo(3, SituacaoContaPagar.ABERTO, "2027-02-05");
         ContaPagar parcial = titulo(4, SituacaoContaPagar.PAGO_PARCIAL, "2027-03-05");
         ContaPagar paga = titulo(5, SituacaoContaPagar.PAGO, "2027-04-05");
         ContaPagar cancelada = titulo(6, SituacaoContaPagar.CANCELADO, "2027-05-05");
         ContaPagar noLimite = titulo(7, SituacaoContaPagar.ABERTO, "2027-01-01");
-        List<ContaPagar> alvo = RecorrenciaCalculo.selecionarReajustaveis(List.of(passada, aberta, comBaixa, parcial, paga, cancelada, noLimite), d("2027-01-01"), Set.of(3L));
+        List<ContaPagar> alvo = RecorrenciaCalculo.selecionarReajustaveis(List.of(passada, aberta, comPagamento, parcial, paga, cancelada, noLimite), d("2027-01-01"), Set.of(3L));
         assertThat(alvo).containsExactlyInAnyOrder(aberta, noLimite);
     }
 
     @Test
-    void encerramentoAtingeSoFuturasAbertasSemBaixaAPartirDeHoje() {
+    void encerramentoAtingeSoFuturasAbertasSemPagamentoAPartirDeHoje() {
         ContaPagar vencida = titulo(1, SituacaoContaPagar.ABERTO, "2026-11-10");
         ContaPagar hoje = titulo(2, SituacaoContaPagar.ABERTO, "2026-11-14");
         ContaPagar futura = titulo(3, SituacaoContaPagar.ABERTO, "2026-12-14");
         ContaPagar paga = titulo(4, SituacaoContaPagar.PAGO, "2026-12-20");
-        ContaPagar comBaixa = titulo(5, SituacaoContaPagar.ABERTO, "2026-12-21");
-        assertThat(RecorrenciaCalculo.selecionarEncerraveis(List.of(vencida, hoje, futura, paga, comBaixa), d("2026-11-14"), Set.of(5L)))
+        ContaPagar comPagamento = titulo(5, SituacaoContaPagar.ABERTO, "2026-12-21");
+        assertThat(RecorrenciaCalculo.selecionarEncerraveis(List.of(vencida, hoje, futura, paga, comPagamento), d("2026-11-14"), Set.of(5L)))
                 .containsExactlyInAnyOrder(hoje, futura);
     }
 
