@@ -13,6 +13,8 @@ CREATE TABLE conta_pagar_recorrencia (
     forma_prevista_id BIGINT REFERENCES forma_pagamento (id),
     documento VARCHAR(60),
     observacao VARCHAR(1000),
+    -- valor_variavel: contas de valor e vencimento diferentes a cada mês (água, luz, telefone); as ocorrências nascem estimadas
+    valor_variavel BOOLEAN NOT NULL DEFAULT FALSE,
     ativa BOOLEAN NOT NULL DEFAULT TRUE,
     ultima_geracao TIMESTAMP,
     encerrada_em TIMESTAMP,
@@ -38,6 +40,10 @@ CREATE INDEX idx_conta_pagar_recorrencia_evento ON conta_pagar_recorrencia_event
 ALTER TABLE conta_pagar ADD COLUMN ocorrencia_data DATE;
 ALTER TABLE conta_pagar ADD CONSTRAINT fk_conta_pagar_recorrencia FOREIGN KEY (recorrencia_id) REFERENCES conta_pagar_recorrencia (id);
 CREATE UNIQUE INDEX uk_conta_pagar_recorrencia_ocorrencia ON conta_pagar (recorrencia_id, ocorrencia_data) WHERE recorrencia_id IS NOT NULL;
+
+-- estimado = valor e vencimento ainda não confirmados (título de recorrência de valor variável); passa a false na confirmação
+ALTER TABLE conta_pagar ADD COLUMN estimado BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX idx_conta_pagar_estimado ON conta_pagar (vencimento) WHERE estimado;
 
 -- arquivo = nome do arquivo no diretório de anexos (app.storage.financeiro-anexos-dir), no padrão dos demais arquivos do projeto
 CREATE TABLE conta_pagar_anexo (
