@@ -10,7 +10,7 @@ A ação "baixar" passou a se chamar **pagar** e o registro "baixa" passou a se 
 publicadas e foram ajustadas diretamente. A 8080 de desenvolvimento já está com o novo contrato. **Nada além dos nomes mudou** (regras, valores e fluxo são os mesmos).
 
 **Permissão:** `CONTA_PAGAR_BAIXAR` → `CONTA_PAGAR_PAGAR`. O perfil ADMIN do banco de desenvolvimento já foi atualizado; **é preciso fazer login novamente**
-para o token trazer a permissão nova. `CONTA_PAGAR_ESTORNAR` permanece. **Observação:** `CONTA_PAGAR_ESTORNAR` isolada **não dá acesso às telas** de Contas a Pagar
+para o token trazer a permissão nova. `CONTA_PAGAR_ESTORNAR` permanece. **Observação:** `CONTA_PAGAR_ESTORNAR` isolada **não concede acesso às telas** de Contas a Pagar
 (as consultas exigem `CONTA_PAGAR_VISUALIZAR`, `CONTA_PAGAR_GERENCIAR` ou `CONTA_PAGAR_PAGAR`); conceda-a sempre junto com uma dessas.
 As permissões de Movimentação (`MOVIMENTACAO_VISUALIZAR`/`MOVIMENTACAO_GERENCIAR`) e suas rotas **não mudam**.
 
@@ -96,7 +96,7 @@ Resposta:
 { "ids": [12, 13, 14], "dataPagamento": "2026-11-14", "bancoId": 1, "formaPagamentoId": 2, "observacao": "Pagamento do dia" }
 ```
 Paga o **saldo integral em aberto** de cada título (sem juros, multa ou desconto), cada título em transação própria (até 200 ids, repetidos são ignorados).
-Um título recusado **nunca derruba o lote**:
+Um título recusado **nunca interrompe o lote**:
 ```json
 { "pagos": 2, "recusados": 1, "totalPago": 2300.00,
   "resultados": [
@@ -171,4 +171,4 @@ Regras:
 
 ### Pagamento em lote
 Em `POST /contas-pagar/pagamentos-lote`, títulos com `estimado = true` são **recusados por item** (`pago = false`) com a mensagem
-"Título de valor variável: confirme o valor da conta no pagamento individual.", sem derrubar os demais.
+"Título de valor variável: confirme o valor da conta no pagamento individual.", sem afetar os demais.

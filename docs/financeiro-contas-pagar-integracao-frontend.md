@@ -31,7 +31,7 @@ Migration: `V65__financeiro-contas-pagar.sql`. Pagamento, estorno, recorrência,
   "motivoCancelamento": null, "dataCancelamento": null }
 ```
 `centroCusto`, `formaPrevista`, `favorecido`, `documento` e os campos de parcela são `null` quando não se aplicam.
-`motivoCancelamento` e `dataCancelamento` (data e hora) só vêm preenchidos em título `CANCELADO` (use no tooltip do ícone de cancelado); nos demais são `null`.
+`motivoCancelamento` e `dataCancelamento` (data e hora) só vêm preenchidos em título `CANCELADO` (podem ser exibidos na dica do ícone de cancelado); nos demais são `null`.
 `categoria.grupoId/grupoNome` vêm `null` quando a categoria escolhida é um grupo (sem pai).
 
 ## `POST /contas-pagar` (201)
@@ -58,7 +58,7 @@ Título parcelado — acrescente o bloco `parcelamento` (`valor` é o **total**)
 - `QUINZENAL`: a cada 15 dias. `SEMANAL`: a cada 7 dias.
 - `PERSONALIZADO`: informe `datas` (exatamente `quantidade` datas); `primeiroVencimento` é ignorado.
 - `valores` (opcional): exatamente `quantidade` valores > 0 cuja **soma é igual ao total**. Omitido: valores iguais (arredondados para baixo em 2 casas)
-  e a **diferença de centavos vai para a última parcela** (ex.: 1000,00 em 12x = 11 × 83,33 + 83,37).
+  e a **diferença de centavos é atribuída à última parcela** (ex.: 1000,00 em 12x = 11 × 83,33 + 83,37).
 - Cada parcela é um título; a descrição ganha o sufixo `" n/N"` (se a descrição já terminar em `n/N`, o sufixo é **substituído**, não duplicado).
   Todas ficam ligadas por `grupoParcelamentoId`.
 - `competencia` informada vale para todas as parcelas; omitida, cada parcela usa o mês do seu vencimento.

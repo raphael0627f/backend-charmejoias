@@ -127,7 +127,7 @@ O arquivo é apagado e o evento `ANEXO_REMOVIDO` é registrado.
 ```
 Até **100 linhas** (mais: 400 para a requisição inteira; lista vazia: 400). Cada linha usa os campos do lançamento **simples**
 (`descricao`, `favorecido`, `categoriaId`, `centroCustoId`, `valor`, `emissao`, `competencia`, `vencimento`, `documento`, `formaPrevistaId`, `linhaDigitavel`, `observacao`);
-`parcelamento` e `recorrencia` não são aceitos no lote (a linha é recusada). Cada linha é criada em transação própria: **uma linha inválida nunca derruba as outras**.
+`parcelamento` e `recorrencia` não são aceitos no lote (a linha é recusada). Cada linha é criada em transação própria: **uma linha inválida nunca afeta as demais**.
 ```json
 { "criadas": 1, "recusadas": 1,
   "resultados": [ { "indice": 0, "criada": true, "id": 120, "numero": 98, "menssage": null, "campo": null },
