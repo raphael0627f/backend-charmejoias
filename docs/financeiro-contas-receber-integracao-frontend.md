@@ -24,8 +24,8 @@ Leitura aceita qualquer uma das três primeiras. Sem permissão: **403 antes de 
   "documento": "NF 123", "formaPrevistaId": 3, "observacao": "...",
   "parcelamento": { "quantidade": 3, "primeiroVencimento": "2026-12-10", "intervalo": "MENSAL", "datas": null, "valores": null } }
 ```
-- Obrigatórios: `descricao` (até 200), `clienteId`, `categoriaId`, `valor`; `vencimento` é obrigatório no título simples. `documento` até 60 e `observacao` até 1000 caracteres.
-- `clienteId` deve existir e estar **ativo** (400: "O cliente informado não foi encontrado." / "O cliente X está desativado.").
+- Obrigatórios: `descricao` (até 200), `categoriaId`, `valor` e **um pagador** (`clienteId` **ou** `pagadorNome`, veja a seção "Pagador avulso"); `vencimento` é obrigatório no título simples. `documento` até 60 e `observacao` até 1000 caracteres.
+- Quando informado, `clienteId` deve existir e estar **ativo** (400: "O cliente informado não foi encontrado." / "O cliente X está desativado.").
 - `categoriaId`: categoria de receita ativa (grupo **ou** subgrupo). `centroCustoId` e `formaPrevistaId` (opcionais): ativos.
 - `valor` > 0, até 2 casas e **teto R$ 9.999.999,99**.
 - `emissao` padrão: hoje. **Decisão: o vencimento não pode ser anterior à emissão** (400: "O vencimento não pode ser anterior à data de emissão."; vale para cada parcela). Não há restrição para emissão futura.
@@ -112,3 +112,51 @@ O saldo dos bancos é uma informação restrita. A regra é aplicada no servidor
 - **Aviso de saldo negativo** (estorno de recebimento, campo `aviso`): para quem não vê o saldo, o texto não traz o valor. Exemplo: `Atenção: após esta operação, o saldo do banco "Caixa" ficou negativo.` Para quem vê, o texto continua com o valor entre parênteses.
 - `GET /movimentacoes-banco` (extrato, com `saldoApos`) e `GET /movimentacoes-banco/saldos` já exigiam permissão de movimentação e continuam respondendo 403 para perfis só de Contas a Receber.
 - O front deve tratar `saldoAtual`/`saldoInicial` nulos (ocultar a coluna/valor) e não depender de `aviso` conter o valor.
+
+## Pagador avulso (migration V71)
+
+O título pode ser lançado para quem **não é cliente cadastrado** (aluguel, devolução de fornecedor, reembolso, venda avulsa, rendimentos). O cliente deixou de ser obrigatório: informa-se **ou** o cliente **ou** o pagador avulso.
+
+### Requisição (`POST /contas-receber` e `PUT /contas-receber/{id}`)
+Novos campos opcionais no corpo: `pagadorNome` e `pagadorDocumento`.
+```json
+{ "descricao": "Aluguel da vitrine", "clienteId": null, "pagadorNome": "Loja Vizinha Ltda", "pagadorDocumento": "12.345.678/0001-90",
+  "categoriaId": 2, "valor": 800.00, "vencimento": "2026-12-10" }
+```
+| Regra | Resultado |
+| --- | --- |
+| Nenhum dos dois (`clienteId` e `pagadorNome`) | 400 "Informe o cliente ou o pagador avulso." |
+| Ambos | 400 "Informe apenas o cliente ou o pagador avulso." |
+| `pagadorNome` | `trim`, convertido para **MAIÚSCULAS**, de 2 a 150 caracteres (400 "O nome do pagador avulso deve ter entre 2 e 150 caracteres.") |
+| `pagadorDocumento` (opcional) | Aceita com ou sem máscara; gravado **só com dígitos**; 11 (CPF) ou 14 (CNPJ) dígitos, senão 400 "O documento do pagador avulso deve ter 11 dígitos (CPF) ou 14 dígitos (CNPJ)." Os dígitos verificadores **não** são conferidos. Sem cliente e sem `pagadorNome`, informar só `pagadorDocumento` é 400 ("Informe o cliente ou o pagador avulso."); com `clienteId`, qualquer `pagadorNome` ou `pagadorDocumento` é 400 ("Informe apenas o cliente ou o pagador avulso.") |
+| `clienteId` informado | Regras anteriores (cliente existente e ativo) |
+
+No parcelamento todas as parcelas herdam o pagador (ou o cliente). Para "duplicar", reenvie os mesmos campos.
+
+### Edição
+- Trocar de cliente para avulso, de avulso para cliente ou alterar o pagador avulso só é permitido **sem valor recebido** (mesma regra da troca de cliente). Com recebimento ativo: 400 "O pagador não pode ser alterado em título com recebimento. Estorne os recebimentos antes." (a mensagem anterior sobre cliente foi substituída por essa).
+- Título `RECEBIDO` altera só a observação; `CANCELADO` não altera nada (regras já existentes).
+- Ao trocar, o histórico registra `pagador: "ANTES" → "DEPOIS"` (nome de exibição).
+
+### Respostas (lista, resumo, parcelas, detalhe, criação)
+Campos novos em todo título; os atuais foram mantidos:
+```json
+{ "cliente": null, "pagadorNome": "LOJA VIZINHA LTDA", "pagadorDocumento": "12345678000190",
+  "pagadorExibicao": "LOJA VIZINHA LTDA", "tipoPagador": "AVULSO" }
+```
+- `cliente` agora pode ser **`null`** (título avulso); quando há cliente continua `{ id, nome, documento }`, e `pagadorNome`/`pagadorDocumento` vêm `null`.
+- `pagadorExibicao`: nome do cliente ou o `pagadorNome`; `tipoPagador`: `CLIENTE` ou `AVULSO`. A tela não precisa decidir.
+- `pagadorDocumento` vem sem máscara.
+
+### Lista (`GET /contas-receber`)
+- `busca` também procura em `pagadorNome` e `pagadorDocumento` (com ou sem máscara).
+- Novo filtro `tipoPagador=CLIENTE|AVULSO` (outro valor: 400 "Tipo de pagador inválido. Use CLIENTE ou AVULSO."). `clienteId` continua e **não** traz avulsos.
+- `ordenar=cliente` ordena pelo nome de exibição (cliente ou avulso), sem diferenciar maiúsculas; avulsos entram na ordenação.
+- Totais consideram os avulsos (o filtro é o mesmo da lista).
+
+### Recebimento, extrato e histórico
+A descrição da entrada no extrato passa a usar o nome de exibição: `Recebimento do título nº N - descrição - NOME DO CLIENTE OU DO PAGADOR AVULSO`. Títulos e movimentações antigos não mudam. O histórico de criação diz "Título criado para o cliente X..." ou "Título criado para o pagador avulso X...".
+
+### O que não muda
+- `GET /contas-receber/clientes` (seletor) e a **situação do cliente** (`/contas-receber/clientes/{id}/situacao` e `/contas-receber/clientes/situacao`): continuam **só para clientes cadastrados**; títulos avulsos não entram nesses cálculos nem nos totais.
+- Cancelamento, lote, anexos, comprovantes, estorno: sem mudança de regra, funcionam igualmente para título avulso.

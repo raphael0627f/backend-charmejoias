@@ -94,3 +94,6 @@ Os `totais` valem para todo o filtro (não só para a página). Só aparecem cli
 | Título, recebimento, anexo ou cliente inexistente | 404 |
 | 11º anexo do título | 409 |
 | Arquivo acima de 5 MB | 413 |
+
+
+> Pagador avulso (V71): títulos sem cliente cadastrado funcionam normalmente com anexos e comprovantes. A situação do cliente (resumo e visão geral) considera **somente clientes cadastrados**; títulos avulsos ficam fora dos cálculos e totais. Detalhes em `docs/financeiro-contas-receber-integracao-frontend.md`.
