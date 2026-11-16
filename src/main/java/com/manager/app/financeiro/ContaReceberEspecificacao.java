@@ -30,6 +30,9 @@ public final class ContaReceberEspecificacao {
             if (f.valorMin() != null) p.add(cb.greaterThanOrEqualTo(root.get("valor"), f.valorMin()));
             if (f.valorMax() != null) p.add(cb.lessThanOrEqualTo(root.get("valor"), f.valorMax()));
             if (f.clienteId() != null) p.add(cb.equal(root.get("cliente").get("id"), f.clienteId()));
+            if (f.tipoPagador() != null && !f.tipoPagador().isBlank()) {
+                p.add(f.tipoPagador().trim().equalsIgnoreCase("AVULSO") ? cb.isNull(root.get("cliente")) : cb.isNotNull(root.get("cliente")));
+            }
             if (f.centroCustoId() != null) p.add(cb.equal(root.get("centroCusto").get("id"), f.centroCustoId()));
             if (f.formaPrevistaId() != null) p.add(cb.equal(root.get("formaPrevista").get("id"), f.formaPrevistaId()));
             if (f.categoriaId() != null) {
@@ -68,16 +71,33 @@ public final class ContaReceberEspecificacao {
         };
     }
 
+    // ordena pelo nome de exibição (cliente ou pagador avulso) sem diferenciar caixa; desempate pelo número.
+    // Só aplica a ordem na consulta de dados (a de contagem da página não pode ter ORDER BY).
+    public static Specification<ContaReceber> ordenadaPorPagador(Specification<ContaReceber> base, boolean desc) {
+        return (root, query, cb) -> {
+            Class<?> tipo = query.getResultType();
+            if (tipo != Long.class && tipo != long.class) {
+                Join<ContaReceber, Cliente> cliente = root.join("cliente", JoinType.LEFT);
+                var nome = cb.lower(cb.coalesce(cliente.<String>get("nome"), root.<String>get("pagadorNome")));
+                query.orderBy(desc ? cb.desc(nome) : cb.asc(nome), cb.asc(root.get("numero")));
+            }
+            return base.toPredicate(root, query, cb);
+        };
+    }
+
     private static Predicate busca(String termo, Root<ContaReceber> root, CriteriaBuilder cb) {
-        Join<ContaReceber, Cliente> cliente = root.join("cliente", JoinType.INNER);
+        Join<ContaReceber, Cliente> cliente = root.join("cliente", JoinType.LEFT);
         List<Predicate> ou = new ArrayList<>();
         ou.add(SpecificationUtils.likeIgnoreCase(cb, root.get("descricao"), termo, ModoBusca.MEIO));
         ou.add(SpecificationUtils.likeIgnoreCase(cb, root.get("documento"), termo, ModoBusca.MEIO));
         ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), termo, ModoBusca.MEIO));
         ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("cpf"), termo, ModoBusca.MEIO));
         ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("documento"), termo, ModoBusca.MEIO));
+        ou.add(SpecificationUtils.likeIgnoreCase(cb, root.get("pagadorNome"), termo, ModoBusca.MEIO));
+        ou.add(SpecificationUtils.likeIgnoreCase(cb, root.get("pagadorDocumento"), termo, ModoBusca.MEIO));
         String digitos = BuscaDocumento.digitos(termo);
         if (digitos != null) {
+            ou.add(SpecificationUtils.likeIgnoreCase(cb, root.get("pagadorDocumento"), digitos, ModoBusca.MEIO));
             ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("cpf"), digitos, ModoBusca.MEIO));
             ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("documento"), digitos, ModoBusca.MEIO));
         }

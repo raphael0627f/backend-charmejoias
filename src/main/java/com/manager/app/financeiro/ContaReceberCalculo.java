@@ -78,11 +78,56 @@ public final class ContaReceberCalculo {
         }
     }
 
-    // o cliente só pode ser trocado enquanto não há valor recebido
+    // o pagador (cliente ou avulso) só pode ser trocado ou alterado enquanto não há valor recebido
     public static void validarTrocaDeCliente(boolean trocou, BigDecimal valorRecebido) {
         if (trocou && CalculoFinanceiro.arredondar(valorRecebido).signum() > 0) {
-            throw new ItemInvalidoException("O cliente não pode ser alterado em título com recebimento. Estorne os recebimentos antes.");
+            throw new ItemInvalidoException("O pagador não pode ser alterado em título com recebimento. Estorne os recebimentos antes.");
         }
+    }
+
+    // pagador avulso já validado: nome em maiúsculas e documento só com dígitos (ou null)
+    public record PagadorAvulso(String nome, String documento) {
+    }
+
+    // regra do pagador: informa-se o cliente OU o pagador avulso. Retorna null quando há cliente.
+    public static PagadorAvulso validarPagador(boolean temCliente, String nome, String documento) {
+        String nomeLimpo = nome == null ? "" : nome.trim();
+        String documentoLimpo = documento == null || documento.isBlank() ? null : documento.trim();
+        if (temCliente) {
+            if (!nomeLimpo.isEmpty() || documentoLimpo != null) {
+                throw new ItemInvalidoException("Informe apenas o cliente ou o pagador avulso.");
+            }
+            return null;
+        }
+        if (nomeLimpo.isEmpty()) throw new ItemInvalidoException("Informe o cliente ou o pagador avulso.");
+        if (nomeLimpo.length() < 2 || nomeLimpo.length() > 150) {
+            throw new ItemInvalidoException("O nome do pagador avulso deve ter entre 2 e 150 caracteres.");
+        }
+        if (nomeLimpo.chars().anyMatch(Character::isISOControl)) {
+            throw new ItemInvalidoException("O nome do pagador avulso contém caracteres inválidos.");
+        }
+        return new PagadorAvulso(nomeLimpo.toUpperCase(java.util.Locale.forLanguageTag("pt-BR")), documentoDoPagador(documentoLimpo));
+    }
+
+    // documento opcional: aceita máscara (ponto, traço, barra e espaço); grava só dígitos; 11 (CPF) ou 14 (CNPJ) dígitos
+    static String documentoDoPagador(String documento) {
+        if (documento == null) return null;
+        StringBuilder digitos = new StringBuilder();
+        for (char ch : documento.toCharArray()) {
+            if (ch >= '0' && ch <= '9') digitos.append(ch);
+            else if (ch != '.' && ch != '-' && ch != '/' && ch != ' ') throw mensagemDocumentoPagador();
+        }
+        if (digitos.length() != 11 && digitos.length() != 14) throw mensagemDocumentoPagador();
+        return digitos.toString();
+    }
+
+    private static ItemInvalidoException mensagemDocumentoPagador() {
+        return new ItemInvalidoException("O documento do pagador avulso deve ter 11 dígitos (CPF) ou 14 dígitos (CNPJ).");
+    }
+
+    // nome de exibição: cliente ou pagador avulso
+    public static String pagadorExibicao(String nomeCliente, String pagadorNome) {
+        return nomeCliente != null ? nomeCliente : pagadorNome;
     }
 
     // título cancelado ou com valor recebido não pode ser cancelado (precisa estornar antes)

@@ -28,9 +28,13 @@ public class ContaReceber extends AuditoriaFinanceira {
 
     private Long numero;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    // nulo quando o título é de pagador avulso (pagadorNome preenchido)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
+
+    private String pagadorNome;
+    private String pagadorDocumento;
 
     private String descricao;
 

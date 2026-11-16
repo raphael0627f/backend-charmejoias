@@ -10,10 +10,12 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-// criação (simples ou parcelada, com o bloco parcelamento) e edição de título a receber; no PUT o bloco parcelamento é ignorado
+// informar clienteId OU pagadorNome (pagador avulso, com pagadorDocumento opcional); criação (simples ou parcelada, com o bloco parcelamento) e edição de título a receber; no PUT o bloco parcelamento é ignorado
 public record ContaReceberRequestDTO(
         @NotBlank(message = "A descrição é obrigatória.") @Size(max = 200, message = "A descrição deve ter no máximo 200 caracteres.") String descricao,
-        @NotNull(message = "O cliente é obrigatório.") UUID clienteId,
+        UUID clienteId,
+        String pagadorNome,
+        String pagadorDocumento,
         @NotNull(message = "A categoria é obrigatória.") Long categoriaId,
         Long centroCustoId,
         @NotNull(message = "O valor é obrigatório.") BigDecimal valor,

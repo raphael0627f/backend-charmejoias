@@ -69,12 +69,13 @@ public class ContaReceberController {
             @RequestParam(required = false) Long bancoId,
             @RequestParam(required = false) BigDecimal valorMin,
             @RequestParam(required = false) BigDecimal valorMax,
+            @RequestParam(required = false) String tipoPagador,
             @RequestParam(required = false) String ordenar,
             @RequestParam(required = false) String direcao,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         ContaReceberFiltro filtro = new ContaReceberFiltro(vencimentoDe, vencimentoAte, emissaoDe, emissaoAte, recebimentoDe, recebimentoAte,
-                situacao, busca, clienteId, categoriaId, centroCustoId, formaPrevistaId, bancoId, valorMin, valorMax);
+                situacao, busca, clienteId, categoriaId, centroCustoId, formaPrevistaId, bancoId, valorMin, valorMax, tipoPagador);
         return ResponseEntity.ok(service.listar(filtro, ordenar, direcao, page, size));
     }
 

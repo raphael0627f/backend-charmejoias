@@ -70,7 +70,7 @@ public final class RecebimentoCalculo {
 
         MovimentacaoBanco entrada = CalculoFinanceiro.movimentacao(banco, dataRecebimento, TipoMovimentacao.ENTRADA, total,
                 OrigemMovimentacao.RECEBIMENTO_CONTA_RECEBER,
-                "Recebimento do título nº " + titulo.getNumero() + " - " + titulo.getDescricao() + " - " + titulo.getCliente().getNome(), usuario);
+                "Recebimento do título nº " + titulo.getNumero() + " - " + titulo.getDescricao() + " - " + ContaReceberMapper.pagadorExibicao(titulo), usuario);
         entrada.setContaReceberId(titulo.getId());
         return new ResultadoRecebimento(r, entrada);
     }

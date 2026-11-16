@@ -52,7 +52,7 @@ public class ContaReceberService {
     static final int LOTE_MAXIMO = 200;
     static final int LIMITE_CLIENTES = 20;
     private static final Map<String, String> ORDENACOES = Map.of("vencimento", "vencimento", "valor", "valor", "numero", "numero",
-            "cliente", "cliente.nome", "situacao", "situacao");
+            "cliente", "cliente", "situacao", "situacao");
 
     private final ContaReceberRepository repository;
     private final ContaReceberEventoRepository eventoRepository;
@@ -70,7 +70,7 @@ public class ContaReceberService {
     @PersistenceContext
     private EntityManager em;
 
-    record Base(String descricao, Cliente cliente, CategoriaReceita categoria, CentroCusto centroCusto, FormaPagamento forma,
+    record Base(String descricao, Cliente cliente, ContaReceberCalculo.PagadorAvulso pagador, CategoriaReceita categoria, CentroCusto centroCusto, FormaPagamento forma,
                 BigDecimal valor, String documento, String observacao) {
     }
 
@@ -122,7 +122,7 @@ public class ContaReceberService {
     private ContaReceber novo(Base b, BigDecimal valor, String descricao, LocalDate emissao, String competenciaInformada, LocalDate vencimento,
                               UUID grupo, Integer parcela, Integer total) {
         ContaReceber c = new ContaReceber();
-        c.setCliente(b.cliente());
+        aplicarPagador(c, b);
         c.setDescricao(descricao);
         c.setCategoria(b.categoria());
         c.setCentroCusto(b.centroCusto());
@@ -143,8 +143,24 @@ public class ContaReceberService {
 
     private String detalheCriacao(ContaReceber c) {
         String parcela = c.getParcelaNumero() == null ? "" : " (parcela " + c.getParcelaNumero() + "/" + c.getParcelaTotal() + ")";
-        return "Título criado para o cliente " + c.getCliente().getNome() + " no valor de " + MovimentacaoBancoService.moeda(c.getValor())
+        String paraQuem = c.getCliente() != null ? "o cliente " + c.getCliente().getNome() : "o pagador avulso " + c.getPagadorNome();
+        return "Título criado para " + paraQuem + " no valor de " + MovimentacaoBancoService.moeda(c.getValor())
                 + ", com vencimento em " + TextoUtils.data(c.getVencimento()) + parcela + ".";
+    }
+
+    // grava o cliente ou o pagador avulso (nunca os dois)
+    private static void aplicarPagador(ContaReceber c, Base b) {
+        c.setCliente(b.cliente());
+        c.setPagadorNome(b.pagador() == null ? null : b.pagador().nome());
+        c.setPagadorDocumento(b.pagador() == null ? null : b.pagador().documento());
+    }
+
+    private static String exibicao(Base b) {
+        return ContaReceberCalculo.pagadorExibicao(b.cliente() == null ? null : b.cliente().getNome(), b.pagador() == null ? null : b.pagador().nome());
+    }
+
+    private static UUID idDe(Cliente c) {
+        return c == null ? null : c.getId();
     }
 
     // ---------- consulta ----------
@@ -160,6 +176,10 @@ public class ContaReceberService {
         boolean desc = direcao != null && direcao.trim().equalsIgnoreCase("desc");
         if (direcao != null && !direcao.isBlank() && !desc && !direcao.trim().equalsIgnoreCase("asc")) {
             throw new ItemInvalidoException("Direção inválida. Use asc ou desc.");
+        }
+        if (filtro.tipoPagador() != null && !filtro.tipoPagador().isBlank()
+                && !filtro.tipoPagador().trim().equalsIgnoreCase("CLIENTE") && !filtro.tipoPagador().trim().equalsIgnoreCase("AVULSO")) {
+            throw new ItemInvalidoException("Tipo de pagador inválido. Use CLIENTE ou AVULSO.");
         }
         validarPeriodo("vencimento", filtro.vencimentoDe(), filtro.vencimentoAte());
         validarPeriodo("emissão", filtro.emissaoDe(), filtro.emissaoAte());
@@ -177,9 +197,15 @@ public class ContaReceberService {
             ate = mes.atEndOfMonth();
         }
         var spec = ContaReceberEspecificacao.de(filtro, de, ate, hoje);
-        Sort sort = Sort.by(desc ? Sort.Direction.DESC : Sort.Direction.ASC, campo);
-        if (!campo.equals("numero")) sort = sort.and(Sort.by(Sort.Direction.ASC, "numero"));
-        Page<ContaReceber> resultado = repository.findAll(spec, PageRequest.of(pagina, tamanho, sort));
+        Page<ContaReceber> resultado;
+        if (campo.equals("cliente")) {
+            // nome de exibição (cliente ou pagador avulso); a ordenação vai na própria consulta, com junção externa
+            resultado = repository.findAll(ContaReceberEspecificacao.ordenadaPorPagador(spec, desc), PageRequest.of(pagina, tamanho));
+        } else {
+            Sort sort = Sort.by(desc ? Sort.Direction.DESC : Sort.Direction.ASC, campo);
+            if (!campo.equals("numero")) sort = sort.and(Sort.by(Sort.Direction.ASC, "numero"));
+            resultado = repository.findAll(spec, PageRequest.of(pagina, tamanho, sort));
+        }
         Map<Long, Integer> anexos = contagemAnexos(resultado.getContent().stream().map(ContaReceber::getId).toList());
         List<ContaReceberResumoDTO> itens = resultado.getContent().stream().map(c -> mapper.resumo(c, hoje, anexos.getOrDefault(c.getId(), 0))).toList();
         return new ContaReceberListaResponseDTO(itens, pagina, tamanho, resultado.getTotalElements(), resultado.getTotalPages(),
@@ -274,7 +300,9 @@ public class ContaReceberService {
         LocalDate vencimento = r.vencimento() == null ? c.getVencimento() : r.vencimento();
         LocalDate emissao = r.emissao() == null ? c.getEmissao() : r.emissao();
         String competencia = r.competencia() == null || r.competencia().isBlank() ? c.getCompetencia() : ContaReceberCalculo.validarCompetencia(r.competencia());
-        boolean trocouCliente = !c.getCliente().getId().equals(base.cliente().getId());
+        boolean trocouCliente = !Objects.equals(idDe(c.getCliente()), idDe(base.cliente()))
+                || !Objects.equals(c.getPagadorNome(), base.pagador() == null ? null : base.pagador().nome())
+                || !Objects.equals(c.getPagadorDocumento(), base.pagador() == null ? null : base.pagador().documento());
 
         List<String> alteracoes = new ArrayList<>();
         if (c.getSituacao() == SituacaoContaReceber.RECEBIDO) {
@@ -294,7 +322,7 @@ public class ContaReceberService {
             ContaReceberCalculo.validarValorNaoAbaixoDoRecebido(base.valor(), c.getValorRecebido());
             ContaReceberCalculo.validarTrocaDeCliente(trocouCliente, c.getValorRecebido());
             diff(alteracoes, "descrição", c.getDescricao(), base.descricao());
-            diff(alteracoes, "cliente", c.getCliente().getNome(), base.cliente().getNome());
+            diff(alteracoes, "pagador", ContaReceberMapper.pagadorExibicao(c), exibicao(base));
             diff(alteracoes, "categoria", c.getCategoria().getNome(), base.categoria().getNome());
             diff(alteracoes, "centro de custo", nomeDe(c.getCentroCusto()), nomeDe(base.centroCusto()));
             diff(alteracoes, "forma prevista", nomeDe(c.getFormaPrevista()), nomeDe(base.forma()));
@@ -310,7 +338,7 @@ public class ContaReceberService {
             diff(alteracoes, "observação", c.getObservacao(), base.observacao());
 
             c.setDescricao(base.descricao());
-            c.setCliente(base.cliente());
+            aplicarPagador(c, base);
             c.setCategoria(base.categoria());
             c.setCentroCusto(base.centroCusto());
             c.setFormaPrevista(base.forma());
@@ -407,9 +435,13 @@ public class ContaReceberService {
         TextoUtils.validarTexto(r.documento(), "O documento", 60);
         TextoUtils.validarTexto(r.observacao(), "A observação", 1000);
         BigDecimal valor = CalculoFinanceiro.validarValorPositivo(r.valor());
-        Cliente cliente = clienteRepository.findById(r.clienteId())
-                .orElseThrow(() -> new ItemInvalidoException("O cliente informado não foi encontrado."));
-        if (!cliente.isAtivo()) throw new ItemInvalidoException("O cliente \"" + cliente.getNome() + "\" está desativado.");
+        ContaReceberCalculo.PagadorAvulso pagador = ContaReceberCalculo.validarPagador(r.clienteId() != null, r.pagadorNome(), r.pagadorDocumento());
+        Cliente cliente = null;
+        if (r.clienteId() != null) {
+            cliente = clienteRepository.findById(r.clienteId())
+                    .orElseThrow(() -> new ItemInvalidoException("O cliente informado não foi encontrado."));
+            if (!cliente.isAtivo()) throw new ItemInvalidoException("O cliente \"" + cliente.getNome() + "\" está desativado.");
+        }
         CategoriaReceita categoria = categoriaRepository.findById(r.categoriaId())
                 .orElseThrow(() -> new ItemInvalidoException("A categoria informada não foi encontrada."));
         if (!categoria.isAtivo()) throw new ItemInvalidoException("A categoria \"" + categoria.getNome() + "\" está desativada.");
@@ -423,7 +455,7 @@ public class ContaReceberService {
             forma = formaPagamentoRepository.findById(r.formaPrevistaId()).orElseThrow(() -> new ItemInvalidoException("A forma de pagamento informada não foi encontrada."));
             if (!forma.isAtivo()) throw new ItemInvalidoException("A forma de pagamento \"" + forma.getNome() + "\" está desativada.");
         }
-        return new Base(descricao, cliente, categoria, centro, forma, valor, BancoService.vazioParaNulo(r.documento()),
+        return new Base(descricao, cliente, pagador, categoria, centro, forma, valor, BancoService.vazioParaNulo(r.documento()),
                 BancoService.vazioParaNulo(r.observacao()));
     }
 

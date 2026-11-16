@@ -8,7 +8,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record ContaReceberResumoDTO(Long id, Long numero, String descricao, ClienteRef cliente, CategoriaRef categoria, Ref centroCusto,
+public record ContaReceberResumoDTO(Long id, Long numero, String descricao, ClienteRef cliente, String pagadorNome, String pagadorDocumento,
+                                    String pagadorExibicao, String tipoPagador, CategoriaRef categoria, Ref centroCusto,
                                     Ref formaPrevista, BigDecimal valor, BigDecimal valorRecebido, BigDecimal valorAberto, LocalDate emissao,
                                     String competencia, LocalDate vencimento, String documento, SituacaoContaReceber situacao,
                                     SituacaoExibicaoContaReceber situacaoExibicao, UUID grupoParcelamentoId, Integer parcelaNumero,
