@@ -186,9 +186,24 @@ class LinkPagamentoCalculoTest {
     @Test
     void textosSubstituemMarcadores() {
         String t = LinkPagamentoCalculo.renderizar("{cliente}|{valor}|{descricao}|{link}|{validade}", "padrao", "Maria", new BigDecimal("1234.50"), "Acerto", "https://x.com/a", LocalDate.of(2026, 12, 1));
-        assertEquals("Maria|R$ 1.234,50|Acerto|https://x.com/a|até 01/12/2026", t);
-        String sem = LinkPagamentoCalculo.renderizar(null, "Olá {cliente} {validade}", null, BigDecimal.ONE, "x", "l", null);
-        assertEquals("Olá cliente sem data de expiração", sem);
+        assertEquals("Maria|R$ 1.234,50|Acerto|https://x.com/a|01/12/2026", t);
+        String sem = LinkPagamentoCalculo.renderizar(null, "Olá {cliente}, validade: {validade}", null, BigDecimal.ONE, "x", "l", null);
+        assertEquals("Olá cliente, validade: sem data de expiração", sem);
+    }
+
+    @Test
+    void marcadorValidadeNaoDuplicaAPreposicaoENosTextosPadrao() {
+        LocalDate v = LocalDate.of(2026, 12, 1);
+        String personalizado = LinkPagamentoCalculo.renderizar("Válido até {validade}.", "x", "Maria", BigDecimal.TEN, "d", "l", v);
+        assertEquals("Válido até 01/12/2026.", personalizado);
+        assertFalse(personalizado.contains("até até"));
+        for (String padrao : List.of(LinkPagamentoCalculo.TEXTO_WHATSAPP_PADRAO, LinkPagamentoCalculo.TEXTO_EMAIL_PADRAO)) {
+            String com = LinkPagamentoCalculo.renderizar(null, padrao, "Maria", BigDecimal.TEN, "Acerto", "https://x.com/a", v);
+            assertTrue(com.contains("Validade do link: 01/12/2026."), com);
+            String sem = LinkPagamentoCalculo.renderizar(null, padrao, "Maria", BigDecimal.TEN, "Acerto", "https://x.com/a", null);
+            assertTrue(sem.contains("Validade do link: sem data de expiração."), sem);
+            assertFalse(com.contains("{") || sem.contains("{"));
+        }
     }
 
     @Test

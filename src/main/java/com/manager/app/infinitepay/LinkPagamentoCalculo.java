@@ -24,8 +24,8 @@ public final class LinkPagamentoCalculo {
     private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
-    public static final String TEXTO_WHATSAPP_PADRAO = "Olá, {cliente}! Segue o link para pagamento de {valor} referente a {descricao}: {link} Válido {validade}. Em caso de dúvida, estamos à disposição.";
-    public static final String TEXTO_EMAIL_PADRAO = "Prezado(a) {cliente}, segue o link para pagamento de {valor} referente a {descricao}: {link} Válido {validade}. Em caso de dúvida, estamos à disposição.";
+    public static final String TEXTO_WHATSAPP_PADRAO = "Olá, {cliente}! Segue o link para pagamento de {valor} referente a {descricao}: {link} Validade do link: {validade}. Em caso de dúvida, estamos à disposição.";
+    public static final String TEXTO_EMAIL_PADRAO = "Prezado(a) {cliente}, segue o link para pagamento de {valor} referente a {descricao}: {link} Validade do link: {validade}. Em caso de dúvida, estamos à disposição.";
 
     private LinkPagamentoCalculo() {
     }
@@ -260,7 +260,8 @@ public final class LinkPagamentoCalculo {
 
     public static String renderizar(String modelo, String padrao, String cliente, BigDecimal valor, String descricao, String link, LocalDate validade) {
         String t = modelo == null || modelo.isBlank() ? padrao : modelo;
-        String quando = validade == null ? "sem data de expiração" : "até " + data(validade);
+        // {validade} devolve SOMENTE a data (DD/MM/AAAA) ou, sem validade, "sem data de expiração": o texto ao redor escolhe a preposição
+        String quando = validade == null ? "sem data de expiração" : data(validade);
         return t.replace("{cliente}", cliente == null || cliente.isBlank() ? "cliente" : cliente)
                 .replace("{valor}", moeda(valor))
                 .replace("{descricao}", descricao == null ? "" : descricao)

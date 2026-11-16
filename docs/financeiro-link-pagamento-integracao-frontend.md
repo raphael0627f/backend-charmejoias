@@ -42,7 +42,8 @@ GET 200
 - `handle`: InfiniteTag **sem** `$` (o `$` inicial e espaços são removidos); até 60 caracteres, letras, números, `.`, `_`, `-`.
 - `chaveFinal` mostra apenas os 4 últimos caracteres mascarados (nulo sem chave).
 - `validadeDias` 0 a 365 (0 = padrão "sem validade"); `taxaParcelamentoAssumida` 0 a 12; descontos: 0 ou maiores que 0 e menores que 100.
-- `textoWhatsapp` / `textoEmail` (até 2000): marcadores `{cliente}`, `{valor}`, `{descricao}`, `{link}`, `{validade}`. Vazios = textos formais padrão.
+- `textoWhatsapp` / `textoEmail` (até 2000): marcadores `{cliente}`, `{valor}`, `{descricao}`, `{link}`, `{validade}`. Vazios = textos formais padrão (terminam com `Validade do link: {validade}.`).
+  - `{validade}` devolve **somente a data** (`DD/MM/AAAA`) ou, quando o link não tem validade, o texto `sem data de expiração`; **não** inclui a preposição. Um texto personalizado deve escrever a palavra ao redor (ex.: `Validade: {validade}` ou `Válido até {validade}`; neste último, sem validade ficaria `Válido até sem data de expiração`, por isso prefira `Validade: {validade}`).
 - `envioEmailHabilitado` é **somente leitura** (vem da propriedade `app.infinitepay.envio-email-enabled`, hoje `false`).
 - Erros: 400 (validações), 403, 409 `Não foi possível gravar a chave com segurança.` (sem segredo de criptografia no servidor).
 
