@@ -55,6 +55,7 @@ public class AcertoConsignacaoService {
     private final ConsignacaoValidation consignacaoValidation;
     private final com.manager.app.usuario.UsuarioResumoMapper usuarioResumoMapper;
     private final UsuarioAuditorAware usuarioAuditorAware;
+    private final com.manager.app.financeiro.ContaReceberRepository contaReceberRepository;
 
     public Page<AcertoConsignacao> findAll(String busca, ModoBusca modoBusca, Long consignacaoId, Boolean confirmado,
                                             LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
@@ -313,12 +314,45 @@ public class AcertoConsignacaoService {
         return repository.save(acerto);
     }
 
+    static final String MENSAGEM_COM_TITULO = "O acerto possui título a receber ativo e não pode ser alterado. Cancele o título para alterar.";
+
+    // true quando o corpo pede mudança de desconto ou dos itens devolvidos (itens, quantidades)
+    static boolean alteraValor(AcertoConsignacao atual, AcertoConsignacaoRequestDTO r) {
+        java.math.BigDecimal descontoAtual = atual.getDesconto() == null ? java.math.BigDecimal.ZERO : atual.getDesconto();
+        java.math.BigDecimal descontoNovo = r.getDesconto() == null ? java.math.BigDecimal.ZERO : r.getDesconto();
+        if (descontoAtual.compareTo(descontoNovo) != 0) return true;
+        List<AcertoConsignacaoProdutoRequestDTO> itens = r.getProdutos() == null ? List.of() : r.getProdutos();
+        if (itens.size() != atual.getProdutos().size()) return true;
+        for (AcertoConsignacaoProdutoRequestDTO item : itens) {
+            AcertoConsignacaoProduto existente = null;
+            for (AcertoConsignacaoProduto p : atual.getProdutos()) {
+                Long variacaoAtualId = p.getProdutoVariacao() != null ? p.getProdutoVariacao().getId() : null;
+                boolean mesmoProduto = p.getProduto() != null && p.getProduto().getId().equals(item.getProdutoId())
+                        && Objects.equals(variacaoAtualId, item.getProdutoVariacaoId());
+                boolean mesmaJoia = p.getJoia() != null && p.getJoia().getId().equals(item.getJoiaId());
+                if (mesmoProduto || mesmaJoia) {
+                    existente = p;
+                    break;
+                }
+            }
+            if (existente == null || !Objects.equals(existente.getQuantidade(), item.getQuantidade())) return true;
+        }
+        return false;
+    }
+
     @Transactional
     public AcertoConsignacao update(AcertoConsignacaoRequestDTO request){
-        AcertoConsignacao acertoUpdate = this.findById(request.getId());
+        // bloqueio pessimista: serializa a edição com a geração de título a receber do mesmo acerto
+        AcertoConsignacao acertoUpdate = request.getId() == null ? this.findById(null)
+                : repository.findByIdForUpdate(request.getId())
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Acerto de consignação não encontrado. Id: " + request.getId()));
 
         if (Boolean.TRUE.equals(acertoUpdate.getConfirmado())) {
             throw new ObjetoEmUsoException("Não é possível editar um acerto confirmado. Id: " + acertoUpdate.getId());
+        }
+        // acerto não confirmado com título a receber ativo: mesma regra do pré-acerto (somente a observação pode mudar)
+        if (contaReceberRepository.existsAcertoAtivo(acertoUpdate.getId()) && alteraValor(acertoUpdate, request)) {
+            throw new ItemInvalidoException(MENSAGEM_COM_TITULO);
         }
 
         Consignacao consignacao = acertoUpdate.getConsignacao();

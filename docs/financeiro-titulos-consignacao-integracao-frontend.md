@@ -22,9 +22,9 @@ Os títulos gerados seguem **todas** as regras do Contas a Receber (`docs/financ
 - **Recebimento no mesmo ato (opcional):** só para título **simples**. Tudo na mesma transação (título + recebimento); se o recebimento falhar, nada é criado. O comprovante é enviado depois pelo endpoint de anexos existente (`POST /contas-receber/recebimentos/{id}/anexos`).
 
 ### Bloqueio de edição com título ativo
-- **Pré-acerto** com título ativo **próprio**: `PUT /pre-acertos-consignacao` recusa (400) qualquer alteração de itens, quantidades, preços, desconto, consignação ou cliente. Alterar **somente a observação** continua permitido. Mensagem: `O pré-acerto possui título a receber ativo e não pode ser alterado. Cancele o título para alterar.`
+- **Pré-acerto** com título ativo **próprio**: `PUT /pre-acertos-consignacao` recusa (400) qualquer alteração de itens, quantidades, preços, desconto, consignação ou cliente. A verificação compara o corpo com o que está gravado: **reenviar o corpo idêntico (sem mudança real) continua 200**, para não quebrar o salvamento da tela; qualquer diferença em preço unitário, quantidade, itens, desconto, consignação ou cliente devolve 400. Alterar **somente a observação** continua permitido. Mensagem: `O pré-acerto possui título a receber ativo e não pode ser alterado. Cancele o título para alterar.`
 - Cancelar o título (todos os ativos do pré-acerto) libera a edição.
-- **Acerto:** o acerto confirmado já não é editável (regra existente, inalterada); como o título do acerto só existe após a confirmação, não há edição possível com título. Se for necessário alterar, o acerto não tem desconfirmação (comportamento atual).
+- **Acerto:** o acerto confirmado não é editável (409, regra existente). Acerto **não confirmado** com título ativo: mesma regra do pré-acerto (somente a observação pode mudar; corpo idêntico continua 200; alterar desconto, itens ou quantidades devolve 400 `O acerto possui título a receber ativo e não pode ser alterado. Cancele o título para alterar.`). O título do acerto normalmente só nasce após a confirmação; a regra cobre qualquer título ativo do acerto.
 - Decisão: o título ativo do **acerto** da mesma consignação **não** bloqueia a edição do pré-acerto (fora do escopo desta fase). Em contrapartida, **não é possível gerar título do pré-acerto quando a consignação já possui título ativo do acerto** (evita excedente artificial).
 - Decisão: título gerado por consignação **não permite alterar o valor nem o pagador (cliente)** em `PUT /contas-receber/{id}` (400: `O valor e o cliente de título gerado a partir de consignação não podem ser alterados. Cancele o título e gere novamente.`). Vencimento, descrição, categoria, centro, forma, documento e observação seguem editáveis; `PATCH /vencimento`, cancelamento e recebimentos funcionam normalmente.
 
@@ -99,6 +99,7 @@ O frontend deve pedir **confirmação** antes de chamar.
 | Recebimento em título parcelado | 400 `O recebimento no mesmo ato só é permitido para título simples. A baixa das parcelas é feita na tela do título.` |
 | Parcelamento/valores/datas inválidos, recebimento inválido, categoria/centro/forma desativados | 400 (mensagens do Contas a Receber e dos recebimentos) |
 | Edição do pré-acerto com título ativo | 400 `O pré-acerto possui título a receber ativo e não pode ser alterado. Cancele o título para alterar.` |
+| Edição do acerto não confirmado com título ativo | 400 `O acerto possui título a receber ativo e não pode ser alterado. Cancele o título para alterar.` |
 | Alterar valor/cliente de título de consignação | 400 (ver acima) |
 
 ## O que o frontend deve travar

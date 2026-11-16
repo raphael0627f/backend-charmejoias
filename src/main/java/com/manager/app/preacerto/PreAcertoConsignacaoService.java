@@ -288,6 +288,39 @@ public class PreAcertoConsignacaoService {
         return repository.save(preAcerto);
     }
 
+    static final String MENSAGEM_COM_TITULO = "O pré-acerto possui título a receber ativo e não pode ser alterado. Cancele o título para alterar.";
+
+    private static BigDecimal ou0(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
+    }
+
+    // compara o corpo da requisição com o pré-acerto gravado: true quando pede mudança de consignação, cliente, desconto, itens, quantidades ou preços
+    static boolean alteraValor(PreAcertoConsignacao atual, PreAcertoConsignacaoRequestDTO r) {
+        Long consignacaoAtual = atual.getConsignacao() == null ? null : atual.getConsignacao().getId();
+        if (!Objects.equals(consignacaoAtual, r.getConsignacaoId())) return true;
+        if (r.getClienteId() != null && (atual.getCliente() == null || !r.getClienteId().equals(atual.getCliente().getId()))) return true;
+        if (ou0(atual.getDesconto()).compareTo(ou0(r.getDesconto())) != 0) return true;
+        List<PreAcertoConsignacaoProdutoRequestDTO> itens = r.getProdutos() == null ? List.of() : r.getProdutos();
+        if (itens.size() != atual.getProdutos().size()) return true;
+        for (PreAcertoConsignacaoProdutoRequestDTO item : itens) {
+            PreAcertoConsignacaoProduto existente = null;
+            for (PreAcertoConsignacaoProduto p : atual.getProdutos()) {
+                Long variacaoAtualId = p.getProdutoVariacao() != null ? p.getProdutoVariacao().getId() : null;
+                boolean mesmoProduto = p.getProduto() != null && p.getProduto().getId().equals(item.getProdutoId())
+                        && Objects.equals(variacaoAtualId, item.getProdutoVariacaoId());
+                boolean mesmaJoia = p.getJoia() != null && p.getJoia().getId().equals(item.getJoiaId());
+                if (mesmoProduto || mesmaJoia) {
+                    existente = p;
+                    break;
+                }
+            }
+            if (existente == null) return true;
+            if (!Objects.equals(existente.getQuantidade(), item.getQuantidade())) return true;
+            if (item.getPreco() != null && existente.getPreco() != null && existente.getPreco().compareTo(item.getPreco()) != 0) return true;
+        }
+        return false;
+    }
+
     // tudo o que compõe o valor ou a identidade do pré-acerto (a observação fica de fora)
     private static String assinaturaDoValor(PreAcertoConsignacao p) {
         List<String> itens = new ArrayList<>();
@@ -309,6 +342,11 @@ public class PreAcertoConsignacaoService {
                 : repository.findByIdForUpdate(request.getId())
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Pré-acerto de consignação não encontrado. Id: " + request.getId()));
         boolean comTituloAtivo = contaReceberRepository.existsPreAcertoAtivo(preAcertoUpdate.getId());
+        // com título ativo, qualquer tentativa de alterar itens, quantidades, preços, desconto, consignação ou cliente é recusada
+        // (inclusive preço e cliente, que o fluxo normal ignoraria em silêncio); reenviar o corpo idêntico continua válido
+        if (comTituloAtivo && alteraValor(preAcertoUpdate, request)) {
+            throw new ItemInvalidoException(MENSAGEM_COM_TITULO);
+        }
         String assinaturaAntes = comTituloAtivo ? assinaturaDoValor(preAcertoUpdate) : null;
 
         Consignacao consignacao = resolverConsignacao(request.getConsignacaoId());
@@ -364,7 +402,7 @@ public class PreAcertoConsignacaoService {
         // com título a receber ativo só a observação pode mudar; qualquer alteração de itens, preços, desconto, consignação ou cliente
         // desfaz a transação inteira (nada é gravado)
         if (comTituloAtivo && !assinaturaAntes.equals(assinaturaDoValor(preAcertoUpdate))) {
-            throw new ItemInvalidoException("O pré-acerto possui título a receber ativo e não pode ser alterado. Cancele o título para alterar.");
+            throw new ItemInvalidoException(MENSAGEM_COM_TITULO);
         }
 
         // Sem isso, uma edição que só mexe nos produtos não deixa o pré-acerto
