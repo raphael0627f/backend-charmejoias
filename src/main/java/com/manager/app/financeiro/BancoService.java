@@ -29,23 +29,25 @@ public class BancoService {
     private final MovimentacaoBancoRepository movimentacaoRepository;
     private final UsuarioAuditorAware auditor;
     private final FinanceiroMapper mapper;
+    private final SaldoVisibilidade saldoVisibilidade;
 
     @Transactional(readOnly = true)
     public List<BancoResponseDTO> listar(Boolean ativo, String busca) {
-        Map<Long, BigDecimal> saldos = saldos();
+        boolean verSaldo = saldoVisibilidade.podeVerSaldo();
+        Map<Long, BigDecimal> saldos = verSaldo ? saldos() : Map.of();
         String termo = busca == null ? "" : semAcento(busca.trim());
         return repository.findAll().stream()
                 .filter(b -> ativo == null || b.isAtivo() == ativo)
                 .filter(b -> termo.isEmpty() || semAcento(b.getNome()).contains(termo))
                 .sorted((a, b) -> a.getNome().compareToIgnoreCase(b.getNome()))
-                .map(b -> mapper.banco(b, saldos.getOrDefault(b.getId(), BigDecimal.ZERO)))
+                .map(b -> mapper.banco(b, verSaldo ? saldos.getOrDefault(b.getId(), BigDecimal.ZERO) : null))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public BancoResponseDTO obter(Long id) {
         Banco banco = buscar(id);
-        return mapper.banco(banco, movimentacaoRepository.saldoDoBanco(id));
+        return mapper.banco(banco, saldoVisibilidade.podeVerSaldo() ? movimentacaoRepository.saldoDoBanco(id) : null);
     }
 
     @Transactional

@@ -41,6 +41,7 @@ public class MovimentacaoBancoService {
     private final BancoRepository bancoRepository;
     private final UsuarioAuditorAware auditor;
     private final FinanceiroMapper mapper;
+    private final SaldoVisibilidade saldoVisibilidade;
 
     @Transactional(readOnly = true)
     public Page<MovimentacaoResponseDTO> extrato(Long bancoId, LocalDate inicio, LocalDate fim, OrigemMovimentacao origem,
@@ -147,12 +148,13 @@ public class MovimentacaoBancoService {
 
     // saldo negativo é permitido: apenas informa
     String avisoSaldoNegativo(List<Banco> bancos) {
+        boolean verSaldo = saldoVisibilidade.podeVerSaldo();
         Map<Long, String> avisos = new LinkedHashMap<>();
         for (Banco banco : bancos) {
             if (avisos.containsKey(banco.getId())) continue;
             BigDecimal saldo = repository.saldoDoBanco(banco.getId());
             if (saldo.signum() < 0) {
-                avisos.put(banco.getId(), "o saldo do banco \"" + banco.getNome() + "\" ficou negativo (" + moeda(saldo) + ")");
+                avisos.put(banco.getId(), "o saldo do banco \"" + banco.getNome() + "\" ficou negativo" + (verSaldo ? " (" + moeda(saldo) + ")" : ""));
             }
         }
         if (avisos.isEmpty()) return null;

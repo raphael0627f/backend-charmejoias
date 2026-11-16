@@ -26,10 +26,12 @@ public class FinanceiroMapper {
         return dto;
     }
 
+    // saldoAtual nulo = usuário sem permissão de ver saldos: saldoInicial e saldoAtual saem nulos
     public BancoResponseDTO banco(Banco b, BigDecimal saldoAtual) {
+        boolean semSaldo = saldoAtual == null;
         return new BancoResponseDTO(b.getId(), b.getNome(), b.getTipo(), b.getCodigoBanco(), b.getAgencia(), b.getConta(),
-                CalculoFinanceiro.arredondar(b.getSaldoInicial()), b.getDataSaldoInicial(), b.getObservacao(), b.isAtivo(),
-                CalculoFinanceiro.arredondar(saldoAtual), b.getCreatedAt(), b.getUpdatedAt(), usuario(b.getCreatedBy()), usuario(b.getUpdatedBy()));
+                semSaldo ? null : CalculoFinanceiro.arredondar(b.getSaldoInicial()), b.getDataSaldoInicial(), b.getObservacao(), b.isAtivo(),
+                semSaldo ? null : CalculoFinanceiro.arredondar(saldoAtual), b.getCreatedAt(), b.getUpdatedAt(), usuario(b.getCreatedBy()), usuario(b.getUpdatedBy()));
     }
 
     public CategoriaDespesaResponseDTO categoria(CategoriaDespesa c, List<CategoriaDespesaResponseDTO> subcategorias) {
