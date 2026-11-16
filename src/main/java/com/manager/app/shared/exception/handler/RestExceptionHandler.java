@@ -112,6 +112,13 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(status).body(response);
     }
 
+    @ExceptionHandler(com.manager.app.infinitepay.InfinitePayApiException.class)
+    public ResponseEntity<RestErrorMenssage> infinitePayApiHandler(com.manager.app.infinitepay.InfinitePayApiException exception, WebRequest request){
+        HttpStatus status = HttpStatus.BAD_GATEWAY;
+        RestErrorMenssage response = new RestErrorMenssage(new Date(), status, exception.getMessage(),request.getDescription(false));
+        return ResponseEntity.status(status).body(response);
+    }
+
     @ExceptionHandler(DanfeApiException.class)
     private ResponseEntity<RestErrorMenssage> danfeApiError(DanfeApiException exception, WebRequest request){
         HttpStatus status = HttpStatus.BAD_GATEWAY;
