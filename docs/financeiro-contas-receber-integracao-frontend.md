@@ -101,3 +101,14 @@ Edição, alteração de vencimento e cancelamento bloqueiam a linha do título 
 | Sem permissão (mesmo com corpo vazio ou inválido) | 403 |
 | Campo obrigatório ausente, cliente inexistente/desativado, categoria/centro/forma desativados ou inexistentes, valor ≤ 0 ou acima do teto, vencimento anterior à emissão, parcelamento inválido, motivo curto, regra de edição/cancelamento violada | 400 |
 | Título não encontrado | 404 |
+
+## Visibilidade do saldo dos bancos
+
+O saldo dos bancos é uma informação restrita. A regra é aplicada no servidor; a tela apenas acompanha.
+
+- **Quem vê o saldo:** quem possui `MOVIMENTACAO_VISUALIZAR`, `MOVIMENTACAO_GERENCIAR` ou `CADASTRO_FINANCEIRO_GERENCIAR` (e o administrador). As permissões `CONTA_PAGAR_*` mantêm o comportamento anterior (continuam vendo), pois o Contas a Pagar não foi alterado.
+- **Quem não vê:** perfis que possuem apenas permissões `CONTA_RECEBER_*`.
+- **Efeito em `GET /bancos` e `GET /bancos/{id}`:** para quem não vê, os campos `saldoInicial` e `saldoAtual` vêm `null`. Os demais campos (`id`, `nome`, `tipo`, `ativo`, etc.) continuam normais, de modo que o banco segue utilizável em filtros e no diálogo de recebimento.
+- **Aviso de saldo negativo** (estorno de recebimento, campo `aviso`): para quem não vê o saldo, o texto não traz o valor. Exemplo: `Atenção: após esta operação, o saldo do banco "Caixa" ficou negativo.` Para quem vê, o texto continua com o valor entre parênteses.
+- `GET /movimentacoes-banco` (extrato, com `saldoApos`) e `GET /movimentacoes-banco/saldos` já exigiam permissão de movimentação e continuam respondendo 403 para perfis só de Contas a Receber.
+- O front deve tratar `saldoAtual`/`saldoInicial` nulos (ocultar a coluna/valor) e não depender de `aviso` conter o valor.
