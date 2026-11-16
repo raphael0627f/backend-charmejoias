@@ -174,6 +174,16 @@ class LinkPagamentoCalculoTest {
     }
 
     @Test
+    void segredoEcoadoNoCorpoEOcultadoNoLog() {
+        String corpo = "{\"erro\":\"x\",\"chave\":\"inchk_abc123\",\"de_novo\":\"inchk_abc123\"}";
+        String saida = LinkPagamentoCalculo.ocultarSegredo(corpo, "inchk_abc123", 300);
+        assertFalse(saida.contains("inchk_abc123"));
+        assertTrue(saida.contains("****"));
+        assertEquals(10, LinkPagamentoCalculo.ocultarSegredo("a".repeat(50), "k", 10).length());
+        assertNull(LinkPagamentoCalculo.ocultarSegredo(null, "k", 10));
+    }
+
+    @Test
     void textosSubstituemMarcadores() {
         String t = LinkPagamentoCalculo.renderizar("{cliente}|{valor}|{descricao}|{link}|{validade}", "padrao", "Maria", new BigDecimal("1234.50"), "Acerto", "https://x.com/a", LocalDate.of(2026, 12, 1));
         assertEquals("Maria|R$ 1.234,50|Acerto|https://x.com/a|até 01/12/2026", t);

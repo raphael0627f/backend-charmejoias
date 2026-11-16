@@ -49,7 +49,7 @@ public class InfinitePayClient {
                     .retrieve()
                     .body(String.class);
         } catch (RestClientResponseException e) {
-            throw traduzir(e);
+            throw traduzir(e, chave);
         } catch (RestClientException e) {
             log.warn("InfinitePay indisponível ao criar link: {}", e.getClass().getSimpleName());
             throw new InfinitePayApiException("A InfinitePay está indisponível no momento. Tente novamente em instantes.", e);
@@ -63,16 +63,16 @@ public class InfinitePayClient {
         String url = LinkPagamentoCalculo.extrairUrl(json, corpo);
         String bruta = LinkPagamentoCalculo.truncar(corpo, LinkPagamentoCalculo.RESPOSTA_MAXIMA);
         if (url == null) {
-            log.warn("InfinitePay não devolveu URL do link. Resposta (truncada): {}", LinkPagamentoCalculo.truncar(corpo, 300));
+            log.warn("InfinitePay não devolveu URL do link. Resposta (truncada): {}", LinkPagamentoCalculo.ocultarSegredo(corpo, chave, 300));
             throw new InfinitePayApiException("A InfinitePay não devolveu o link de pagamento.");
         }
         return new LinkCriado(url, bruta);
     }
 
-    // só o status e um trecho curto do corpo vão para o log (o corpo da InfinitePay não contém a chave); o usuário recebe mensagem formal
-    private InfinitePayApiException traduzir(RestClientResponseException e) {
+    // só o status e um trecho curto do corpo, com a chave ocultada caso a InfinitePay a ecoe, vão para o log; o usuário recebe mensagem formal
+    private InfinitePayApiException traduzir(RestClientResponseException e, String chave) {
         int status = e.getStatusCode().value();
-        log.warn("InfinitePay respondeu HTTP {} ao criar link: {}", status, LinkPagamentoCalculo.truncar(e.getResponseBodyAsString(), 300));
+        log.warn("InfinitePay respondeu HTTP {} ao criar link: {}", status, LinkPagamentoCalculo.ocultarSegredo(e.getResponseBodyAsString(), chave, 300));
         if (status == 401 || status == 403) {
             return new InfinitePayApiException("A InfinitePay não aceitou as credenciais configuradas. Verifique a InfiniteTag e a chave em Sistema.", e);
         }

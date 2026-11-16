@@ -214,6 +214,13 @@ public final class LinkPagamentoCalculo {
         return (t.startsWith("https://") || t.startsWith("http://")) && t.length() > 12 && t.length() <= 1000;
     }
 
+    // o corpo devolvido pela InfinitePay pode ecoar a chave: antes de ir para o log, a chave é substituída e o trecho é truncado
+    public static String ocultarSegredo(String texto, String segredo, int max) {
+        if (texto == null) return null;
+        String t = segredo == null || segredo.isBlank() ? texto : texto.replace(segredo, "****");
+        return truncar(t, max);
+    }
+
     public static String truncar(String texto, int max) {
         if (texto == null) return null;
         return texto.length() <= max ? texto : texto.substring(0, max);
