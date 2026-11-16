@@ -43,7 +43,7 @@ GET 200
 - `validadeDias` 0 a 365 (0 = padrão "sem validade"); `taxaParcelamentoAssumida` 0 a 12; descontos: 0 ou maiores que 0 e menores que 100.
 - `textoWhatsapp` / `textoEmail` (até 2000): marcadores `{cliente}`, `{valor}`, `{descricao}`, `{link}`, `{validade}`. Vazios = textos formais padrão.
 - `envioEmailHabilitado` é **somente leitura** (vem da propriedade `app.infinitepay.envio-email-enabled`, hoje `false`).
-- Erros: 400 (validações), 403, 503 `Não foi possível gravar a chave com segurança.` (sem segredo de criptografia no servidor).
+- Erros: 400 (validações), 403, 409 `Não foi possível gravar a chave com segurança.` (sem segredo de criptografia no servidor).
 
 ## Padrões para a tela de geração — `GET /infinitepay/padroes` (200)
 Somente leitura, para quem gera links (sem exigir `INFINITEPAY_GERENCIAR`). **Não** devolve InfiniteTag, chave nem textos.
