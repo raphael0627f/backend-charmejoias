@@ -15,6 +15,7 @@ Branch `feat/infinitepay-link` (empilhada sobre `feat/receber-consignacao`).
 | Ação | Permissão |
 | --- | --- |
 | `GET /infinitepay/configuracao`, `PUT /infinitepay/configuracao` | **`INFINITEPAY_GERENCIAR`** (nova; concedida só ao perfil ADMIN na V73, mesmo padrão da configuração de e-mail) |
+| `GET /infinitepay/padroes` | `INFINITEPAY_GERENCIAR`, `CONTA_RECEBER_VISUALIZAR`, `CONTA_RECEBER_GERENCIAR` ou `CONTA_RECEBER_RECEBER` |
 | `GET /contas-receber/{id}/links-pagamento` | `CONTA_RECEBER_VISUALIZAR`, `CONTA_RECEBER_GERENCIAR` ou `CONTA_RECEBER_RECEBER` |
 | `POST /contas-receber/{id}/links-pagamento` | `CONTA_RECEBER_GERENCIAR` |
 | `POST /links-pagamento/{id}/marcar-pago`, `POST /links-pagamento/{id}/enviar-email` | `CONTA_RECEBER_GERENCIAR` |
@@ -26,11 +27,11 @@ Sem permissão: 403 **antes** de qualquer validação do corpo. Sem token: 401. 
 A **chave da API nunca é devolvida** (nem registrada em log). O usuário informa a InfiniteTag e a chave pela tela; ninguém além dele as conhece.
 ```json
 GET 200
-{ "handle": "minha-tag", "chaveConfigurada": true, "chaveFinal": "••••abcd",
+{ "handle": "minha-tag", "chaveConfigurada": true, "chaveFinal": "****abcd",
   "validadeDias": 7, "pagamentoUnico": true, "taxaParcelamentoAssumida": 0, "pixHabilitado": true,
   "descontoPix": 0, "descontoCartao": 0, "exigeEnderecoEntrega": false,
   "textoWhatsapp": "Olá, {cliente}! ...{link}", "textoEmail": "...",
-  "envioEmailHabilitado": false, "atualizadoEm": "2026-11-16T10:00:00", "atualizadoPor": { "id": "...", "nome": "..." } }
+  "envioEmailHabilitado": false, "atualizadoEm": "2026-11-16T10:00:00", "atualizadoPor": { "id": "...", "usuario": "...", "primeiroNome": "...", "sobrenome": "..." } }
 ```
 - `PUT` (mesmos campos, todos opcionais exceto o que o usuário quiser alterar; **`chave` vazia ou ausente mantém a anterior**; `removerChave: true` apaga a chave):
 ```json
@@ -43,6 +44,14 @@ GET 200
 - `textoWhatsapp` / `textoEmail` (até 2000): marcadores `{cliente}`, `{valor}`, `{descricao}`, `{link}`, `{validade}`. Vazios = textos formais padrão.
 - `envioEmailHabilitado` é **somente leitura** (vem da propriedade `app.infinitepay.envio-email-enabled`, hoje `false`).
 - Erros: 400 (validações), 403, 503 `Não foi possível gravar a chave com segurança.` (sem segredo de criptografia no servidor).
+
+## Padrões para a tela de geração — `GET /infinitepay/padroes` (200)
+Somente leitura, para quem gera links (sem exigir `INFINITEPAY_GERENCIAR`). **Não** devolve InfiniteTag, chave nem textos.
+```json
+{ "configurada": true, "validadeDias": 7, "pagamentoUnico": true, "taxaParcelamentoAssumida": 0, "pixHabilitado": true,
+  "descontoPix": 0, "descontoCartao": 0, "exigeEnderecoEntrega": false, "envioEmailHabilitado": false }
+```
+- `configurada` = InfiniteTag **e** chave presentes. Com `false`, a tela deve desabilitar o botão de gerar link e exibir: `Configure a InfinitePay em Sistema antes de gerar links.`
 
 ## Gerar link — `POST /contas-receber/{id}/links-pagamento`
 ```json
@@ -64,7 +73,7 @@ GET 200
   "valor": 250.00, "descricao": "Consignação Nº 12 — acerto", "validade": "2026-11-23", "expirado": false,
   "pagamentoUnico": true, "taxaParcelamentoAssumida": 0, "pixHabilitado": true, "descontoPix": 5, "descontoCartao": 0, "exigeEnderecoEntrega": false,
   "cliente": { "nome": "Maria", "email": "maria@exemplo.com", "telefone": "+5524999998888" },
-  "status": "ATIVO", "recebimentoId": null, "criadoEm": "2026-11-16T10:00:00", "criadoPor": { "id": "...", "nome": "..." },
+  "status": "ATIVO", "recebimentoId": null, "criadoEm": "2026-11-16T10:00:00", "criadoPor": { "id": "...", "usuario": "...", "primeiroNome": "...", "sobrenome": "..." },
   "reaproveitado": false,
   "textoWhatsapp": "mensagem pronta com o link", "textoEmail": "mensagem pronta com o link" }
 ```
