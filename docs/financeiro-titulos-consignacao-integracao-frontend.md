@@ -34,7 +34,7 @@ Os títulos gerados seguem **todas** as regras do Contas a Receber (`docs/financ
 | --- | --- |
 | `GET .../financeiro` | `CONTA_RECEBER_VISUALIZAR`, `CONTA_RECEBER_GERENCIAR` ou `CONTA_RECEBER_RECEBER` |
 | `POST .../titulos` | `CONTA_RECEBER_GERENCIAR` |
-| `POST .../titulos` com `recebimento` | `CONTA_RECEBER_GERENCIAR` **e** `CONTA_RECEBER_RECEBER` (sem a segunda: 403 `Você não possui permissão para registrar o recebimento no mesmo ato.`) |
+| `POST .../titulos` com `recebimento` | `CONTA_RECEBER_GERENCIAR` **e** `CONTA_RECEBER_RECEBER` (sem a segunda: 403 `Acesso negado.`, antes de qualquer validação do corpo) |
 
 Sem permissão: **403 antes de qualquer validação do corpo** (inclusive corpo inválido). Sem token: 401. As telas e as rotas atuais de pré-acerto/acerto **não mudam**: um usuário só com permissões de consignação/acerto continua usando-as normalmente (apenas não vê o resumo financeiro). O frontend deve esconder o bloco financeiro e o botão para quem não tem as permissões acima.
 
@@ -87,7 +87,7 @@ O frontend deve pedir **confirmação** antes de chamar.
 | --- | --- |
 | Sem token | 401 |
 | Sem permissão (mesmo com corpo vazio ou inválido) | 403 |
-| `recebimento` sem `CONTA_RECEBER_RECEBER` | 403 `Você não possui permissão para registrar o recebimento no mesmo ato.` |
+| `recebimento` sem `CONTA_RECEBER_RECEBER` | 403 `Acesso negado.` |
 | Documento inexistente | 404 |
 | Pré-acerto sem consignação | 400 `O pré-acerto não possui consignação e não gera título a receber.` |
 | Acerto não confirmado | 400 `O acerto precisa estar confirmado para gerar título a receber.` |

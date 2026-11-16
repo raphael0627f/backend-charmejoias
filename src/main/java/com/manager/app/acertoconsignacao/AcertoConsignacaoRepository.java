@@ -23,6 +23,10 @@ public interface AcertoConsignacaoRepository extends JpaRepository<AcertoConsign
 
     boolean existsByConsignacaoId(Long consignacaoId);
 
+    // id da consignação do acerto sem carregar a entidade (lista vazia = acerto inexistente)
+    @Query("select a.consignacao.id from AcertoConsignacao a where a.id = :id")
+    java.util.List<Long> consignacaoIdDe(@Param("id") Long id);
+
     // bloqueio pessimista da linha (SELECT ... FOR UPDATE): serializa a geração de títulos e a edição do documento
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from AcertoConsignacao a where a.id = :id")

@@ -57,6 +57,21 @@ public class ContaReceberRecebimentoService {
         return new RecebimentoDTOs.Resultado(mapper.recebimento(a.recebimento(), a.movimentacao().getId()), contaReceberService.detalhe(titulo), null);
     }
 
+    // recebimento no mesmo ato da geração do título (chamado dentro da transação de quem gerou): mesmas regras e mesmo bloqueio do recebimento normal
+    @Transactional
+    public com.manager.app.financeiro.dto.ContaReceberDetalheDTO.Recebimento receberNoAto(ContaReceber titulo, RecebimentoDTOs.Request r) {
+        if (r.dataRecebimento() == null) throw new ItemInvalidoException("A data do recebimento é obrigatória.");
+        if (r.valorPrincipal() == null) throw new ItemInvalidoException("O valor principal é obrigatório.");
+        if (r.bancoId() == null) throw new ItemInvalidoException("O banco é obrigatório.");
+        if (r.formaPagamentoId() == null) throw new ItemInvalidoException("A forma de pagamento é obrigatória.");
+        TextoUtils.validarTexto(r.observacao(), "A observação", 500);
+        Banco banco = bancoRepository.findByIdForUpdate(r.bancoId()).orElseThrow(() -> new ItemInvalidoException("O banco informado não foi encontrado."));
+        FormaPagamento forma = formaPagamentoRepository.findById(r.formaPagamentoId())
+                .orElseThrow(() -> new ItemInvalidoException("A forma de pagamento informada não foi encontrada."));
+        Aplicado a = aplicar(titulo, banco, forma, r.dataRecebimento(), r.valorPrincipal(), r.juros(), r.multa(), r.desconto(), r.observacao());
+        return mapper.recebimento(a.recebimento(), a.movimentacao().getId());
+    }
+
     private Aplicado aplicar(ContaReceber titulo, Banco banco, FormaPagamento forma, LocalDate data, BigDecimal principal, BigDecimal juros,
                              BigDecimal multa, BigDecimal desconto, String observacao) {
         Usuario usuario = auditor.getCurrentAuditor().orElse(null);

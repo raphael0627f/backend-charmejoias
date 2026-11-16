@@ -13,6 +13,10 @@ public interface PreAcertoConsignacaoRepository extends JpaRepository<PreAcertoC
 
     boolean existsByConsignacaoId(Long consignacaoId);
 
+    // id da consignação do pré-acerto sem carregar a entidade (lista vazia = pré-acerto inexistente; elemento nulo = sem consignação)
+    @Query("select c.id from PreAcertoConsignacao p left join p.consignacao c where p.id = :id")
+    java.util.List<Long> consignacaoIdDe(@Param("id") Long id);
+
     // bloqueio pessimista da linha (SELECT ... FOR UPDATE): serializa a geração de títulos e a edição do documento
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from PreAcertoConsignacao p where p.id = :id")
