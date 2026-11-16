@@ -46,7 +46,7 @@ public class ContaReceberMapper {
                 parcelas.stream().map(p -> resumo(p, hoje, anexosPorTitulo.getOrDefault(p.getId(), 0))).toList(),
                 eventos.stream().map(e -> new ContaReceberDetalheDTO.Evento(e.getId(), e.getEvento(), e.getDetalhe(),
                         mapper.usuario(e.getUsuario()), e.getDataHora())).toList(),
-                c.getCreatedAt(), c.getUpdatedAt(), mapper.usuario(c.getCreatedBy()), mapper.usuario(c.getUpdatedBy()), anexos.stream().map(this::anexo).toList());
+                c.getCreatedAt(), c.getUpdatedAt(), mapper.usuario(c.getCreatedBy()), mapper.usuario(c.getUpdatedBy()), anexos.stream().map(this::anexo).toList(), null);
     }
 
     public ContaReceberAnexoDTO anexo(ContaReceberAnexo a) {

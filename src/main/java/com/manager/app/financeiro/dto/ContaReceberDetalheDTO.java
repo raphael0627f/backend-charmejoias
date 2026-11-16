@@ -20,7 +20,16 @@ public record ContaReceberDetalheDTO(Long id, Long numero, String descricao, Con
                                      Integer parcelaNumero, Integer parcelaTotal, Cancelamento cancelamento, String motivoCancelamento,
                                      LocalDateTime dataCancelamento, UsuarioResumoDTO canceladoPor, List<Recebimento> recebimentos,
                                      List<ContaReceberResumoDTO> parcelas, List<Evento> eventos, LocalDateTime createdAt, LocalDateTime updatedAt,
-                                     UsuarioResumoDTO createdBy, UsuarioResumoDTO updatedBy, List<ContaReceberAnexoDTO> anexos) {
+                                     UsuarioResumoDTO createdBy, UsuarioResumoDTO updatedBy, List<ContaReceberAnexoDTO> anexos,
+                                     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) String aviso) {
+
+    // aviso formal opcional (hoje só no cancelamento de título com link de pagamento ativo)
+    public ContaReceberDetalheDTO comAviso(String novoAviso) {
+        return new ContaReceberDetalheDTO(id, numero, descricao, cliente, pagadorNome, pagadorDocumento, pagadorExibicao, tipoPagador, origem, categoria,
+                centroCusto, formaPrevista, valor, valorRecebido, valorAberto, emissao, competencia, vencimento, documento, observacao, situacao,
+                situacaoExibicao, grupoParcelamentoId, parcelaNumero, parcelaTotal, cancelamento, motivoCancelamento, dataCancelamento, canceladoPor,
+                recebimentos, parcelas, eventos, createdAt, updatedAt, createdBy, updatedBy, anexos, novoAviso);
+    }
 
     public record Cancelamento(String motivo, LocalDateTime em, UsuarioResumoDTO por) {
     }

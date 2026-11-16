@@ -19,7 +19,8 @@ public final class RecebimentoDTOs {
             BigDecimal juros, BigDecimal multa, BigDecimal desconto,
             @NotNull(message = "O banco é obrigatório.") Long bancoId,
             @NotNull(message = "A forma de pagamento é obrigatória.") Long formaPagamentoId,
-            @Size(max = 500, message = "A observação deve ter no máximo 500 caracteres.") String observacao) {
+            @Size(max = 500, message = "A observação deve ter no máximo 500 caracteres.") String observacao,
+            Long linkId) {
     }
 
     // aviso só existe quando o saldo do banco ficou negativo (possível apenas no estorno)

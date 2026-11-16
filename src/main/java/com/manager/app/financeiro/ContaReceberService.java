@@ -66,6 +66,7 @@ public class ContaReceberService {
     private final UsuarioAuditorAware auditor;
     private final ContaReceberMapper mapper;
     private final PlatformTransactionManager transactionManager;
+    private final com.manager.app.infinitepay.LinkPagamentoCicloVida linkCicloVida;
 
     @PersistenceContext
     private EntityManager em;
@@ -407,7 +408,12 @@ public class ContaReceberService {
 
     @Transactional
     public ContaReceberDetalheDTO cancelar(Long id, ContaReceberAcoesDTO.Cancelar r) {
-        return detalhe(cancelarTitulo(id, CalculoFinanceiro.validarMotivo(r == null ? null : r.motivo())));
+        Cancelado cancelado = cancelarTitulo(id, CalculoFinanceiro.validarMotivo(r == null ? null : r.motivo()));
+        ContaReceberDetalheDTO detalhe = detalhe(cancelado.titulo());
+        return cancelado.comLinkAtivo() ? detalhe.comAviso(com.manager.app.infinitepay.LinkPagamentoCicloVida.AVISO_CANCELAMENTO) : detalhe;
+    }
+
+    private record Cancelado(ContaReceber titulo, boolean comLinkAtivo) {
     }
 
     // o lote nunca falha inteiro: cada título é cancelado em sua própria transação e a resposta traz o resultado por id
@@ -421,7 +427,7 @@ public class ContaReceberService {
         int cancelados = 0;
         for (Long id : new LinkedHashSet<>(r.ids())) {
             try {
-                Long numero = tx.execute(status -> cancelarTitulo(id, motivo).getNumero());
+                Long numero = tx.execute(status -> cancelarTitulo(id, motivo).titulo().getNumero());
                 itens.add(new ContaReceberAcoesDTO.Item(id, numero, true, null));
                 cancelados++;
             } catch (ItemInvalidoException | ObjetoNaoEncontradoException e) {
@@ -435,7 +441,7 @@ public class ContaReceberService {
         return repository.findById(id).map(ContaReceber::getNumero).orElse(null);
     }
 
-    private ContaReceber cancelarTitulo(Long id, String motivo) {
+    private Cancelado cancelarTitulo(Long id, String motivo) {
         ContaReceber c = buscarComLock(id);
         ContaReceberCalculo.validarCancelavel(c.getSituacao(), c.getValorRecebido());
         Usuario usuario = usuarioAtual();
@@ -445,7 +451,9 @@ public class ContaReceberService {
         c.setCanceladoPor(usuario);
         repository.save(c);
         registrar(c, "TITULO_CANCELADO", "Título cancelado. Motivo: " + motivo, usuario);
-        return c;
+        // links de pagamento ativos deste título passam a TITULO_CANCELADO (a InfinitePay não permite cancelá-los lá)
+        boolean comLink = linkCicloVida.aoCancelar(c);
+        return new Cancelado(c, comLink);
     }
 
     // ---------- apoio ----------

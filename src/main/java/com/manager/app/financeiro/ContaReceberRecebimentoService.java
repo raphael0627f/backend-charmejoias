@@ -40,6 +40,7 @@ public class ContaReceberRecebimentoService {
     private final ContaReceberMapper mapper;
     private final UsuarioAuditorAware auditor;
     private final PlatformTransactionManager transactionManager;
+    private final com.manager.app.infinitepay.LinkPagamentoCicloVida linkCicloVida;
 
     private record Aplicado(ContaReceberRecebimento recebimento, MovimentacaoBanco movimentacao) {
     }
@@ -50,10 +51,12 @@ public class ContaReceberRecebimentoService {
     public RecebimentoDTOs.Resultado receber(Long tituloId, RecebimentoDTOs.Request r) {
         TextoUtils.validarTexto(r.observacao(), "A observação", 500);
         ContaReceber titulo = contaReceberService.buscarComLock(tituloId);
+        // linkId opcional: o link deve ser do título e estar ativo; é marcado como pago na mesma transação do recebimento
+        com.manager.app.infinitepay.ContaReceberLinkPagamento link = r.linkId() == null ? null : linkCicloVida.validarParaRecebimento(tituloId, r.linkId());
         Banco banco = bancoRepository.findByIdForUpdate(r.bancoId()).orElseThrow(() -> new ItemInvalidoException("O banco informado não foi encontrado."));
         FormaPagamento forma = formaPagamentoRepository.findById(r.formaPagamentoId())
                 .orElseThrow(() -> new ItemInvalidoException("A forma de pagamento informada não foi encontrada."));
-        Aplicado a = aplicar(titulo, banco, forma, r.dataRecebimento(), r.valorPrincipal(), r.juros(), r.multa(), r.desconto(), r.observacao());
+        Aplicado a = aplicar(titulo, banco, forma, r.dataRecebimento(), r.valorPrincipal(), r.juros(), r.multa(), r.desconto(), r.observacao(), link);
         return new RecebimentoDTOs.Resultado(mapper.recebimento(a.recebimento(), a.movimentacao().getId()), contaReceberService.detalhe(titulo), null);
     }
 
@@ -74,6 +77,11 @@ public class ContaReceberRecebimentoService {
 
     private Aplicado aplicar(ContaReceber titulo, Banco banco, FormaPagamento forma, LocalDate data, BigDecimal principal, BigDecimal juros,
                              BigDecimal multa, BigDecimal desconto, String observacao) {
+        return aplicar(titulo, banco, forma, data, principal, juros, multa, desconto, observacao, null);
+    }
+
+    private Aplicado aplicar(ContaReceber titulo, Banco banco, FormaPagamento forma, LocalDate data, BigDecimal principal, BigDecimal juros,
+                             BigDecimal multa, BigDecimal desconto, String observacao, com.manager.app.infinitepay.ContaReceberLinkPagamento link) {
         Usuario usuario = auditor.getCurrentAuditor().orElse(null);
         RecebimentoCalculo.ResultadoRecebimento r = RecebimentoCalculo.receber(titulo, banco, forma, data, principal, juros, multa, desconto, observacao,
                 usuario, LocalDate.now());
@@ -86,6 +94,9 @@ public class ContaReceberRecebimentoService {
                 + " (principal " + MovimentacaoBancoService.moeda(recebimento.getValorPrincipal()) + ", juros " + MovimentacaoBancoService.moeda(recebimento.getJuros())
                 + ", multa " + MovimentacaoBancoService.moeda(recebimento.getMulta()) + ", desconto " + MovimentacaoBancoService.moeda(recebimento.getDesconto())
                 + "), banco \"" + banco.getNome() + "\", forma \"" + forma.getNome() + "\".", usuario);
+        // ciclo de vida dos links: primeiro o link usado na baixa (e os demais ficam obsoletos); depois, se o título foi quitado, encerra os que sobraram
+        if (link != null) linkCicloVida.marcarPago(link, recebimento.getId(), "Recebimento registrado com o link.");
+        linkCicloVida.aoQuitar(titulo);
         return new Aplicado(recebimento, mov);
     }
 
