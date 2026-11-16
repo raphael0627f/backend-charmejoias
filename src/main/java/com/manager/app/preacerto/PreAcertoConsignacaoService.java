@@ -55,6 +55,7 @@ public class PreAcertoConsignacaoService {
     private final ConsignacaoValidation consignacaoValidation;
     private final UsuarioResumoMapper usuarioResumoMapper;
     private final UsuarioAuditorAware usuarioAuditorAware;
+    private final com.manager.app.financeiro.ContaReceberRepository contaReceberRepository;
 
     public Page<PreAcertoConsignacao> findAll(String busca, ModoBusca modoBusca, Long consignacaoId,
                                                LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
@@ -287,9 +288,28 @@ public class PreAcertoConsignacaoService {
         return repository.save(preAcerto);
     }
 
+    // tudo o que compõe o valor ou a identidade do pré-acerto (a observação fica de fora)
+    private static String assinaturaDoValor(PreAcertoConsignacao p) {
+        List<String> itens = new ArrayList<>();
+        for (PreAcertoConsignacaoProduto i : p.getProdutos()) {
+            itens.add((i.getProduto() != null ? "p" + i.getProduto().getId() : "") + "|"
+                    + (i.getProdutoVariacao() != null ? i.getProdutoVariacao().getId() : "") + "|"
+                    + (i.getJoia() != null ? "j" + i.getJoia().getId() : "") + "|" + i.getQuantidade() + "|"
+                    + (i.getPreco() == null ? "" : i.getPreco().stripTrailingZeros().toPlainString()));
+        }
+        java.util.Collections.sort(itens);
+        return (p.getConsignacao() == null ? "" : p.getConsignacao().getId()) + "#" + (p.getCliente() == null ? "" : p.getCliente().getId()) + "#"
+                + (p.getDesconto() == null ? "0" : p.getDesconto().stripTrailingZeros().toPlainString()) + "#" + String.join(";", itens);
+    }
+
     @Transactional
     public PreAcertoConsignacao update(PreAcertoConsignacaoRequestDTO request){
-        PreAcertoConsignacao preAcertoUpdate = this.findById(request.getId());
+        // bloqueio pessimista: serializa a edição com a geração de título a receber do mesmo pré-acerto
+        PreAcertoConsignacao preAcertoUpdate = request.getId() == null ? this.findById(null)
+                : repository.findByIdForUpdate(request.getId())
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Pré-acerto de consignação não encontrado. Id: " + request.getId()));
+        boolean comTituloAtivo = contaReceberRepository.existsPreAcertoAtivo(preAcertoUpdate.getId());
+        String assinaturaAntes = comTituloAtivo ? assinaturaDoValor(preAcertoUpdate) : null;
 
         Consignacao consignacao = resolverConsignacao(request.getConsignacaoId());
         Cliente cliente;
@@ -339,6 +359,12 @@ public class PreAcertoConsignacaoService {
 
         for (PreAcertoConsignacaoProduto removerProduto : produtosAtuais) {
             preAcertoUpdate.removerProduto(removerProduto);
+        }
+
+        // com título a receber ativo só a observação pode mudar; qualquer alteração de itens, preços, desconto, consignação ou cliente
+        // desfaz a transação inteira (nada é gravado)
+        if (comTituloAtivo && !assinaturaAntes.equals(assinaturaDoValor(preAcertoUpdate))) {
+            throw new ItemInvalidoException("O pré-acerto possui título a receber ativo e não pode ser alterado. Cancele o título para alterar.");
         }
 
         // Sem isso, uma edição que só mexe nos produtos não deixa o pré-acerto
