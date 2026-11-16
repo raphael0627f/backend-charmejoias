@@ -36,7 +36,7 @@ CREATE TABLE conta_receber_link_pagamento (
     cliente_nome VARCHAR(200),
     cliente_email VARCHAR(200),
     cliente_telefone VARCHAR(20),
-    status VARCHAR(40) NOT NULL CHECK (status IN ('ATIVO', 'PAGO_MANUAL', 'ENCERRADO_TITULO_RECEBIDO', 'TITULO_CANCELADO', 'OBSOLETO')),
+    status VARCHAR(40) NOT NULL CHECK (status IN ('ATIVO', 'PAGO_MANUAL', 'ENCERRADO_TITULO_RECEBIDO', 'TITULO_CANCELADO', 'NAO_UTILIZAR')),
     recebimento_id BIGINT REFERENCES conta_receber_recebimento (id),
     resposta_bruta VARCHAR(1000),
     criado_por_id UUID REFERENCES usuarios (id),

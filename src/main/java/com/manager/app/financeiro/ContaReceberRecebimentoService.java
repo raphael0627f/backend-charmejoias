@@ -94,7 +94,7 @@ public class ContaReceberRecebimentoService {
                 + " (principal " + MovimentacaoBancoService.moeda(recebimento.getValorPrincipal()) + ", juros " + MovimentacaoBancoService.moeda(recebimento.getJuros())
                 + ", multa " + MovimentacaoBancoService.moeda(recebimento.getMulta()) + ", desconto " + MovimentacaoBancoService.moeda(recebimento.getDesconto())
                 + "), banco \"" + banco.getNome() + "\", forma \"" + forma.getNome() + "\".", usuario);
-        // ciclo de vida dos links: primeiro o link usado na baixa (e os demais ficam obsoletos); depois, se o título foi quitado, encerra os que sobraram
+        // ciclo de vida dos links: primeiro o link usado na baixa (e os demais ficam NAO_UTILIZAR); depois, se o título foi quitado, encerra os que sobraram
         if (link != null) linkCicloVida.marcarPago(link, recebimento.getId(), "Recebimento registrado com o link.");
         linkCicloVida.aoQuitar(titulo);
         return new Aplicado(recebimento, mov);

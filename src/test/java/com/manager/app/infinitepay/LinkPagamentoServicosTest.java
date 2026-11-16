@@ -268,7 +268,7 @@ class LinkPagamentoServicosTest {
     }
 
     @Test
-    void marcarPagoTornaObsoletosOsDemaisAtivos() {
+    void marcarPagoMarcaOsDemaisAtivosComoNaoUtilizar() {
         ContaReceber t = titulo(12, SituacaoContaReceber.ABERTO, "100.00", "0");
         ContaReceberLinkPagamento a = link(1, t, StatusLinkPagamento.ATIVO);
         ContaReceberLinkPagamento b = link(2, t, StatusLinkPagamento.ATIVO);
@@ -278,7 +278,7 @@ class LinkPagamentoServicosTest {
         when(repo.findByContaReceberIdAndStatus(12L, StatusLinkPagamento.ATIVO)).thenReturn(List.of(a, b));
         InfinitePayDTOs.LinkResponse r = service.marcarPago(1L, new InfinitePayDTOs.MarcarPagoRequest(null, "Conferido"));
         assertEquals("PAGO_MANUAL", r.status());
-        assertEquals(StatusLinkPagamento.OBSOLETO, b.getStatus());
+        assertEquals(StatusLinkPagamento.NAO_UTILIZAR, b.getStatus());
         assertEquals(StatusLinkPagamento.TITULO_CANCELADO, c.getStatus());
         ArgumentCaptor<ContaReceberEvento> evento = ArgumentCaptor.forClass(ContaReceberEvento.class);
         verify(eventos).save(evento.capture());

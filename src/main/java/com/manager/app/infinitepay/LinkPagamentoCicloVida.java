@@ -51,7 +51,7 @@ public class LinkPagamentoCicloVida {
         return link;
     }
 
-    // marca o link como pago manualmente (com ou sem recebimento) e torna obsoletos os demais ativos do título
+    // marca o link como pago manualmente (com ou sem recebimento) e marca os demais ativos do título como NAO_UTILIZAR
     public void marcarPago(ContaReceberLinkPagamento link, Long recebimentoId, String observacao) {
         Long tituloId = link.getContaReceber().getId();
         link.setStatus(StatusLinkPagamento.PAGO_MANUAL);
@@ -60,10 +60,10 @@ public class LinkPagamentoCicloVida {
         repository.save(link);
         List<ContaReceberLinkPagamento> demais = repository.findByContaReceberIdAndStatus(tituloId, StatusLinkPagamento.ATIVO).stream()
                 .filter(l -> !l.getId().equals(link.getId())).toList();
-        mudar(demais, StatusLinkPagamento.OBSOLETO);
+        mudar(demais, StatusLinkPagamento.NAO_UTILIZAR);
         String detalhe = "Link de pagamento nº " + link.getId() + " marcado como pago manualmente"
                 + (recebimentoId != null ? " (recebimento nº " + recebimentoId + ")" : "") + "."
-                + (demais.isEmpty() ? "" : " Os demais links ativos do título tornaram-se obsoletos.")
+                + (demais.isEmpty() ? "" : " Os demais links ativos do título foram marcados como \"Não utilizar\".")
                 + (observacao != null && !observacao.isBlank() ? " Observação: " + observacao.trim() : "");
         registrar(link.getContaReceber(), "LINK_PAGAMENTO_MARCADO_PAGO", detalhe);
     }

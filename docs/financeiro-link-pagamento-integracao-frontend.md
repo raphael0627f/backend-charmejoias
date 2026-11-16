@@ -7,7 +7,8 @@ Branch `feat/infinitepay-link` (empilhada sobre `feat/receber-consignacao`).
 
 ## Conceitos
 - Um título pode ter **vários links** (cada geração cria um registro próprio, com `orderNsu` único `CR-<número do título>-<código curto>`).
-- `status` do link: `ATIVO`, `PAGO_MANUAL`, `ENCERRADO_TITULO_RECEBIDO`, `TITULO_CANCELADO`, `OBSOLETO`.
+- `status` do link: `ATIVO`, `PAGO_MANUAL`, `ENCERRADO_TITULO_RECEBIDO`, `TITULO_CANCELADO`, `NAO_UTILIZAR`.
+  - Rótulo para a tela do `NAO_UTILIZAR`: **"Não utilizar"** (substitui o antigo `OBSOLETO`; mapa antigo → novo: `OBSOLETO` → `NAO_UTILIZAR`). Texto de apoio: `Outro link deste título foi pago. Este link não deve mais ser utilizado, mas ainda pode ser pago na InfinitePay.`
 - `expirado` (booleano) é **calculado** pela `validade` (data inclusiva, fuso de São Paulo); não é gravado. Um link `ATIVO` e `expirado` deve ser exibido como "Expirado".
 - Valor mínimo do link: **R$ 1,00**; máximo: o **saldo em aberto** do título.
 
@@ -88,7 +89,7 @@ Lista de links do título, do mais recente ao mais antigo, no formato acima (`re
 { "recebimentoId": 40, "observacao": "Pago pelo link; conferido no extrato." }
 ```
 - Corpo opcional. `recebimentoId` (opcional): o recebimento **ativo e do mesmo título** que corresponde ao pagamento. `observacao` até 500.
-- Só link `ATIVO`. O link vira `PAGO_MANUAL`; os **demais links ATIVOS do mesmo título viram `OBSOLETO`**. Evento `LINK_PAGAMENTO_MARCADO_PAGO`. Marcar **não** registra recebimento algum: a baixa é feita pela tela de recebimento.
+- Só link `ATIVO`. O link vira `PAGO_MANUAL`; os **demais links ATIVOS do mesmo título viram `NAO_UTILIZAR`**. Evento `LINK_PAGAMENTO_MARCADO_PAGO`. Marcar **não** registra recebimento algum: a baixa é feita pela tela de recebimento.
 - Resposta 200: o link atualizado. Erros: 404; 400 `Somente links ativos podem ser marcados como pagos.`; 400 recebimento de outro título ou estornado.
 
 ## Recebimento manual com link — campo `linkId`
@@ -97,7 +98,7 @@ Lista de links do título, do mais recente ao mais antigo, no formato acima (`re
 { "dataRecebimento": "...", "valorPrincipal": 250.00, "bancoId": 1, "formaPagamentoId": 3, "linkId": 5 }
 ```
 - Valida que o link é **do título** e está **ATIVO** (senão 400 `O link de pagamento informado não pertence a este título.` ou `... não está ativo.`). O banco e a forma continuam escolhidos pelo usuário.
-- Na mesma transação: o link vira `PAGO_MANUAL` com `recebimentoId` preenchido, e os demais ATIVOS do título viram `OBSOLETO`. Se a baixa falhar, nada muda. Sem `linkId` o recebimento segue como hoje.
+- Na mesma transação: o link vira `PAGO_MANUAL` com `recebimentoId` preenchido, e os demais ATIVOS do título viram `NAO_UTILIZAR`. Se a baixa falhar, nada muda. Sem `linkId` o recebimento segue como hoje.
 - A tela deve oferecer o campo opcional "Pago pelo link" listando os links ATIVOS do título.
 
 ## Enviar por e-mail — `POST /links-pagamento/{id}/enviar-email`
@@ -112,7 +113,7 @@ Lista de links do título, do mais recente ao mais antigo, no formato acima (`re
 | --- | --- |
 | Título **quitado** (`RECEBIDO`) por qualquer recebimento (individual, no ato ou em lote) | viram `ENCERRADO_TITULO_RECEBIDO` |
 | Título **cancelado** (individual ou em lote) | viram `TITULO_CANCELADO`. A resposta do cancelamento individual traz `aviso`: `Os links de pagamento já enviados não podem ser cancelados na InfinitePay e ainda podem ser pagos.` (exibir ao usuário; vale só quando havia link ativo) |
-| Link marcado como pago (manual ou por `linkId`) | os outros ATIVOS do título viram `OBSOLETO` |
+| Link marcado como pago (manual ou por `linkId`) | os outros ATIVOS do título viram `NAO_UTILIZAR` |
 | **Estorno** do recebimento (título reabre) | links `ENCERRADO_TITULO_RECEBIDO` **não** voltam a `ATIVO` sozinhos; o usuário gera um novo link |
 - Links nos estados finais não mudam mais. `expirado` é calculado, nunca gravado.
 - `aviso` é um campo novo e **aditivo** (somente quando há texto) em `ContaReceberDetalheDTO`, usado só no `POST /contas-receber/{id}/cancelar`.
