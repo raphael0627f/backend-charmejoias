@@ -21,7 +21,9 @@ public final class ContaReceberAcoesDTO {
     public record CancelarLote(List<Long> ids, String motivo) {
     }
 
-    public record ResultadoLote(int cancelados, int recusados, List<Item> resultados) {
+    // aviso só existe quando ao menos um título cancelado tinha link de pagamento ativo
+    public record ResultadoLote(int cancelados, int recusados, List<Item> resultados,
+                                @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) String aviso) {
     }
 
     public record Item(Long id, Long numero, boolean cancelado, String menssage) {

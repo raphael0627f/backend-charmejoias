@@ -268,6 +268,13 @@ class LinkPagamentoServicosTest {
     }
 
     @Test
+    void avisoDoLoteSoQuandoHaLinkAtivoComAQuantidade() {
+        assertNull(LinkPagamentoCicloVida.avisoDoLote(0));
+        assertEquals("Os links de pagamento já enviados de 1 título cancelado não podem ser cancelados na InfinitePay e ainda podem ser pagos.", LinkPagamentoCicloVida.avisoDoLote(1));
+        assertEquals("Os links de pagamento já enviados de 3 títulos cancelados não podem ser cancelados na InfinitePay e ainda podem ser pagos.", LinkPagamentoCicloVida.avisoDoLote(3));
+    }
+
+    @Test
     void marcarPagoMarcaOsDemaisAtivosComoNaoUtilizar() {
         ContaReceber t = titulo(12, SituacaoContaReceber.ABERTO, "100.00", "0");
         ContaReceberLinkPagamento a = link(1, t, StatusLinkPagamento.ATIVO);

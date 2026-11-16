@@ -116,6 +116,7 @@ Lista de links do título, do mais recente ao mais antigo, no formato acima (`re
 | Link marcado como pago (manual ou por `linkId`) | os outros ATIVOS do título viram `NAO_UTILIZAR` |
 | **Estorno** do recebimento (título reabre) | links `ENCERRADO_TITULO_RECEBIDO` **não** voltam a `ATIVO` sozinhos; o usuário gera um novo link |
 - Links nos estados finais não mudam mais. `expirado` é calculado, nunca gravado.
+- **Cancelamento em lote** (`POST /contas-receber/cancelar-lote`): a resposta ganha o campo aditivo `aviso` (texto único, **somente** quando ao menos um título cancelado tinha link `ATIVO`; sem links, o campo não vem). Exemplo: `Os links de pagamento já enviados de 2 títulos cancelados não podem ser cancelados na InfinitePay e ainda podem ser pagos.` (no singular: `de 1 título cancelado não podem`). Exibir ao usuário depois do resumo do lote.
 - `aviso` é um campo novo e **aditivo** (somente quando há texto) em `ContaReceberDetalheDTO`, usado só no `POST /contas-receber/{id}/cancelar`.
 
 ## Erros da geração

@@ -21,6 +21,13 @@ public class LinkPagamentoCicloVida {
 
     public static final String AVISO_CANCELAMENTO = "Os links de pagamento já enviados não podem ser cancelados na InfinitePay e ainda podem ser pagos.";
 
+    // cancelamento em lote: texto único com a quantidade de títulos cancelados que tinham link ativo; sem links, sem aviso (null)
+    public static String avisoDoLote(int titulosComLinkAtivo) {
+        if (titulosComLinkAtivo <= 0) return null;
+        return "Os links de pagamento já enviados " + (titulosComLinkAtivo == 1 ? "de 1 título cancelado não podem" : "de " + titulosComLinkAtivo + " títulos cancelados não podem")
+                + " ser cancelados na InfinitePay e ainda podem ser pagos.";
+    }
+
     private final ContaReceberLinkPagamentoRepository repository;
     private final ContaReceberEventoRepository eventoRepository;
     private final UsuarioAuditorAware auditor;

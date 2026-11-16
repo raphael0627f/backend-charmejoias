@@ -425,16 +425,18 @@ public class ContaReceberService {
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         List<ContaReceberAcoesDTO.Item> itens = new ArrayList<>();
         int cancelados = 0;
+        int comLink = 0;
         for (Long id : new LinkedHashSet<>(r.ids())) {
             try {
-                Long numero = tx.execute(status -> cancelarTitulo(id, motivo).titulo().getNumero());
-                itens.add(new ContaReceberAcoesDTO.Item(id, numero, true, null));
+                Cancelado cancelado = tx.execute(status -> cancelarTitulo(id, motivo));
+                itens.add(new ContaReceberAcoesDTO.Item(id, cancelado.titulo().getNumero(), true, null));
                 cancelados++;
+                if (cancelado.comLinkAtivo()) comLink++;
             } catch (ItemInvalidoException | ObjetoNaoEncontradoException e) {
                 itens.add(new ContaReceberAcoesDTO.Item(id, numeroOuNulo(id), false, e.getMessage()));
             }
         }
-        return new ContaReceberAcoesDTO.ResultadoLote(cancelados, itens.size() - cancelados, itens);
+        return new ContaReceberAcoesDTO.ResultadoLote(cancelados, itens.size() - cancelados, itens, com.manager.app.infinitepay.LinkPagamentoCicloVida.avisoDoLote(comLink));
     }
 
     private Long numeroOuNulo(Long id) {
