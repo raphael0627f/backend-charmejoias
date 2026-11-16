@@ -19,5 +19,8 @@ public interface CategoriaReceitaRepository extends JpaRepository<CategoriaRecei
 
     boolean existsByPaiId(Long paiId);
 
+    // subgrupo pelo nome e pelo nome do grupo (usado na categoria fixa Vendas > Consignação)
+    java.util.Optional<CategoriaReceita> findFirstByNomeIgnoreCaseAndPaiNomeIgnoreCase(String nome, String nomePai);
+
     boolean existsByPaiIdAndAtivoTrue(Long paiId);
 }

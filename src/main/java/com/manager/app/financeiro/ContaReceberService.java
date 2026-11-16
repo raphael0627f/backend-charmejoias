@@ -76,8 +76,24 @@ public class ContaReceberService {
 
     // ---------- criação ----------
 
+    // origem de consignação do título (nula nos títulos comuns): consignação e pré-acerto OU acerto
+    public record Origem(com.manager.app.consignacao.Consignacao consignacao, com.manager.app.preacerto.PreAcertoConsignacao preAcerto,
+                         com.manager.app.acertoconsignacao.AcertoConsignacao acerto) {
+    }
+
+    public record Criados(UUID grupo, List<ContaReceber> titulos) {
+    }
+
     @Transactional
     public ContaReceberCriacaoResponseDTO criar(ContaReceberRequestDTO r) {
+        Criados criados = criarTitulos(r, null);
+        LocalDate hoje = LocalDate.now();
+        return new ContaReceberCriacaoResponseDTO(criados.grupo(), criados.titulos().stream().map(t -> mapper.resumo(t, hoje)).toList());
+    }
+
+    // criação simples ou parcelada, usada também pela geração a partir de pré-acerto/acerto (mesmas validações e mesma transação do chamador)
+    @Transactional
+    public Criados criarTitulos(ContaReceberRequestDTO r, Origem origem) {
         LocalDate hoje = LocalDate.now();
         Base base = validarBase(r);
         LocalDate emissao = r.emissao() == null ? hoje : r.emissao();
@@ -109,14 +125,17 @@ public class ContaReceberService {
             }
         }
 
-        List<ContaReceberResumoDTO> resposta = new ArrayList<>();
         for (ContaReceber titulo : titulos) {
+            if (origem != null) {
+                titulo.setConsignacao(origem.consignacao());
+                titulo.setPreAcerto(origem.preAcerto());
+                titulo.setAcerto(origem.acerto());
+            }
             titulo.setNumero(repository.proximoNumero());
             repository.save(titulo);
             registrar(titulo, "TITULO_CRIADO", detalheCriacao(titulo), usuario);
-            resposta.add(mapper.resumo(titulo, hoje));
         }
-        return new ContaReceberCriacaoResponseDTO(grupo, resposta);
+        return new Criados(grupo, titulos);
     }
 
     private ContaReceber novo(Base b, BigDecimal valor, String descricao, LocalDate emissao, String competenciaInformada, LocalDate vencimento,
@@ -145,7 +164,13 @@ public class ContaReceberService {
         String parcela = c.getParcelaNumero() == null ? "" : " (parcela " + c.getParcelaNumero() + "/" + c.getParcelaTotal() + ")";
         String paraQuem = c.getCliente() != null ? "o cliente " + c.getCliente().getNome() : "o pagador avulso " + c.getPagadorNome();
         return "Título criado para " + paraQuem + " no valor de " + MovimentacaoBancoService.moeda(c.getValor())
-                + ", com vencimento em " + TextoUtils.data(c.getVencimento()) + parcela + ".";
+                + ", com vencimento em " + TextoUtils.data(c.getVencimento()) + parcela + "." + descricaoOrigem(c);
+    }
+
+    private static String descricaoOrigem(ContaReceber c) {
+        if (c.getConsignacao() == null) return "";
+        String documento = c.getPreAcerto() != null ? "pré-acerto nº " + c.getPreAcerto().getId() : "acerto nº " + c.getAcerto().getId();
+        return " Origem: " + documento + " da consignação nº " + c.getConsignacao().getId() + ".";
     }
 
     // grava o cliente ou o pagador avulso (nunca os dois)
@@ -176,6 +201,10 @@ public class ContaReceberService {
         boolean desc = direcao != null && direcao.trim().equalsIgnoreCase("desc");
         if (direcao != null && !direcao.isBlank() && !desc && !direcao.trim().equalsIgnoreCase("asc")) {
             throw new ItemInvalidoException("Direção inválida. Use asc ou desc.");
+        }
+        if (filtro.origem() != null && !filtro.origem().isBlank()
+                && !filtro.origem().trim().equalsIgnoreCase("PRE_ACERTO") && !filtro.origem().trim().equalsIgnoreCase("ACERTO")) {
+            throw new ItemInvalidoException("Origem inválida. Use PRE_ACERTO ou ACERTO.");
         }
         if (filtro.tipoPagador() != null && !filtro.tipoPagador().isBlank()
                 && !filtro.tipoPagador().trim().equalsIgnoreCase("CLIENTE") && !filtro.tipoPagador().trim().equalsIgnoreCase("AVULSO")) {
@@ -321,6 +350,8 @@ public class ContaReceberService {
             ContaReceberCalculo.validarVencimento(emissao, vencimento);
             ContaReceberCalculo.validarValorNaoAbaixoDoRecebido(base.valor(), c.getValorRecebido());
             ContaReceberCalculo.validarTrocaDeCliente(trocouCliente, c.getValorRecebido());
+            ContaReceberCalculo.validarEdicaoDeTituloDeConsignacao(c.getConsignacao() != null,
+                    c.getValor().compareTo(base.valor()) != 0 || trocouCliente);
             diff(alteracoes, "descrição", c.getDescricao(), base.descricao());
             diff(alteracoes, "pagador", ContaReceberMapper.pagadorExibicao(c), exibicao(base));
             diff(alteracoes, "categoria", c.getCategoria().getNome(), base.categoria().getNome());

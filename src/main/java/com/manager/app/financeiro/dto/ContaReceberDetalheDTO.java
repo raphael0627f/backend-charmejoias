@@ -12,6 +12,7 @@ import java.util.UUID;
 
 public record ContaReceberDetalheDTO(Long id, Long numero, String descricao, ContaReceberResumoDTO.ClienteRef cliente,
                                      String pagadorNome, String pagadorDocumento, String pagadorExibicao, String tipoPagador,
+                                     ContaReceberResumoDTO.Origem origem,
                                      ContaReceberResumoDTO.CategoriaRef categoria, ContaReceberResumoDTO.Ref centroCusto,
                                      ContaReceberResumoDTO.Ref formaPrevista, BigDecimal valor, BigDecimal valorRecebido, BigDecimal valorAberto,
                                      LocalDate emissao, String competencia, LocalDate vencimento, String documento, String observacao,

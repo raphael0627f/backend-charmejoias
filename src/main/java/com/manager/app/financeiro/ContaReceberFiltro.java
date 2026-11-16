@@ -9,7 +9,7 @@ import java.util.UUID;
 public record ContaReceberFiltro(LocalDate vencimentoDe, LocalDate vencimentoAte, LocalDate emissaoDe, LocalDate emissaoAte,
                                  LocalDate recebimentoDe, LocalDate recebimentoAte, List<SituacaoExibicaoContaReceber> situacao,
                                  String busca, UUID clienteId, Long categoriaId, Long centroCustoId, Long formaPrevistaId, Long bancoId,
-                                 BigDecimal valorMin, BigDecimal valorMax, String tipoPagador) {
+                                 BigDecimal valorMin, BigDecimal valorMax, String tipoPagador, Long consignacaoId, String origem) {
 
     public boolean temBusca() {
         return busca != null && !busca.isBlank();

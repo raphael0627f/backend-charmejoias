@@ -36,6 +36,19 @@ public class ContaReceber extends AuditoriaFinanceira {
     private String pagadorNome;
     private String pagadorDocumento;
 
+    // origem (V72): título gerado a partir do pré-acerto OU do acerto de consignação; nulos nos demais títulos
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "consignacao_id")
+    private com.manager.app.consignacao.Consignacao consignacao;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pre_acerto_id")
+    private com.manager.app.preacerto.PreAcertoConsignacao preAcerto;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "acerto_id")
+    private com.manager.app.acertoconsignacao.AcertoConsignacao acerto;
+
     private String descricao;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

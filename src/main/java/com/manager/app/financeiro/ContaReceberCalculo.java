@@ -85,6 +85,13 @@ public final class ContaReceberCalculo {
         }
     }
 
+    // título gerado a partir de consignação: valor e pagador não mudam (cancelar e gerar de novo), para não divergir do documento de origem
+    public static void validarEdicaoDeTituloDeConsignacao(boolean tituloDeConsignacao, boolean alterouValorOuPagador) {
+        if (tituloDeConsignacao && alterouValorOuPagador) {
+            throw new ItemInvalidoException("O valor e o cliente de título gerado a partir de consignação não podem ser alterados. Cancele o título e gere novamente.");
+        }
+    }
+
     // pagador avulso já validado: nome em maiúsculas e documento só com dígitos (ou null)
     public record PagadorAvulso(String nome, String documento) {
     }

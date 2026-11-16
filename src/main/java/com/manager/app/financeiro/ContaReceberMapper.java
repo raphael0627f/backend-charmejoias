@@ -22,7 +22,7 @@ public class ContaReceberMapper {
 
     public ContaReceberResumoDTO resumo(ContaReceber c, LocalDate hoje, int quantidadeAnexos) {
         return new ContaReceberResumoDTO(c.getId(), c.getNumero(), c.getDescricao(), cliente(c.getCliente()), c.getPagadorNome(),
-                c.getPagadorDocumento(), pagadorExibicao(c), c.getCliente() == null ? "AVULSO" : "CLIENTE", categoria(c.getCategoria()),
+                c.getPagadorDocumento(), pagadorExibicao(c), c.getCliente() == null ? "AVULSO" : "CLIENTE", origem(c), categoria(c.getCategoria()),
                 c.getCentroCusto() == null ? null : new ContaReceberResumoDTO.Ref(c.getCentroCusto().getId(), c.getCentroCusto().getNome()),
                 c.getFormaPrevista() == null ? null : new ContaReceberResumoDTO.Ref(c.getFormaPrevista().getId(), c.getFormaPrevista().getNome()),
                 CalculoFinanceiro.arredondar(c.getValor()), CalculoFinanceiro.arredondar(c.getValorRecebido()),
@@ -38,7 +38,7 @@ public class ContaReceberMapper {
         ContaReceberResumoDTO r = resumo(c, hoje, anexosPorTitulo.getOrDefault(c.getId(), 0));
         ContaReceberDetalheDTO.Cancelamento cancelamento = c.getCancelamentoEm() == null ? null
                 : new ContaReceberDetalheDTO.Cancelamento(c.getCancelamentoMotivo(), c.getCancelamentoEm(), mapper.usuario(c.getCanceladoPor()));
-        return new ContaReceberDetalheDTO(r.id(), r.numero(), r.descricao(), r.cliente(), r.pagadorNome(), r.pagadorDocumento(), r.pagadorExibicao(), r.tipoPagador(), r.categoria(), r.centroCusto(), r.formaPrevista(),
+        return new ContaReceberDetalheDTO(r.id(), r.numero(), r.descricao(), r.cliente(), r.pagadorNome(), r.pagadorDocumento(), r.pagadorExibicao(), r.tipoPagador(), r.origem(), r.categoria(), r.centroCusto(), r.formaPrevista(),
                 r.valor(), r.valorRecebido(), r.valorAberto(), r.emissao(), r.competencia(), r.vencimento(), r.documento(), c.getObservacao(),
                 r.situacao(), r.situacaoExibicao(), r.grupoParcelamentoId(), r.parcelaNumero(), r.parcelaTotal(), cancelamento,
                 c.getCancelamentoMotivo(), c.getCancelamentoEm(), cancelamento == null ? null : cancelamento.por(),
@@ -66,6 +66,14 @@ public class ContaReceberMapper {
     public static String documentoDe(Cliente c) {
         if (c.getCpf() != null && !c.getCpf().isBlank()) return c.getCpf();
         return c.getDocumento() == null || c.getDocumento().isBlank() ? null : c.getDocumento();
+    }
+
+    // origem de consignação (só os ids; as relações são preguiçosas e não são carregadas)
+    public static ContaReceberResumoDTO.Origem origem(ContaReceber c) {
+        if (c.getConsignacao() == null) return null;
+        if (c.getPreAcerto() != null) return new ContaReceberResumoDTO.Origem("PRE_ACERTO", c.getPreAcerto().getId(), c.getConsignacao().getId());
+        if (c.getAcerto() != null) return new ContaReceberResumoDTO.Origem("ACERTO", c.getAcerto().getId(), c.getConsignacao().getId());
+        return null;
     }
 
     // nome de exibição: cliente ou pagador avulso

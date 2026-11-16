@@ -25,6 +25,11 @@ public interface ConsignacaoRepository  extends JpaRepository<Consignacao, Long>
 
     boolean existsByMostruario(Mostruario mostruario);
 
+    // bloqueio pessimista da linha da consignação: serializa a geração de títulos a receber da consignação
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from Consignacao c where c.id = :id")
+    java.util.Optional<Consignacao> findByIdForUpdate(@Param("id") Long id);
+
     // consignações ainda não confirmadas do cliente para uma data de entrega (vínculo automático à montagem)
     List<Consignacao> findByCliente_IdAndDataEntregaAndConfirmadaFalseAndCanceladaFalse(UUID clienteId, LocalDate dataEntrega);
 

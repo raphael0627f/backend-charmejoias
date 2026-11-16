@@ -13,6 +13,11 @@ public interface PreAcertoConsignacaoRepository extends JpaRepository<PreAcertoC
 
     boolean existsByConsignacaoId(Long consignacaoId);
 
+    // bloqueio pessimista da linha (SELECT ... FOR UPDATE): serializa a geração de títulos e a edição do documento
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from PreAcertoConsignacao p where p.id = :id")
+    java.util.Optional<PreAcertoConsignacao> findByIdForUpdate(@Param("id") Long id);
+
     boolean existsByConsignacaoIdAndIdNot(Long consignacaoId, Long idAtual);
 
     // O Hibernate só marca a linha do pré-acerto como "suja" (e dispara

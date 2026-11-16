@@ -23,6 +23,11 @@ public interface AcertoConsignacaoRepository extends JpaRepository<AcertoConsign
 
     boolean existsByConsignacaoId(Long consignacaoId);
 
+    // bloqueio pessimista da linha (SELECT ... FOR UPDATE): serializa a geração de títulos e a edição do documento
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from AcertoConsignacao a where a.id = :id")
+    java.util.Optional<AcertoConsignacao> findByIdForUpdate(@Param("id") Long id);
+
     // usado na listagem de consignações pra marcar "Finalizado" (tem acerto
     // confirmado) vs "Em aberto" — em lote pelos ids da página, não um por um
     @Query("SELECT DISTINCT a.consignacao.id FROM AcertoConsignacao a WHERE a.consignacao.id IN :consignacaoIds AND a.confirmado = true")

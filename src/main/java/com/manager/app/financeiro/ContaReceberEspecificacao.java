@@ -30,6 +30,10 @@ public final class ContaReceberEspecificacao {
             if (f.valorMin() != null) p.add(cb.greaterThanOrEqualTo(root.get("valor"), f.valorMin()));
             if (f.valorMax() != null) p.add(cb.lessThanOrEqualTo(root.get("valor"), f.valorMax()));
             if (f.clienteId() != null) p.add(cb.equal(root.get("cliente").get("id"), f.clienteId()));
+            if (f.consignacaoId() != null) p.add(cb.equal(root.get("consignacao").get("id"), f.consignacaoId()));
+            if (f.origem() != null && !f.origem().isBlank()) {
+                p.add(f.origem().trim().equalsIgnoreCase("PRE_ACERTO") ? cb.isNotNull(root.get("preAcerto")) : cb.isNotNull(root.get("acerto")));
+            }
             if (f.tipoPagador() != null && !f.tipoPagador().isBlank()) {
                 p.add(f.tipoPagador().trim().equalsIgnoreCase("AVULSO") ? cb.isNull(root.get("cliente")) : cb.isNotNull(root.get("cliente")));
             }
