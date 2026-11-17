@@ -98,8 +98,9 @@ class DocumentoFinanceiroCalculoTest {
 
     @Test
     void descricaoAutomaticaEmMaiusculas() {
-        assertThat(DocumentoFinanceiroCalculo.descricaoAutomatica(Tipo.PRE_ACERTO, 12L)).isEqualTo("PRÉ-ACERTO Nº 12");
-        assertThat(DocumentoFinanceiroCalculo.descricaoAutomatica(Tipo.ACERTO, 7L)).isEqualTo("ACERTO Nº 7");
+        assertThat(DocumentoFinanceiroCalculo.descricaoAutomatica(Tipo.PRE_ACERTO, 123L, 206L)).isEqualTo("CONS. 123 - PRÉ-ACERTO 206");
+        assertThat(DocumentoFinanceiroCalculo.descricaoAutomatica(Tipo.PRE_ACERTO, null, 12L)).isEqualTo("PRÉ-ACERTO 12");
+        assertThat(DocumentoFinanceiroCalculo.descricaoAutomatica(Tipo.ACERTO, 5L, 7L)).isEqualTo("CONS. 5 - ACERTO 7");
     }
 
     @Test

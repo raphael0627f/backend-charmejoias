@@ -183,7 +183,7 @@ public class DocumentoFinanceiroService {
         if (r.dataEmissao() != null && r.dataEmissao().isAfter(hoje)) throw new ItemInvalidoException("A data de emissão não pode ser futura.");
         LocalDate emissao = r.dataEmissao() == null ? hoje : r.dataEmissao();
         LocalDate vencimento = r.dataVencimento() == null ? emissao : r.dataVencimento();
-        String descricao = r.descricao() == null || r.descricao().isBlank() ? DocumentoFinanceiroCalculo.descricaoAutomatica(d.tipo(), d.id())
+        String descricao = r.descricao() == null || r.descricao().isBlank() ? DocumentoFinanceiroCalculo.descricaoAutomatica(d.tipo(), d.consignacao() == null ? null : d.consignacao().getId(), d.id())
                 : r.descricao().trim();
         ContaReceberRequestDTO.Parcelamento parcelamento = parcelas == 1 ? null : new ContaReceberRequestDTO.Parcelamento(parcelas, vencimento,
                 r.intervalo() == null ? IntervaloParcelamento.MENSAL : r.intervalo(), r.datas(), null);

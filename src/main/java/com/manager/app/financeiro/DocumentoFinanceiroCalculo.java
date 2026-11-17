@@ -83,7 +83,8 @@ public final class DocumentoFinanceiroCalculo {
     }
 
     // descrição automática do título, em maiúsculas e curta
-    public static String descricaoAutomatica(Tipo tipo, Long documentoId) {
-        return (tipo == Tipo.ACERTO ? "ACERTO" : "PRÉ-ACERTO") + " Nº " + documentoId;
+    public static String descricaoAutomatica(Tipo tipo, Long consignacaoId, Long documentoId) {
+        String documento = (tipo == Tipo.ACERTO ? "ACERTO " : "PRÉ-ACERTO ") + documentoId;
+        return consignacaoId == null ? documento : "CONS. " + consignacaoId + " - " + documento;
     }
 }
