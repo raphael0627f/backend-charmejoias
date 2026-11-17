@@ -88,7 +88,7 @@ public class DocumentoFinanceiroService {
     }
 
     private DocumentoFinanceiroDTOs.Resumo resumo(Documento d) {
-        return resumo(d, d.consignacao() == null ? List.of() : contaReceberRepository.findAtivosDaConsignacao(d.consignacao().getId()));
+        return resumo(d, ativosDe(d));
     }
 
     // ativosDaConsignacao: títulos não cancelados de toda a consignação (no pré-acerto só os próprios entram no saldo)
@@ -120,6 +120,12 @@ public class DocumentoFinanceiroService {
                 motivo == null, motivo, DocumentoFinanceiroCalculo.aviso(d.tipo(), saldo), titulos);
     }
 
+    // títulos não cancelados do documento: os da consignação inteira ou, no pré-acerto sem consignação, apenas os do próprio pré-acerto
+    private List<ContaReceber> ativosDe(Documento d) {
+        if (d.consignacao() != null) return contaReceberRepository.findAtivosDaConsignacao(d.consignacao().getId());
+        return contaReceberRepository.findByPreAcertoIdOrderByIdAsc(d.id()).stream().filter(t -> t.getSituacao() != SituacaoContaReceber.CANCELADO).toList();
+    }
+
     private static BigDecimal soma(List<ContaReceber> titulos, boolean recebido) {
         BigDecimal total = BigDecimal.ZERO.setScale(CalculoFinanceiro.ESCALA);
         for (ContaReceber t : titulos) total = total.add(CalculoFinanceiro.arredondar(recebido ? t.getValorRecebido() : t.getValor()));
@@ -133,8 +139,7 @@ public class DocumentoFinanceiroService {
         List<Long> consignacaoIds = preAcertoRepository.consignacaoIdDe(id);
         if (consignacaoIds.isEmpty()) throw new ObjetoNaoEncontradoException("Pré-acerto de consignação não encontrado. Id: " + id);
         Long consignacaoId = consignacaoIds.get(0);
-        if (consignacaoId == null) throw new ItemInvalidoException("O pré-acerto não possui consignação e não gera título a receber.");
-        bloquearConsignacao(consignacaoId);
+        if (consignacaoId != null) bloquearConsignacao(consignacaoId);
         PreAcertoConsignacao p = preAcertoRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Pré-acerto de consignação não encontrado. Id: " + id));
         return gerar(documentoDe(p), r);
@@ -166,7 +171,8 @@ public class DocumentoFinanceiroService {
         TextoUtils.validarTexto(r.descricao(), "A descrição", 200);
 
         // títulos ativos da consignação bloqueados antes do cálculo: serializa com o cancelamento de cada título
-        List<ContaReceber> ativos = contaReceberRepository.findAtivosDaConsignacaoForUpdate(d.consignacao().getId());
+        List<ContaReceber> ativos = d.consignacao() == null ? ativosDe(d)
+                : contaReceberRepository.findAtivosDaConsignacaoForUpdate(d.consignacao().getId());
         DocumentoFinanceiroDTOs.Resumo antes = resumo(d, ativos);
         if (!antes.podeGerar()) throw new ItemInvalidoException(antes.motivoBloqueio());
 
@@ -194,7 +200,7 @@ public class DocumentoFinanceiroService {
 
         List<ContaReceberResumoDTO> resumos = new ArrayList<>();
         for (ContaReceber t : criados.titulos()) resumos.add(mapper.resumo(t, hoje));
-        List<ContaReceber> ativosDepois = contaReceberRepository.findAtivosDaConsignacao(d.consignacao().getId());
+        List<ContaReceber> ativosDepois = ativosDe(d);
         return new DocumentoFinanceiroDTOs.GerarResposta(criados.grupo(), resumos, recebimento, resumo(d, ativosDepois));
     }
 

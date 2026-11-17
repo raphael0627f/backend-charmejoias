@@ -108,3 +108,9 @@ O frontend deve pedir **confirmação** antes de chamar.
 - No pré-acerto com `bloqueadoParaEdicao`, desabilitar itens/desconto/consignação e manter só a observação editável; exibir `motivoBloqueio`.
 - Exibir `aviso`/`excedente` quando houver.
 - Concorrência: duas requisições simultâneas nunca geram dois grupos nem tituam acima do saldo (o servidor bloqueia a consignação e o documento); a segunda recebe 400.
+
+## Pré-acerto SEM consignação (ajuste 6.1, migration V74)
+- O pré-acerto já podia ser criado sem consignação (`POST/PUT /pre-acertos-consignacao` sem `consignacaoId`, com `clienteId` **obrigatório** e `preco` informado em cada item). Agora ele também **gera título a receber**: `GET /pre-acertos-consignacao/{id}/financeiro` e `POST /pre-acertos-consignacao/{id}/titulos` funcionam normalmente (`podeGerar = true`), com o mesmo contrato, as mesmas regras (valor > 0, um título ativo por pré-acerto, cliente ativo, edição bloqueada com título ativo) e o saldo calculado apenas sobre os títulos do próprio pré-acerto.
+- Diferenças no contrato (nenhum campo novo): `consignacaoId` do resumo passa a poder ser `null`; em `/contas-receber`, `origem` = `{ "tipo": "PRE_ACERTO", "documentoId": <id>, "consignacaoId": null }`; o evento `TITULO_CRIADO` cita apenas "pré-acerto nº X" quando não há consignação. A frase de bloqueio "O pré-acerto não possui consignação..." deixou de existir; o **acerto** continua exigindo consignação (`O acerto não possui consignação e não gera título a receber.`).
+- O frontend deve exibir o botão de gerar título também para pré-acertos sem consignação e tratar `consignacaoId` nulo nas telas (link para a consignação somente quando houver).
+- Descrição automática: `PRÉ-ACERTO Nº <id>` / `ACERTO Nº <id>` (ver acima).

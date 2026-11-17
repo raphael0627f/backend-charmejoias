@@ -70,9 +70,9 @@ public class ContaReceberMapper {
 
     // origem de consignação (só os ids; as relações são preguiçosas e não são carregadas)
     public static ContaReceberResumoDTO.Origem origem(ContaReceber c) {
-        if (c.getConsignacao() == null) return null;
-        if (c.getPreAcerto() != null) return new ContaReceberResumoDTO.Origem("PRE_ACERTO", c.getPreAcerto().getId(), c.getConsignacao().getId());
-        if (c.getAcerto() != null) return new ContaReceberResumoDTO.Origem("ACERTO", c.getAcerto().getId(), c.getConsignacao().getId());
+        Long consignacaoId = c.getConsignacao() == null ? null : c.getConsignacao().getId();
+        if (c.getPreAcerto() != null) return new ContaReceberResumoDTO.Origem("PRE_ACERTO", c.getPreAcerto().getId(), consignacaoId);
+        if (c.getAcerto() != null && consignacaoId != null) return new ContaReceberResumoDTO.Origem("ACERTO", c.getAcerto().getId(), consignacaoId);
         return null;
     }
 

@@ -74,8 +74,10 @@ class DocumentoFinanceiroCalculoTest {
 
     @Test
     void regrasDeBloqueioDaGeracao() {
-        assertThat(DocumentoFinanceiroCalculo.motivoBloqueio(situacao(Tipo.PRE_ACERTO, false, false, true, "100", false, false, "0")))
-                .isEqualTo("O pré-acerto não possui consignação e não gera título a receber.");
+        // pré-acerto sem consignação gera título normalmente; acerto sem consignação continua bloqueado
+        assertThat(DocumentoFinanceiroCalculo.motivoBloqueio(situacao(Tipo.PRE_ACERTO, false, false, true, "100", false, false, "0"))).isNull();
+        assertThat(DocumentoFinanceiroCalculo.motivoBloqueio(situacao(Tipo.ACERTO, false, true, true, "100", false, false, "0")))
+                .isEqualTo("O acerto não possui consignação e não gera título a receber.");
         assertThat(DocumentoFinanceiroCalculo.motivoBloqueio(situacao(Tipo.ACERTO, true, false, true, "100", false, false, "0")))
                 .isEqualTo("O acerto precisa estar confirmado para gerar título a receber.");
         assertThat(DocumentoFinanceiroCalculo.motivoBloqueio(situacao(Tipo.PRE_ACERTO, true, false, true, "0", false, false, "0")))

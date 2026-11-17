@@ -169,9 +169,9 @@ public class ContaReceberService {
     }
 
     private static String descricaoOrigem(ContaReceber c) {
-        if (c.getConsignacao() == null) return "";
+        if (c.getPreAcerto() == null && c.getAcerto() == null) return "";
         String documento = c.getPreAcerto() != null ? "pré-acerto nº " + c.getPreAcerto().getId() : "acerto nº " + c.getAcerto().getId();
-        return " Origem: " + documento + " da consignação nº " + c.getConsignacao().getId() + ".";
+        return " Origem: " + documento + (c.getConsignacao() == null ? "" : " da consignação nº " + c.getConsignacao().getId()) + ".";
     }
 
     // grava o cliente ou o pagador avulso (nunca os dois)
@@ -351,7 +351,7 @@ public class ContaReceberService {
             ContaReceberCalculo.validarVencimento(emissao, vencimento);
             ContaReceberCalculo.validarValorNaoAbaixoDoRecebido(base.valor(), c.getValorRecebido());
             ContaReceberCalculo.validarTrocaDeCliente(trocouCliente, c.getValorRecebido());
-            ContaReceberCalculo.validarEdicaoDeTituloDeConsignacao(c.getConsignacao() != null,
+            ContaReceberCalculo.validarEdicaoDeTituloDeConsignacao(c.getPreAcerto() != null || c.getAcerto() != null,
                     c.getValor().compareTo(base.valor()) != 0 || trocouCliente);
             diff(alteracoes, "descrição", c.getDescricao(), base.descricao());
             diff(alteracoes, "pagador", ContaReceberMapper.pagadorExibicao(c), exibicao(base));

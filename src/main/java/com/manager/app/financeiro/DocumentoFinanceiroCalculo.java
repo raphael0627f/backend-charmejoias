@@ -59,7 +59,8 @@ public final class DocumentoFinanceiroCalculo {
     // motivo formal que impede gerar o título, ou null quando pode gerar. A ordem das regras é a mesma do GET e do POST.
     public static String motivoBloqueio(Situacao s) {
         Tipo t = s.tipo();
-        if (!s.temConsignacao()) return "O pré-acerto não possui consignação e não gera título a receber.";
+        // o pré-acerto pode não ter consignação de referência (título gerado normalmente); o acerto sempre tem
+        if (t == Tipo.ACERTO && !s.temConsignacao()) return "O acerto não possui consignação e não gera título a receber.";
         if (t == Tipo.ACERTO && !s.acertoConfirmado()) return "O acerto precisa estar confirmado para gerar título a receber.";
         if (s.valorDocumento().signum() <= 0) return t.nomeComArtigo() + " deve ter valor maior que zero para gerar título a receber.";
         if (s.tituloProprioAtivo()) return t.nomeComArtigo() + " já possui título a receber ativo.";
