@@ -18,7 +18,7 @@ Os títulos gerados seguem **todas** as regras do Contas a Receber (`docs/financ
 - **Saldo ≤ 0:** não gera título. Se o título ativo estiver acima do valor do acerto, o resumo informa `excedente` e um `aviso` formal (crédito de cliente fica para fase posterior).
 - O título do **acerto só pode ser gerado com o acerto CONFIRMADO**. Pré-acerto **sem consignação não gera título**. Valor do documento ≤ 0 não gera título.
 - O **cliente** é o da consignação/pré-acerto e deve estar **ativo**.
-- Padrões do título: vencimento hoje (editável no pedido), emissão hoje, categoria de receita fixa **Vendas > Consignação** (criada pela V72), descrição automática em maiúsculas (`PRÉ-ACERTO DA CONSIGNAÇÃO Nº 12` / `ACERTO DA CONSIGNAÇÃO Nº 12`; nas parcelas ganha o sufixo `n/N`). Centro de custo e forma de pagamento prevista são opcionais.
+- Padrões do título: vencimento hoje (editável no pedido), emissão hoje, categoria de receita fixa **Vendas > Consignação** (criada pela V72), descrição automática em maiúsculas (`PRÉ-ACERTO Nº <id do pré-acerto>` / `ACERTO Nº <id do acerto>`; títulos já gerados não mudam; a descrição padrão do link de pagamento deriva da descrição do título; nas parcelas ganha o sufixo `n/N`). Centro de custo e forma de pagamento prevista são opcionais.
 - **Recebimento no mesmo ato (opcional):** só para título **simples**. Tudo na mesma transação (título + recebimento); se o recebimento falhar, nada é criado. O comprovante é enviado depois pelo endpoint de anexos existente (`POST /contas-receber/recebimentos/{id}/anexos`).
 
 ### Bloqueio de edição com título ativo
