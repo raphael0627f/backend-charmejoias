@@ -275,48 +275,10 @@ class LinkPagamentoServicosTest {
     }
 
     @Test
-    void marcarPagoMarcaOsDemaisAtivosComoNaoUtilizar() {
-        ContaReceber t = titulo(12, SituacaoContaReceber.ABERTO, "100.00", "0");
-        ContaReceberLinkPagamento a = link(1, t, StatusLinkPagamento.ATIVO);
-        ContaReceberLinkPagamento b = link(2, t, StatusLinkPagamento.ATIVO);
-        ContaReceberLinkPagamento c = link(3, t, StatusLinkPagamento.TITULO_CANCELADO);
-        when(repo.findContaReceberIdById(1L)).thenReturn(Optional.of(12L));
-        when(repo.findById(1L)).thenReturn(Optional.of(a));
-        when(repo.findByContaReceberIdAndStatus(12L, StatusLinkPagamento.ATIVO)).thenReturn(List.of(a, b));
-        InfinitePayDTOs.LinkResponse r = service.marcarPago(1L, new InfinitePayDTOs.MarcarPagoRequest(null, "Conferido"));
-        assertEquals("PAGO_MANUAL", r.status());
-        assertEquals(StatusLinkPagamento.NAO_UTILIZAR, b.getStatus());
-        assertEquals(StatusLinkPagamento.TITULO_CANCELADO, c.getStatus());
-        ArgumentCaptor<ContaReceberEvento> evento = ArgumentCaptor.forClass(ContaReceberEvento.class);
-        verify(eventos).save(evento.capture());
-        assertEquals("LINK_PAGAMENTO_MARCADO_PAGO", evento.getValue().getEvento());
-        // não ativo não pode ser marcado
-        when(repo.findContaReceberIdById(3L)).thenReturn(Optional.of(12L));
-        when(repo.findById(3L)).thenReturn(Optional.of(c));
-        assertThrows(ItemInvalidoException.class, () -> service.marcarPago(3L, null));
-    }
-
-    @Test
-    void marcarPagoValidaORecebimentoInformado() {
-        ContaReceber t = titulo(13, SituacaoContaReceber.ABERTO, "100.00", "0");
-        ContaReceber outro = titulo(14, SituacaoContaReceber.ABERTO, "100.00", "0");
-        ContaReceberLinkPagamento a = link(1, t, StatusLinkPagamento.ATIVO);
-        when(repo.findContaReceberIdById(1L)).thenReturn(Optional.of(13L));
-        when(repo.findById(1L)).thenReturn(Optional.of(a));
-        ContaReceberRecebimento deOutroTitulo = new ContaReceberRecebimento();
-        deOutroTitulo.setContaReceber(outro);
-        when(recebimentoRepo.findById(50L)).thenReturn(Optional.of(deOutroTitulo));
-        assertThrows(ItemInvalidoException.class, () -> service.marcarPago(1L, new InfinitePayDTOs.MarcarPagoRequest(50L, null)));
-        ContaReceberRecebimento estornado = new ContaReceberRecebimento();
-        estornado.setContaReceber(t);
-        estornado.setEstornada(true);
-        when(recebimentoRepo.findById(51L)).thenReturn(Optional.of(estornado));
-        assertThrows(ItemInvalidoException.class, () -> service.marcarPago(1L, new InfinitePayDTOs.MarcarPagoRequest(51L, null)));
-        ContaReceberRecebimento bom = new ContaReceberRecebimento();
-        bom.setContaReceber(t);
-        when(recebimentoRepo.findById(52L)).thenReturn(Optional.of(bom));
-        assertEquals(52L, service.marcarPago(1L, new InfinitePayDTOs.MarcarPagoRequest(52L, null)).recebimentoId());
-        assertEquals(StatusLinkPagamento.PAGO_MANUAL, a.getStatus());
+    void marcarPagoAvulsoERecusadoSempreComOrientacaoFormal() {
+        ItemInvalidoException e = assertThrows(ItemInvalidoException.class, () -> service.marcarPago(1L, null));
+        assertEquals("Não é possível marcar o link como pago sem registrar o recebimento. Registre o recebimento do título informando o link de pagamento utilizado.", e.getMessage());
+        assertThrows(ItemInvalidoException.class, () -> service.marcarPago(1L, new InfinitePayDTOs.MarcarPagoRequest(52L, null)));
     }
 
     @Test

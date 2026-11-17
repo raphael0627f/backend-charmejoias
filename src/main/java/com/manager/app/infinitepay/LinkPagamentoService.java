@@ -143,23 +143,9 @@ public class LinkPagamentoService {
 
     // ---------- marcar como pago ----------
 
-    @Transactional
+    // a marcação avulsa foi removida: o link só vira PAGO_MANUAL junto com o recebimento (POST /contas-receber/{id}/recebimentos com linkId)
     public InfinitePayDTOs.LinkResponse marcarPago(Long linkId, InfinitePayDTOs.MarcarPagoRequest r) {
-        Long tituloId = repository.findContaReceberIdById(linkId).orElseThrow(() -> new ObjetoNaoEncontradoException("Link de pagamento não encontrado."));
-        ContaReceber titulo = contaReceberService.buscarComLock(tituloId);
-        ContaReceberLinkPagamento link = repository.findById(linkId).orElseThrow(() -> new ObjetoNaoEncontradoException("Link de pagamento não encontrado."));
-        if (link.getStatus() != StatusLinkPagamento.ATIVO) {
-            throw new ItemInvalidoException("Somente links ativos podem ser marcados como pagos.");
-        }
-        Long recebimentoId = r == null ? null : r.recebimentoId();
-        if (recebimentoId != null) {
-            ContaReceberRecebimento rec = recebimentoRepository.findById(recebimentoId)
-                    .orElseThrow(() -> new ItemInvalidoException("O recebimento informado não foi encontrado."));
-            if (!rec.getContaReceber().getId().equals(titulo.getId())) throw new ItemInvalidoException("O recebimento informado não pertence ao título do link.");
-            if (rec.isEstornada()) throw new ItemInvalidoException("O recebimento informado foi estornado.");
-        }
-        cicloVida.marcarPago(link, recebimentoId, r == null ? null : r.observacao());
-        return resposta(link, configuracaoService.atual(), false);
+        throw new ItemInvalidoException("Não é possível marcar o link como pago sem registrar o recebimento. Registre o recebimento do título informando o link de pagamento utilizado.");
     }
 
     // ---------- e-mail (atrás de flag) ----------

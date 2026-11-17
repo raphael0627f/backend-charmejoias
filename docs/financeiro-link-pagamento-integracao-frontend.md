@@ -85,13 +85,9 @@ Somente leitura, para quem gera links (sem exigir `INFINITEPAY_GERENCIAR`). **N�
 ## Listar — `GET /contas-receber/{id}/links-pagamento` (200)
 Lista de links do título, do mais recente ao mais antigo, no formato acima (`reaproveitado` sempre `false`). Título inexistente: 404.
 
-## Marcar como pago manualmente — `POST /links-pagamento/{id}/marcar-pago`
-```json
-{ "recebimentoId": 40, "observacao": "Pago pelo link; conferido no extrato." }
-```
-- Corpo opcional. `recebimentoId` (opcional): o recebimento **ativo e do mesmo título** que corresponde ao pagamento. `observacao` até 500.
-- Só link `ATIVO`. O link vira `PAGO_MANUAL`; os **demais links ATIVOS do mesmo título viram `NAO_UTILIZAR`**. Evento `LINK_PAGAMENTO_MARCADO_PAGO`. Marcar **não** registra recebimento algum: a baixa é feita pela tela de recebimento.
-- Resposta 200: o link atualizado. Erros: 404; 400 `Somente links ativos podem ser marcados como pagos.`; 400 recebimento de outro título ou estornado.
+## Marcar como pago manualmente — REMOVIDO (`POST /links-pagamento/{id}/marcar-pago`)
+A marcação avulsa **não existe mais**: o endpoint responde sempre **400** `Não é possível marcar o link como pago sem registrar o recebimento. Registre o recebimento do título informando o link de pagamento utilizado.` (nada é alterado). O frontend deve remover o botão "marcar como pago" e usar **somente** o recebimento com `linkId` (abaixo), que baixa o título e marca o link como `PAGO_MANUAL` (vinculando `recebimentoId`) na mesma transação.
+- Recebimento parcial: o título fica `RECEBIDO_PARCIAL` com saldo = valor − recebido; o **valor sugerido** no formulário de recebimento deve ser o **saldo** do título (`valorAberto` do detalhe), não o valor cheio.
 
 ## Recebimento manual com link — campo `linkId`
 `POST /contas-receber/{id}/recebimentos` (e o recebimento no mesmo ato **não** usa) aceita o campo **opcional** `linkId` no corpo atual:
