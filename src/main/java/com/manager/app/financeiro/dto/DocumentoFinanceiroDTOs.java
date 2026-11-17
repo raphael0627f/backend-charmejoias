@@ -25,7 +25,8 @@ public final class DocumentoFinanceiroDTOs {
 
     // todos os campos são opcionais; sem corpo valem os padrões (título simples com vencimento hoje)
     public record GerarRequest(LocalDate dataVencimento, Integer quantidadeParcelas, IntervaloParcelamento intervalo, List<LocalDate> datas,
-                               String descricao, Long centroCustoId, Long formaPagamentoId, String observacao, RecebimentoDTOs.Request recebimento) {
+                               String descricao, Long centroCustoId, Long formaPagamentoId, String observacao, RecebimentoDTOs.Request recebimento,
+                               LocalDate dataEmissao) {
     }
 
     public record GerarResposta(java.util.UUID grupoParcelamentoId, List<ContaReceberResumoDTO> titulos,

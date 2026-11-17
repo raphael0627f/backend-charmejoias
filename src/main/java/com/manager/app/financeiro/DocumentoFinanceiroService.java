@@ -157,7 +157,7 @@ public class DocumentoFinanceiroService {
 
     private DocumentoFinanceiroDTOs.GerarResposta gerar(Documento d, DocumentoFinanceiroDTOs.GerarRequest pedido) {
         DocumentoFinanceiroDTOs.GerarRequest r = pedido == null
-                ? new DocumentoFinanceiroDTOs.GerarRequest(null, null, null, null, null, null, null, null, null) : pedido;
+                ? new DocumentoFinanceiroDTOs.GerarRequest(null, null, null, null, null, null, null, null, null, null) : pedido;
         int parcelas = r.quantidadeParcelas() == null ? 1 : r.quantidadeParcelas();
         if (parcelas < 1) throw new ItemInvalidoException("A quantidade de parcelas deve ser no mínimo 1.");
         if (parcelas > 1 && r.recebimento() != null) {
@@ -173,13 +173,16 @@ public class DocumentoFinanceiroService {
         CategoriaReceita categoria = categoriaRepository.findFirstByNomeIgnoreCaseAndPaiNomeIgnoreCase(CATEGORIA_SUBGRUPO, CATEGORIA_GRUPO)
                 .orElseThrow(() -> new ItemInvalidoException("A categoria de receita \"" + CATEGORIA_GRUPO + " > " + CATEGORIA_SUBGRUPO + "\" não foi encontrada."));
         LocalDate hoje = LocalDate.now();
-        LocalDate vencimento = r.dataVencimento() == null ? hoje : r.dataVencimento();
+        // dataEmissao (opcional, aditivo): permite lançar o título com a data real do documento (vencimento não pode ser anterior à emissão)
+        if (r.dataEmissao() != null && r.dataEmissao().isAfter(hoje)) throw new ItemInvalidoException("A data de emissão não pode ser futura.");
+        LocalDate emissao = r.dataEmissao() == null ? hoje : r.dataEmissao();
+        LocalDate vencimento = r.dataVencimento() == null ? emissao : r.dataVencimento();
         String descricao = r.descricao() == null || r.descricao().isBlank() ? DocumentoFinanceiroCalculo.descricaoAutomatica(d.tipo(), d.consignacao().getId())
                 : r.descricao().trim();
         ContaReceberRequestDTO.Parcelamento parcelamento = parcelas == 1 ? null : new ContaReceberRequestDTO.Parcelamento(parcelas, vencimento,
                 r.intervalo() == null ? IntervaloParcelamento.MENSAL : r.intervalo(), r.datas(), null);
         ContaReceberRequestDTO pedidoTitulo = new ContaReceberRequestDTO(descricao, d.cliente().getId(), null, null, categoria.getId(), r.centroCustoId(),
-                antes.saldoATitular(), hoje, null, vencimento, null, r.formaPagamentoId(), r.observacao(), parcelamento);
+                antes.saldoATitular(), emissao, null, vencimento, null, r.formaPagamentoId(), r.observacao(), parcelamento);
 
         ContaReceberService.Criados criados = contaReceberService.criarTitulos(pedidoTitulo,
                 new ContaReceberService.Origem(d.consignacao(), d.preAcerto(), d.acerto()));

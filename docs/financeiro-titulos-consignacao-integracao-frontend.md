@@ -66,7 +66,7 @@ O frontend deve pedir **confirmação** antes de chamar.
   "recebimento": { "dataRecebimento": "2026-11-16", "valorPrincipal": 500.00, "juros": 0, "multa": 0, "desconto": 0,
                    "bancoId": 1, "formaPagamentoId": 3, "observacao": "Pago em dinheiro" } }
 ```
-- Todos os campos são opcionais: `dataVencimento` (padrão hoje; não pode ser anterior a hoje); `quantidadeParcelas` (padrão 1 = simples; 2 a 120); `intervalo` (`MENSAL` padrão, `QUINZENAL`, `SEMANAL`, `PERSONALIZADO` com `datas` de exatamente `quantidadeParcelas` datas); `descricao` (até 200; padrão automático); `centroCustoId`, `formaPagamentoId` (ativos), `observacao` (até 1000).
+- Todos os campos são opcionais: `dataEmissao` (**aditivo**; padrão hoje; não pode ser futura; permite lançar título com a data real do documento, p. ex. carga de pré-acertos antigos); `dataVencimento` (padrão = emissão; não pode ser anterior à **emissão**, ou seja, a hoje quando `dataEmissao` não é enviada); `quantidadeParcelas` (padrão 1 = simples; 2 a 120); `intervalo` (`MENSAL` padrão, `QUINZENAL`, `SEMANAL`, `PERSONALIZADO` com `datas` de exatamente `quantidadeParcelas` datas); `descricao` (até 200; padrão automático); `centroCustoId`, `formaPagamentoId` (ativos), `observacao` (até 1000).
 - `recebimento` (opcional, **somente título simples**): mesmas regras do recebimento normal (`docs/financeiro-recebimentos-integracao-frontend.md`): `dataRecebimento` não futura, `valorPrincipal` até o valor do título, `juros`/`multa`/`desconto` opcionais, `bancoId` e `formaPagamentoId` obrigatórios e ativos.
 - Resposta:
 ```json
