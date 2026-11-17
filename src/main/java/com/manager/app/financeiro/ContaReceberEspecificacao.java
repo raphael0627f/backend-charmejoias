@@ -94,6 +94,7 @@ public final class ContaReceberEspecificacao {
         List<Predicate> ou = new ArrayList<>();
         ou.add(SpecificationUtils.likeIgnoreCase(cb, root.get("descricao"), termo, ModoBusca.MEIO));
         ou.add(SpecificationUtils.likeIgnoreCase(cb, root.get("documento"), termo, ModoBusca.MEIO));
+        ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), termo, ModoBusca.MEIO));
         ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), termo, ModoBusca.MEIO));
         ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("cpf"), termo, ModoBusca.MEIO));
         ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("documento"), termo, ModoBusca.MEIO));

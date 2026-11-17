@@ -83,7 +83,7 @@ public class ContaReceberMapper {
 
     private ContaReceberResumoDTO.ClienteRef cliente(Cliente c) {
         if (c == null) return null;
-        return new ContaReceberResumoDTO.ClienteRef(c.getId(), c.getNome(), documentoDe(c));
+        return new ContaReceberResumoDTO.ClienteRef(c.getId(), c.getCodigo(), c.getNome(), documentoDe(c));
     }
 
     private ContaReceberResumoDTO.CategoriaRef categoria(CategoriaReceita c) {

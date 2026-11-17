@@ -29,6 +29,6 @@ public final class ContaReceberAcoesDTO {
     public record Item(Long id, Long numero, boolean cancelado, String menssage) {
     }
 
-    public record Cliente(UUID id, String nome, String documento, String cidade) {
+    public record Cliente(UUID id, String codigo, String nome, String documento, String cidade) {
     }
 }

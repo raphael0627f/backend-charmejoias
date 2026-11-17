@@ -22,7 +22,7 @@ public record ContaReceberResumoDTO(Long id, Long numero, String descricao, Clie
     public record Origem(String tipo, Long documentoId, Long consignacaoId) {
     }
 
-    public record ClienteRef(UUID id, String nome, String documento) {
+    public record ClienteRef(UUID id, String codigo, String nome, String documento) {
     }
 
     // grupoId/grupoNome nulos quando a categoria escolhida é um grupo

@@ -291,7 +291,7 @@ public class ContaReceberService {
         return mapa;
     }
 
-    // seletor de clientes: ativos, por nome ou CPF/documento (contém, sem diferenciar caixa), até 20
+    // seletor de clientes: ativos, por código, nome ou CPF/documento (contém, sem diferenciar caixa), até 20
     @Transactional(readOnly = true)
     public List<ContaReceberAcoesDTO.Cliente> buscarClientes(String busca) {
         StringBuilder jpql = new StringBuilder("select c from Cliente c where c.ativo = true");
@@ -300,7 +300,7 @@ public class ContaReceberService {
         if (busca != null && !busca.isBlank()) {
             String termo = busca.trim().toLowerCase().replace("\u0000", "").replace("!", "!!").replace("%", "!%").replace("_", "!_");
             padrao = "%" + termo + "%";
-            jpql.append(" and (lower(c.nome) like :p escape '!' or lower(c.cpf) like :p escape '!' or lower(c.documento) like :p escape '!'");
+            jpql.append(" and (lower(c.codigo) like :p escape '!' or lower(c.nome) like :p escape '!' or lower(c.cpf) like :p escape '!' or lower(c.documento) like :p escape '!'");
             if (padraoDigitos != null) jpql.append(" or c.cpf like :d or c.documento like :d");
             jpql.append(")");
         }
@@ -308,7 +308,7 @@ public class ContaReceberService {
         var consulta = em.createQuery(jpql.toString(), Cliente.class).setMaxResults(LIMITE_CLIENTES);
         if (padrao != null) consulta.setParameter("p", padrao);
         if (padraoDigitos != null) consulta.setParameter("d", padraoDigitos);
-        return consulta.getResultList().stream().map(c -> new ContaReceberAcoesDTO.Cliente(c.getId(), c.getNome(),
+        return consulta.getResultList().stream().map(c -> new ContaReceberAcoesDTO.Cliente(c.getId(), c.getCodigo(), c.getNome(),
                 ContaReceberMapper.documentoDe(c), cidade(c))).toList();
     }
 

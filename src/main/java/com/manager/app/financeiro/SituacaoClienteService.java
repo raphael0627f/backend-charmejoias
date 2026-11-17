@@ -33,7 +33,7 @@ public class SituacaoClienteService {
 
     // clientes com saldo em aberto: um registro por cliente com os agregados dos títulos ABERTO/RECEBIDO_PARCIAL
     private static final String AGREGADO = """
-            select c.cliente_id, cl.nome, cl.cpf, cl.documento,
+            select c.cliente_id, cl.codigo, cl.nome, cl.cpf, cl.documento,
                    sum(c.valor - c.valor_recebido) as aberto,
                    coalesce(sum(case when c.vencimento < cast(:hoje as date) then c.valor - c.valor_recebido end), 0) as vencido,
                    count(*) as qtd,
@@ -41,10 +41,10 @@ public class SituacaoClienteService {
             from conta_receber c
             join clientes cl on cl.id = c.cliente_id
             where c.situacao in ('ABERTO', 'RECEBIDO_PARCIAL') and c.valor - c.valor_recebido > 0
-              and (cast(:busca as text) is null or lower(cl.nome) like cast(:busca as text) escape '!'
+              and (cast(:busca as text) is null or lower(cl.codigo) like cast(:busca as text) escape '!' or lower(cl.nome) like cast(:busca as text) escape '!'
                    or lower(cl.cpf) like cast(:busca as text) escape '!' or lower(cl.documento) like cast(:busca as text) escape '!'
                    or cl.cpf like cast(:buscaDigitos as text) or cl.documento like cast(:buscaDigitos as text))
-            group by c.cliente_id, cl.nome, cl.cpf, cl.documento
+            group by c.cliente_id, cl.codigo, cl.nome, cl.cpf, cl.documento
             having (cast(:somenteVencidos as boolean) = false
                     or sum(case when c.vencimento < cast(:hoje as date) then c.valor - c.valor_recebido else 0 end) > 0)
             """;
@@ -98,7 +98,7 @@ public class SituacaoClienteService {
     private static SituacaoClienteDTOs.Cliente identificacao(Cliente c) {
         Endereco e = c.getEnderecoPrincipal();
         if (e == null && !c.getEnderecos().isEmpty()) e = c.getEnderecos().get(0);
-        return new SituacaoClienteDTOs.Cliente(c.getId(), c.getNome(), ContaReceberMapper.documentoDe(c), e == null ? null : e.getMunicipio());
+        return new SituacaoClienteDTOs.Cliente(c.getId(), c.getCodigo(), c.getNome(), ContaReceberMapper.documentoDe(c), e == null ? null : e.getMunicipio());
     }
 
     // ---------- visão geral ----------
@@ -148,7 +148,7 @@ public class SituacaoClienteService {
         if (documento != null && documento.isBlank()) documento = null;
         LocalDate data = rs.getObject("ur_data", LocalDate.class);
         BigDecimal valor = rs.getBigDecimal("ur_valor");
-        return new SituacaoClienteDTOs.Linha(new SituacaoClienteDTOs.Cliente(rs.getObject("cliente_id", UUID.class), rs.getString("nome"), documento, rs.getString("cidade")),
+        return new SituacaoClienteDTOs.Linha(new SituacaoClienteDTOs.Cliente(rs.getObject("cliente_id", UUID.class), rs.getString("codigo"), rs.getString("nome"), documento, rs.getString("cidade")),
                 CalculoFinanceiro.arredondar(rs.getBigDecimal("aberto")), CalculoFinanceiro.arredondar(rs.getBigDecimal("vencido")), rs.getInt("qtd"), rs.getInt("atraso"),
                 data == null ? null : new SituacaoClienteDTOs.UltimoRecebimento(data, CalculoFinanceiro.arredondar(valor)));
     }

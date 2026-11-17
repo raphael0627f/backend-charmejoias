@@ -115,7 +115,7 @@ public class DocumentoFinanceiroService {
                 t.getParcelaNumero(), t.getParcelaTotal(), CalculoFinanceiro.arredondar(t.getValor()), t.getVencimento(), t.getSituacao(),
                 CalculoFinanceiro.arredondar(t.getValorRecebido()))).toList();
         return new DocumentoFinanceiroDTOs.Resumo(d.tipo().name(), d.id(), d.consignacao() == null ? null : d.consignacao().getId(),
-                cliente == null ? null : cliente.getNome(), d.valor(), titulado, recebido, saldo.saldoATitular(), saldo.excedente(),
+                cliente == null ? null : cliente.getCodigo(), cliente == null ? null : cliente.getNome(), d.valor(), titulado, recebido, saldo.saldoATitular(), saldo.excedente(),
                 DocumentoFinanceiroCalculo.excedenteRecebido(d.valor(), recebido), tituladoPreAcerto, tituloProprioAtivo, bloqueadoParaEdicao,
                 motivo == null, motivo, DocumentoFinanceiroCalculo.aviso(d.tipo(), saldo), titulos);
     }

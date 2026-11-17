@@ -42,7 +42,7 @@ Sem permissão: **403 antes de qualquer validação do corpo** (inclusive corpo 
 
 ### `GET /pre-acertos-consignacao/{id}/financeiro` e `GET /acertos-consignacao/{id}/financeiro` (200)
 ```json
-{ "tipo": "PRE_ACERTO", "documentoId": 12, "consignacaoId": 7, "clienteNome": "Maria",
+{ "tipo": "PRE_ACERTO", "documentoId": 12, "consignacaoId": 7, "clienteCodigo": "C0123", "clienteNome": "Maria",
   "valorDocumento": 1000.00, "valorTitulado": 400.00, "valorRecebido": 100.00,
   "saldoATitular": 600.00, "excedente": 0.00, "excedenteRecebido": 0.00,
   "valorTituladoPreAcerto": null, "tituloAtivo": true, "bloqueadoParaEdicao": true,

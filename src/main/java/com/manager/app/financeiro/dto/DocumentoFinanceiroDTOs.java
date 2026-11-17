@@ -17,7 +17,7 @@ public final class DocumentoFinanceiroDTOs {
     }
 
     // tipo: PRE_ACERTO ou ACERTO. valorTituladoPreAcerto só existe no acerto.
-    public record Resumo(String tipo, Long documentoId, Long consignacaoId, String clienteNome, BigDecimal valorDocumento, BigDecimal valorTitulado,
+    public record Resumo(String tipo, Long documentoId, Long consignacaoId, String clienteCodigo, String clienteNome, BigDecimal valorDocumento, BigDecimal valorTitulado,
                          BigDecimal valorRecebido, BigDecimal saldoATitular, BigDecimal excedente, BigDecimal excedenteRecebido,
                          BigDecimal valorTituladoPreAcerto, boolean tituloAtivo, boolean bloqueadoParaEdicao, boolean podeGerar,
                          String motivoBloqueio, String aviso, List<Titulo> titulos) {

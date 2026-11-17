@@ -35,7 +35,7 @@ Leitura aceita qualquer uma das três primeiras. Sem permissão: **403 antes de 
 
 ### Resumo do título (lista, criação, parcelas)
 ```json
-{ "id": 1, "numero": 1, "descricao": "...", "cliente": { "id": "uuid", "nome": "Maria", "documento": "12345678900" },
+{ "id": 1, "numero": 1, "descricao": "...", "cliente": { "id": "uuid", "codigo": "C0123", "nome": "Maria", "documento": "12345678900" },
   "categoria": { "id": 2, "nome": "Vendas de joias", "grupoId": 1, "grupoNome": "Vendas" }, "centroCusto": null, "formaPrevista": { "id": 3, "nome": "Boleto" },
   "valor": 500.00, "valorRecebido": 0.00, "valorAberto": 500.00, "emissao": "2026-11-16", "competencia": "2026-12", "vencimento": "2026-12-10",
   "documento": "NF 123", "situacao": "ABERTO", "situacaoExibicao": "ABERTO", "grupoParcelamentoId": "uuid", "parcelaNumero": 1, "parcelaTotal": 3,
@@ -46,7 +46,7 @@ Leitura aceita qualquer uma das três primeiras. Sem permissão: **403 antes de 
 
 ### `GET /contas-receber` — lista paginada
 Parâmetros (todos opcionais): `vencimentoDe`, `vencimentoAte`, `emissaoDe`, `emissaoAte`, `recebimentoDe`, `recebimentoAte`, `situacao` (repetível; aceita `VENCIDO`),
-`busca` (descrição, nome do cliente, documento do título, CPF/documento do cliente e número, com `#` opcional), `clienteId`, `categoriaId` (grupo traz os subgrupos), `centroCustoId`,
+`busca` (descrição, **código do cliente**, nome do cliente, documento do título, CPF/documento do cliente e número, com `#` opcional), `clienteId`, `categoriaId` (grupo traz os subgrupos), `centroCustoId`,
 `formaPrevistaId`, `bancoId`, `valorMin`, `valorMax`, `ordenar` (`vencimento` [padrão], `valor`, `numero`, `cliente`, `situacao`), `direcao` (`asc`|`desc`), `page` (0), `size` (20, máximo 200).
 - O filtro `situacao=ABERTO` corresponde à situação gravada (inclui os atrasados, como no Contas a Pagar); `situacao=VENCIDO` retorna só os atrasados. Combine os dois para ver todos os em aberto.
 - Sem filtro de data, de busca nem de situação, o backend aplica o **mês atual** no vencimento; o frontend normalmente envia o período.
@@ -77,7 +77,7 @@ Recusado em título já cancelado e em título com recebimento ativo (400: estor
 Cada título em transação própria: `{ "cancelados": 2, "recusados": 1, "resultados": [ { "id", "numero", "cancelado": true|false, "menssage": null|"..." } ] }`. Lista vazia, ids nulos, mais de 200 ou motivo curto → 400 para o pedido inteiro.
 
 ### `GET /contas-receber/clientes?busca=maria` — seletor de clientes
-Até **20** clientes **ativos**, por nome ou CPF/documento (contém, sem diferenciar maiúsculas; o documento é devolvido e guardado **sem máscara**, mas a busca aceita a entrada mascarada, p. ex. `111.444.777-35` ou `12.345.678/0001-95`, e encontra o mesmo cliente que `11144477735`; vale também para o filtro `busca` da lista `/contas-receber` e da visão geral `/contas-receber/clientes/situacao`): `[ { "id": "uuid", "nome": "Maria", "documento": "12345678900", "cidade": "Campinas" } ]`
+Até **20** clientes **ativos**, por **código**, nome ou CPF/documento (contém, sem diferenciar maiúsculas; o documento é devolvido e guardado **sem máscara**, mas a busca aceita a entrada mascarada, p. ex. `111.444.777-35` ou `12.345.678/0001-95`, e encontra o mesmo cliente que `11144477735`; vale também para o filtro `busca` da lista `/contas-receber` e da visão geral `/contas-receber/clientes/situacao`): `[ { "id": "uuid", "nome": "Maria", "documento": "12345678900", "cidade": "Campinas" } ]`
 (`cidade` = município do endereço principal). Acessível com `CONTA_RECEBER_VISUALIZAR`, `GERENCIAR` ou `RECEBER`, **sem exigir permissão de cliente**. Sem `busca`, devolve os primeiros 20 por nome.
 
 ### Duplicar
@@ -160,3 +160,10 @@ A descrição da entrada no extrato passa a usar o nome de exibição: `Recebime
 ### O que não muda
 - `GET /contas-receber/clientes` (seletor) e a **situação do cliente** (`/contas-receber/clientes/{id}/situacao` e `/contas-receber/clientes/situacao`): continuam **só para clientes cadastrados**; títulos avulsos não entram nesses cálculos nem nos totais.
 - Cancelamento, lote, anexos, comprovantes, estorno: sem mudança de regra, funcionam igualmente para título avulso.
+
+## Busca de cliente pelo código (campo `codigo` do cadastro)
+
+- **Busca parcial, sem diferenciar maiúsculas**, junto com nome/documento: `GET /contas-receber?busca=`, `GET /contas-receber/clientes?busca=` (seletor) e `GET /contas-receber/clientes/situacao?busca=` (situação geral). Paginação, ordenação e permissões não mudam.
+- Campo **aditivo `codigo`** (string, pode ser `null`) nos objetos de cliente: `cliente` dos títulos (`ClienteRef`: lista, detalhe, criação), itens do seletor `/contas-receber/clientes`, e o `cliente` da situação (`/contas-receber/clientes/{id}/situacao` e `/contas-receber/clientes/situacao`).
+- O resumo financeiro do pré-acerto/acerto (`GET .../financeiro`) ganha `clienteCodigo` (aditivo, ao lado de `clienteNome`).
+- Contas a Pagar e Movimentações não pesquisam clientes (favorecido/fornecedor e movimentos): sem alteração. As listas de consignação, pré-acerto e acerto já pesquisavam pelo código do cliente.

@@ -10,7 +10,7 @@ public final class SituacaoClienteDTOs {
 
     private SituacaoClienteDTOs() {}
 
-    public record Cliente(UUID id, String nome, String documento, String cidade) {
+    public record Cliente(UUID id, String codigo, String nome, String documento, String cidade) {
     }
 
     public record Faixa(BigDecimal valor, int quantidade) {
