@@ -67,7 +67,7 @@ public class CreditoClienteService {
         lote.setValorOriginal(CalculoFinanceiro.arredondar(e.getValor()));
         lote.setCreatedBy(usuario);
         loteRepository.save(lote);
-        movimento(lote, CreditoClienteMovimento.Tipo.ENTRADA, lote.getValorOriginal(), "Excedente do acerto nº " + e.getAcerto().getId() + " destinado como crédito.", usuario);
+        movimento(lote, CreditoClienteMovimento.Tipo.ENTRADA, lote.getValorOriginal(), "Excedente do acerto Nº " + e.getAcerto().getId() + " (consignação Nº " + e.getConsignacao().getId() + ") destinado como crédito.", usuario);
         e.setSituacao(ExcedenteAcerto.Situacao.CREDITO);
         e.setDestino(ExcedenteAcerto.Destino.CREDITO);
         e.setDestinadoEm(LocalDateTime.now());
@@ -173,7 +173,8 @@ public class CreditoClienteService {
             LocalDate dia = m.getDataHora().toLocalDate();
             if ((de != null && dia.isBefore(de)) || (ate != null && dia.isAfter(ate))) continue;
             todos.add(new CreditoClienteDTOs.Movimento(m.getId(), m.getTipo().name(), CalculoFinanceiro.arredondar(m.getValor()), m.getLote().getId(), m.getContaReceberId(),
-                    m.getRecebimentoId(), m.getMotivo(), usuarioMapper.toResumoDTO(m.getUsuario()), m.getDataHora(), CalculoFinanceiro.arredondar(saldo)));
+                    m.getRecebimentoId(), m.getMotivo(), usuarioMapper.toResumoDTO(m.getUsuario()), m.getDataHora(), CalculoFinanceiro.arredondar(saldo),
+                    origem(m.getLote())[0], origem(m.getLote())[1]));
         }
         Collections.reverse(todos);
         int tamanho = Math.max(1, Math.min(size, 200));
@@ -196,7 +197,13 @@ public class CreditoClienteService {
     private CreditoClienteDTOs.Lote lote(CreditoClienteLote l) {
         return new CreditoClienteDTOs.Lote(l.getId(), l.getOrigemTipo().name(), l.getOrigemId(), CalculoFinanceiro.arredondar(l.getValorOriginal()),
                 CalculoFinanceiro.arredondar(l.getValorUtilizado()), CalculoFinanceiro.arredondar(l.getDisponivel()), l.getSituacao().name(), l.getMotivo(), l.getCreatedAt(),
-                usuarioMapper.toResumoDTO(l.getCreatedBy()));
+                usuarioMapper.toResumoDTO(l.getCreatedBy()), origem(l)[0], origem(l)[1]);
+    }
+
+    // acerto e consignação de origem do lote (somente lote de excedente de acerto); {null, null} nos demais
+    private Long[] origem(CreditoClienteLote l) {
+        if (l.getOrigemTipo() != CreditoClienteLote.Origem.EXCEDENTE_ACERTO || l.getOrigemId() == null) return new Long[]{null, null};
+        return excedenteRepository.findById(l.getOrigemId()).map(e -> new Long[]{e.getAcerto().getId(), e.getConsignacao().getId()}).orElse(new Long[]{null, null});
     }
 
     private void movimento(CreditoClienteLote lote, CreditoClienteMovimento.Tipo tipo, BigDecimal valor, String motivo, Usuario usuario) {

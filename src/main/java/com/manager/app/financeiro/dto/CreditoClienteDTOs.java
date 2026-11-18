@@ -31,14 +31,14 @@ public final class CreditoClienteDTOs {
     }
 
     public record Lote(Long id, String origemTipo, Long origemId, BigDecimal valorOriginal, BigDecimal valorUtilizado, BigDecimal disponivel, String situacao,
-                       String motivo, LocalDateTime criadoEm, UsuarioResumoDTO criadoPor) {
+                       String motivo, LocalDateTime criadoEm, UsuarioResumoDTO criadoPor, Long acertoId, Long consignacaoId) {
     }
 
     public record Credito(BigDecimal saldo, List<Lote> lotes) {
     }
 
     public record Movimento(Long id, String tipo, BigDecimal valor, Long loteId, Long contaReceberId, Long recebimentoId, String motivo, UsuarioResumoDTO usuario,
-                            LocalDateTime dataHora, BigDecimal saldoApos) {
+                            LocalDateTime dataHora, BigDecimal saldoApos, Long acertoId, Long consignacaoId) {
     }
 
     public record Extrato(BigDecimal saldoAtual, List<Movimento> content, int page, int size, long totalElements, int totalPages) {

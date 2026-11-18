@@ -20,6 +20,9 @@ Permissões (fase 1, relogar): consulta = qualquer entre `CREDITO_CLIENTE_VISUAL
 - **GET `/clientes/{clienteId}/credito/extrato?de=AAAA-MM-DD&ate=AAAA-MM-DD&page=0&size=20`** → `{ saldoAtual, content: [Movimento], page, size, totalElements, totalPages }`, do mais recente ao mais antigo.
   `Movimento`: `{ id, tipo (ENTRADA|SAIDA|ESTORNO_SAIDA|ESTORNO_ENTRADA), valor, loteId, contaReceberId, recebimentoId, motivo, usuario, dataHora, saldoApos }`. O extrato é append-only; correções entram como estorno. `saldoApos` é o saldo do cliente após o movimento (independe do filtro de datas). Cliente inexistente: 404.
 
+### Origem do lote (campos adicionais)
+`Lote` e `Movimento` trazem também **`acertoId`** e **`consignacaoId`** (acerto e consignação de origem do excedente; nulos no lançamento manual) para exibir "Excedente do acerto Nº <acertoId> (consignação Nº <consignacaoId>)" em vez do id do excedente (`origemId`). A descrição (`motivo`) das novas entradas segue esse mesmo texto: `Excedente do acerto Nº X (consignação Nº Y) destinado como crédito.` Movimentos antigos mantêm a descrição gravada (`nº` minúsculo, sem consignação); use os campos novos. **Período invertido** no extrato (`ate` anterior a `de`) responde 400: `A data inicial do período não pode ser posterior à data final.`
+
 ## 3. Lançamento manual (ajuste/benefício, sem movimentação bancária)
 - **POST `/clientes/{clienteId}/credito/lancamentos`** `{ "valor": 75.50, "motivo": "..." }` → 201 `Lote`. `valor` > 0; `motivo` obrigatório (5 a 500 caracteres). Não gera movimentação de banco.
 - **POST `/clientes/{clienteId}/credito/lotes/{loteId}/desfazer`** `{ "motivo": "..." }` → 200 `Lote` (DESFEITO). Somente lote **manual** não utilizado; lote de excedente de acerto deve ser desfeito pelo excedente (400 com orientação); lote de outro cliente: 404; já desfeito: 400.
