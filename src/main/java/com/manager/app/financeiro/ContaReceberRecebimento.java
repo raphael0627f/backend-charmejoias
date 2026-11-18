@@ -39,13 +39,23 @@ public class ContaReceberRecebimento {
     private BigDecimal desconto = BigDecimal.ZERO;
     private BigDecimal valorTotal;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    // BANCO: entra no caixa (banco e forma obrigatórios, gera movimentação). CREDITO_CLIENTE: aplicação de crédito, sem banco, sem forma e fora do caixa.
+    public enum Origem { BANCO, CREDITO_CLIENTE }
+
+    @Enumerated(EnumType.STRING)
+    private Origem origem = Origem.BANCO;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "banco_id")
     private Banco banco;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "forma_pagamento_id")
     private FormaPagamento formaPagamento;
+
+    public boolean isCredito() {
+        return origem == Origem.CREDITO_CLIENTE;
+    }
 
     private String observacao;
     private boolean estornada;

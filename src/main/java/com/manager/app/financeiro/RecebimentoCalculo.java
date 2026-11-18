@@ -83,6 +83,19 @@ public final class RecebimentoCalculo {
         return aberto;
     }
 
+    // estorno de aplicação de crédito (sem banco e sem movimentação): marca o recebimento e reabre o saldo do título; a devolução ao lote é feita por quem chama
+    public static void estornarSemBanco(ContaReceberRecebimento recebimento, String motivo, Usuario usuario, LocalDateTime agora) {
+        if (recebimento.isEstornada()) throw new ItemInvalidoException("Este recebimento já foi estornado.");
+        ContaReceber titulo = recebimento.getContaReceber();
+        recebimento.setEstornada(true);
+        recebimento.setEstornoMotivo(motivo);
+        recebimento.setEstornadaEm(agora);
+        recebimento.setEstornadaPor(usuario);
+        BigDecimal recebido = CalculoFinanceiro.arredondar(titulo.getValorRecebido()).subtract(CalculoFinanceiro.arredondar(recebimento.getValorPrincipal()));
+        titulo.setValorRecebido(recebido.signum() < 0 ? BigDecimal.ZERO.setScale(CalculoFinanceiro.ESCALA) : recebido);
+        titulo.setSituacao(ContaReceberCalculo.situacaoPara(titulo.getValor(), titulo.getValorRecebido()));
+    }
+
     // estorno: marca o recebimento e a movimentação original, reduz o valor recebido pelo principal e devolve a movimentação inversa (SAÍDA).
     // Permitido com banco desativado e mesmo que o saldo do banco fique negativo (a resposta traz o aviso).
     public static MovimentacaoBanco estornar(ContaReceberRecebimento recebimento, MovimentacaoBanco original, String motivo, Usuario usuario,

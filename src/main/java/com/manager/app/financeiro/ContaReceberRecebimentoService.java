@@ -42,6 +42,7 @@ public class ContaReceberRecebimentoService {
     private final PlatformTransactionManager transactionManager;
     private final com.manager.app.infinitepay.LinkPagamentoCicloVida linkCicloVida;
     private final ExcedenteAcertoService excedenteService;
+    private final CreditoAplicacaoService creditoAplicacaoService;
 
     private record Aplicado(ContaReceberRecebimento recebimento, MovimentacaoBanco movimentacao) {
     }
@@ -109,10 +110,26 @@ public class ContaReceberRecebimentoService {
         String motivo = CalculoFinanceiro.validarMotivo(request == null ? null : request.motivo());
         Long tituloId = recebimentoRepository.findContaReceberIdById(recebimentoId).orElseThrow(() -> new ObjetoNaoEncontradoException("Recebimento não encontrado."));
         ContaReceber titulo = contaReceberService.buscarComLock(tituloId);
+        boolean credito = recebimentoRepository.findById(recebimentoId).map(ContaReceberRecebimento::isCredito).orElse(false);
+        if (credito) {
+            // estorno de aplicação de crédito: exige também a permissão do crédito; trava os lotes antes do excedente (ordem título -> lotes -> excedente)
+            exigirAutoridadeCredito();
+            creditoAplicacaoService.travarLotes(titulo.getCliente().getId());
+        }
         excedenteService.bloquearSeDestinado(titulo, "estornar o recebimento");
         ContaReceberRecebimento recebimento = recebimentoRepository.findByIdForUpdate(recebimentoId)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Recebimento não encontrado."));
         if (recebimento.isEstornada()) throw new ItemInvalidoException("Este recebimento já foi estornado.");
+        if (credito) {
+            Usuario autor = auditor.getCurrentAuditor().orElse(null);
+            creditoAplicacaoService.estornar(recebimento, motivo, autor);
+            recebimentoRepository.save(recebimento);
+            contaReceberRepository.save(titulo);
+            registrar(titulo, "CREDITO_ESTORNADO", "Estorno da aplicação de crédito (recebimento nº " + recebimento.getId() + ") no valor de "
+                    + MovimentacaoBancoService.moeda(recebimento.getValorPrincipal()) + ", devolvido ao crédito do cliente. Motivo: " + motivo, autor);
+            excedenteService.sincronizarPorTitulo(titulo);
+            return new RecebimentoDTOs.Resultado(mapper.recebimento(recebimento, null), contaReceberService.detalhe(titulo), null);
+        }
         MovimentacaoBanco original = movimentacaoRepository.findByRecebimentoIdAndOrigem(recebimentoId, OrigemMovimentacao.RECEBIMENTO_CONTA_RECEBER).stream().findFirst()
                 .orElseThrow(() -> new ItemInvalidoException("A movimentação bancária deste recebimento não foi localizada."));
         Banco banco = bancoRepository.findByIdForUpdate(original.getBanco().getId()).orElseThrow();
@@ -174,6 +191,12 @@ public class ContaReceberRecebimentoService {
         Aplicado a = aplicar(titulo, banco, forma, r.dataRecebimento(), saldo, null, null, null, r.observacao());
         return new RecebimentoDTOs.ItemLote(id, titulo.getNumero(), true, a.recebimento().getId(), a.recebimento().getValorTotal(),
                 ContaReceberCalculo.valorAberto(titulo.getSituacao(), titulo.getValor(), titulo.getValorRecebido()), titulo.getSituacao().name(), null);
+    }
+
+    private static void exigirAutoridadeCredito() {
+        var autenticacao = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        boolean permitido = autenticacao != null && autenticacao.getAuthorities().stream().anyMatch(a -> "CREDITO_CLIENTE_APLICAR".equals(a.getAuthority()));
+        if (!permitido) throw new org.springframework.security.access.AccessDeniedException("Acesso negado.");
     }
 
     private Long numeroOuNulo(Long id) {

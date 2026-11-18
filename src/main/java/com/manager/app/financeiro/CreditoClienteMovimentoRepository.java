@@ -8,4 +8,6 @@ import java.util.UUID;
 public interface CreditoClienteMovimentoRepository extends JpaRepository<CreditoClienteMovimento, Long> {
 
     List<CreditoClienteMovimento> findByClienteIdOrderByIdAsc(UUID clienteId);
+
+    List<CreditoClienteMovimento> findByRecebimentoIdAndTipo(Long recebimentoId, CreditoClienteMovimento.Tipo tipo);
 }

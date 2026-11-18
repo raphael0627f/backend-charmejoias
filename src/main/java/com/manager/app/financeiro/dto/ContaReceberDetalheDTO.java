@@ -38,7 +38,7 @@ public record ContaReceberDetalheDTO(Long id, Long numero, String descricao, Con
     public record Recebimento(Long id, LocalDate dataRecebimento, BigDecimal valorPrincipal, BigDecimal juros, BigDecimal multa, BigDecimal desconto,
                               BigDecimal valorTotal, ContaReceberResumoDTO.Ref banco, ContaReceberResumoDTO.Ref formaPagamento, String observacao,
                               String situacao, boolean estornado, String estornoMotivo, LocalDateTime estornadoEm, UsuarioResumoDTO estornadoPor,
-                              LocalDateTime createdAt, UsuarioResumoDTO createdBy, Long movimentacaoId) {
+                              LocalDateTime createdAt, UsuarioResumoDTO createdBy, Long movimentacaoId, String origem) {
     }
 
     public record Evento(Long id, String evento, String detalhe, UsuarioResumoDTO usuario, LocalDateTime dataHora) {

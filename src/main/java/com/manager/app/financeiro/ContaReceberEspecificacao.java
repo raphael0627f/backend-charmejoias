@@ -65,6 +65,8 @@ public final class ContaReceberEspecificacao {
                 List<Predicate> b = new ArrayList<>();
                 b.add(cb.equal(recebimento.get("contaReceber"), root));
                 b.add(cb.isFalse(recebimento.get("estornada")));
+                // filtros de recebimento (período/banco) tratam de caixa: aplicação de crédito do cliente nunca entra
+                b.add(cb.equal(recebimento.get("origem"), ContaReceberRecebimento.Origem.BANCO));
                 if (f.recebimentoDe() != null) b.add(cb.greaterThanOrEqualTo(recebimento.get("dataRecebimento"), f.recebimentoDe()));
                 if (f.recebimentoAte() != null) b.add(cb.lessThanOrEqualTo(recebimento.get("dataRecebimento"), f.recebimentoAte()));
                 if (f.bancoId() != null) b.add(cb.equal(recebimento.get("banco").get("id"), f.bancoId()));

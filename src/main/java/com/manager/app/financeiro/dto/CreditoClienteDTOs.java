@@ -24,6 +24,11 @@ public final class CreditoClienteDTOs {
                                     @NotBlank(message = "Informe o motivo.") @Size(min = 5, max = 500, message = "O motivo deve ter entre 5 e 500 caracteres.") String motivo) {
     }
 
+    // valor opcional: padrão = menor entre o crédito disponível do cliente e o valor em aberto do título
+    public record AplicarRequest(@DecimalMin(value = "0.01", message = "O valor aplicado deve ser maior que zero.") BigDecimal valor,
+                                 @Size(max = 500, message = "A observação deve ter no máximo 500 caracteres.") String observacao) {
+    }
+
     public record Lote(Long id, String origemTipo, Long origemId, BigDecimal valorOriginal, BigDecimal valorUtilizado, BigDecimal disponivel, String situacao,
                        String motivo, LocalDateTime criadoEm, UsuarioResumoDTO criadoPor) {
     }

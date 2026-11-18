@@ -29,7 +29,8 @@ public final class SituacaoClienteDTOs {
     }
 
     public record Situacao(Cliente cliente, Faixa emAberto, Faixa vencido, Faixa vencemEm7Dias, Faixa vencemEm30Dias, int diasMaiorAtraso,
-                           TituloVencido tituloMaisAntigoVencido, Periodo recebidoNoPeriodo, UltimoRecebimento ultimoRecebimento, Titulos titulos) {
+                           TituloVencido tituloMaisAntigoVencido, Periodo recebidoNoPeriodo, UltimoRecebimento ultimoRecebimento, Titulos titulos,
+                           BigDecimal creditoDisponivel) {
     }
 
     public record Linha(Cliente cliente, BigDecimal emAberto, BigDecimal vencido, int quantidadeTitulosAbertos, int diasMaiorAtraso,

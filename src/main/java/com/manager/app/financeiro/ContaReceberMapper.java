@@ -56,10 +56,10 @@ public class ContaReceberMapper {
 
     public ContaReceberDetalheDTO.Recebimento recebimento(ContaReceberRecebimento b, Long movimentacaoId) {
         return new ContaReceberDetalheDTO.Recebimento(b.getId(), b.getDataRecebimento(), b.getValorPrincipal(), b.getJuros(), b.getMulta(), b.getDesconto(),
-                b.getValorTotal(), new ContaReceberResumoDTO.Ref(b.getBanco().getId(), b.getBanco().getNome()),
-                new ContaReceberResumoDTO.Ref(b.getFormaPagamento().getId(), b.getFormaPagamento().getNome()), b.getObservacao(),
+                b.getValorTotal(), b.isCredito() ? null : new ContaReceberResumoDTO.Ref(b.getBanco().getId(), b.getBanco().getNome()),
+                b.isCredito() ? new ContaReceberResumoDTO.Ref(null, "Crédito do cliente") : new ContaReceberResumoDTO.Ref(b.getFormaPagamento().getId(), b.getFormaPagamento().getNome()), b.getObservacao(),
                 b.isEstornada() ? "ESTORNADO" : "ATIVO", b.isEstornada(), b.getEstornoMotivo(), b.getEstornadaEm(), mapper.usuario(b.getEstornadaPor()),
-                b.getCreatedAt(), mapper.usuario(b.getCreatedBy()), movimentacaoId);
+                b.getCreatedAt(), mapper.usuario(b.getCreatedBy()), movimentacaoId, b.getOrigem().name());
     }
 
     // documento do cliente: CPF do cadastro ou, na falta dele, o campo documento

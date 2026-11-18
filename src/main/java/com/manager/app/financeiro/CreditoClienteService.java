@@ -65,11 +65,12 @@ public class CreditoClienteService {
 
     @Transactional
     public void desfazerDestino(Long excedenteId, String motivo) {
+        // ordem de trava lotes -> excedente (a mesma da aplicação do crédito)
+        java.util.Optional<CreditoClienteLote> loteOpt = loteRepository.findAtivoDoExcedenteForUpdate(excedenteId);
         ExcedenteAcerto e = excedenteRepository.findByIdForUpdate(excedenteId).orElseThrow(() -> new ObjetoNaoEncontradoException("Excedente não encontrado."));
         if (e.getSituacao() == ExcedenteAcerto.Situacao.DEVOLUCAO) throw new ItemInvalidoException("O excedente foi destinado como devolução ao cliente.");
         if (e.getSituacao() != ExcedenteAcerto.Situacao.CREDITO) throw new ItemInvalidoException("O excedente não possui destino a desfazer.");
-        CreditoClienteLote lote = loteRepository.findAtivoDoExcedenteForUpdate(e.getId())
-                .orElseThrow(() -> new ItemInvalidoException("Lote de crédito do excedente não encontrado."));
+        CreditoClienteLote lote = loteOpt.orElseThrow(() -> new ItemInvalidoException("Lote de crédito do excedente não encontrado."));
         exigirNaoUtilizado(lote);
         Usuario usuario = auditor.getCurrentAuditor().orElse(null);
         desfazerLote(lote, motivo, usuario);
@@ -117,7 +118,7 @@ public class CreditoClienteService {
     private static void exigirNaoUtilizado(CreditoClienteLote lote) {
         if (lote.getValorUtilizado().signum() > 0) {
             throw new ItemInvalidoException("O crédito já foi utilizado (" + MovimentacaoBancoService.moeda(lote.getValorUtilizado())
-                    + "). Estorne a aplicação do crédito antes de desfazer.");
+                    + "). Estorne a aplicação do crédito nos títulos (Contas a Receber) antes de desfazer.");
         }
     }
 
@@ -169,11 +170,17 @@ public class CreditoClienteService {
     }
 
     private void movimento(CreditoClienteLote lote, CreditoClienteMovimento.Tipo tipo, BigDecimal valor, String motivo, Usuario usuario) {
+        movimento(lote, tipo, valor, motivo, usuario, null, null);
+    }
+
+    void movimento(CreditoClienteLote lote, CreditoClienteMovimento.Tipo tipo, BigDecimal valor, String motivo, Usuario usuario, Long contaReceberId, Long recebimentoId) {
         CreditoClienteMovimento m = new CreditoClienteMovimento();
         m.setCliente(lote.getCliente());
         m.setLote(lote);
         m.setTipo(tipo);
         m.setValor(valor);
+        m.setContaReceberId(contaReceberId);
+        m.setRecebimentoId(recebimentoId);
         m.setMotivo(motivo != null && motivo.length() > 500 ? motivo.substring(0, 500) : motivo);
         m.setUsuario(usuario);
         m.setDataHora(LocalDateTime.now());

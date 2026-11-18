@@ -42,6 +42,7 @@ public class ContaReceberController {
 
     private final ContaReceberService service;
     private final ContaReceberRecebimentoService recebimentoService;
+    private final CreditoAplicacaoService creditoAplicacaoService;
     private final ContaReceberAnexoService anexoService;
     private final SituacaoClienteService situacaoClienteService;
 
@@ -139,6 +140,12 @@ public class ContaReceberController {
     @PreAuthorize(RECEBIMENTO)
     public ResponseEntity<RecebimentoDTOs.Resultado> receber(@PathVariable Long id, @Valid @RequestBody RecebimentoDTOs.Request request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(recebimentoService.receber(id, request));
+    }
+
+    @PostMapping("/{id}/aplicar-credito")
+    @PreAuthorize("hasAuthority('CONTA_RECEBER_RECEBER') and hasAuthority('CREDITO_CLIENTE_APLICAR')")
+    public ResponseEntity<RecebimentoDTOs.Resultado> aplicarCredito(@PathVariable Long id, @Valid @RequestBody(required = false) com.manager.app.financeiro.dto.CreditoClienteDTOs.AplicarRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(creditoAplicacaoService.aplicar(id, request));
     }
 
     @PostMapping("/recebimentos/{recebimentoId}/estornar")

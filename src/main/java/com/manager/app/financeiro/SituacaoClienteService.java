@@ -30,6 +30,7 @@ public class SituacaoClienteService {
 
     private final ClienteRepository clienteRepository;
     private final JdbcClient jdbc;
+    private final CreditoClienteLoteRepository creditoRepository;
 
     // clientes com saldo em aberto: um registro por cliente com os agregados dos títulos ABERTO/RECEBIDO_PARCIAL
     private static final String AGREGADO = """
@@ -78,13 +79,13 @@ public class SituacaoClienteService {
         SituacaoClienteDTOs.Periodo recebido = jdbc.sql("""
                         select coalesce(sum(r.valor_total), 0) as valor, count(*) as n
                         from conta_receber_recebimento r join conta_receber c on c.id = r.conta_receber_id
-                        where c.cliente_id = :id and not r.estornada and r.data_recebimento between :de and :ate
+                        where c.cliente_id = :id and not r.estornada and r.origem = 'BANCO' and r.data_recebimento between :de and :ate
                         """).param("id", clienteId).param("de", periodo[0]).param("ate", periodo[1])
                 .query((rs, n) -> new SituacaoClienteDTOs.Periodo(periodo[0], periodo[1], CalculoFinanceiro.arredondar(rs.getBigDecimal("valor")), rs.getInt("n")))
                 .single();
         SituacaoClienteDTOs.UltimoRecebimento ultimo = jdbc.sql("""
                         select r.data_recebimento, r.valor_total from conta_receber_recebimento r join conta_receber c on c.id = r.conta_receber_id
-                        where c.cliente_id = :id and not r.estornada order by r.data_recebimento desc, r.id desc limit 1
+                        where c.cliente_id = :id and not r.estornada and r.origem = 'BANCO' order by r.data_recebimento desc, r.id desc limit 1
                         """).param("id", clienteId)
                 .query((rs, n) -> new SituacaoClienteDTOs.UltimoRecebimento(rs.getObject("data_recebimento", LocalDate.class),
                         CalculoFinanceiro.arredondar(rs.getBigDecimal("valor_total")))).optional().orElse(null);
@@ -92,7 +93,8 @@ public class SituacaoClienteService {
         SituacaoClienteCalculo.TituloAberto antigo = r.maisAntigoVencido();
         return new SituacaoClienteDTOs.Situacao(identificacao(cliente), r.emAberto(), r.vencido(), r.vencemEm7Dias(), r.vencemEm30Dias(), r.diasMaiorAtraso(),
                 antigo == null ? null : new SituacaoClienteDTOs.TituloVencido(antigo.id(), antigo.numero(), antigo.vencimento(), CalculoFinanceiro.arredondar(antigo.valorAberto())),
-                recebido, ultimo, new SituacaoClienteDTOs.Titulos(contagem[2], r.emAberto().quantidade(), contagem[0], contagem[1]));
+                recebido, ultimo, new SituacaoClienteDTOs.Titulos(contagem[2], r.emAberto().quantidade(), contagem[0], contagem[1]),
+                CalculoFinanceiro.arredondar(creditoRepository.saldo(clienteId)));
     }
 
     private static SituacaoClienteDTOs.Cliente identificacao(Cliente c) {
