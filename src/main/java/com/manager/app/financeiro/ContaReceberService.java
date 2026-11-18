@@ -139,6 +139,38 @@ public class ContaReceberService {
         return new Criados(grupo, titulos);
     }
 
+    // título de R$ 0,00 já quitado (acerto sem valor a pagar): sem banco, forma, movimentação nem recebimento financeiro; mesmas regras de numeração e histórico
+    @Transactional
+    public ContaReceber criarTituloZeradoDoAcerto(Cliente cliente, com.manager.app.consignacao.Consignacao consignacao,
+                                                  com.manager.app.acertoconsignacao.AcertoConsignacao acerto, CategoriaReceita categoria, String descricao, LocalDate data) {
+        Usuario usuario = usuarioAtual();
+        ContaReceber c = new ContaReceber();
+        c.setCliente(cliente);
+        c.setConsignacao(consignacao);
+        c.setAcerto(acerto);
+        c.setDescricao(descricao);
+        c.setCategoria(categoria);
+        c.setValor(BigDecimal.ZERO.setScale(CalculoFinanceiro.ESCALA));
+        c.setValorRecebido(BigDecimal.ZERO.setScale(CalculoFinanceiro.ESCALA));
+        c.setEmissao(data);
+        c.setVencimento(data);
+        c.setCompetencia(ContaReceberCalculo.competenciaPadrao(data));
+        c.setObservacao(DocumentoFinanceiroCalculo.OBSERVACAO_TITULO_ZERADO);
+        c.setSituacao(SituacaoContaReceber.RECEBIDO);
+        c.setNumero(repository.proximoNumero());
+        repository.save(c);
+        registrar(c, "TITULO_CRIADO", detalheCriacao(c), usuario);
+        registrar(c, "RECEBIMENTO_AUTOMATICO", "Título sem valor a pagar quitado automaticamente em " + TextoUtils.data(data)
+                + ". Não houve recebimento financeiro nem movimentação bancária.", usuario);
+        return c;
+    }
+
+    private static void exigirNaoZerado(ContaReceber c, String acao) {
+        if (c.getAcerto() != null && DocumentoFinanceiroCalculo.tituloZerado(c.getValor())) {
+            throw new ItemInvalidoException("O título de acerto sem valor a pagar é um registro automático e não pode ser " + acao + ".");
+        }
+    }
+
     private ContaReceber novo(Base b, BigDecimal valor, String descricao, LocalDate emissao, String competenciaInformada, LocalDate vencimento,
                               UUID grupo, Integer parcela, Integer total) {
         ContaReceber c = new ContaReceber();
@@ -326,6 +358,7 @@ public class ContaReceberService {
         if (c.getSituacao() == SituacaoContaReceber.CANCELADO) {
             throw new ItemInvalidoException("O título cancelado não pode ser editado.");
         }
+        exigirNaoZerado(c, "editado");
         Base base = validarBase(r);
         LocalDate vencimento = r.vencimento() == null ? c.getVencimento() : r.vencimento();
         LocalDate emissao = r.emissao() == null ? c.getEmissao() : r.emissao();
@@ -446,6 +479,7 @@ public class ContaReceberService {
     private Cancelado cancelarTitulo(Long id, String motivo) {
         ContaReceber c = buscarComLock(id);
         ContaReceberCalculo.validarCancelavel(c.getSituacao(), c.getValorRecebido());
+        exigirNaoZerado(c, "cancelado");
         Usuario usuario = usuarioAtual();
         c.setSituacao(SituacaoContaReceber.CANCELADO);
         c.setCancelamentoMotivo(motivo);

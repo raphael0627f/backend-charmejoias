@@ -56,6 +56,7 @@ public class AcertoConsignacaoService {
     private final com.manager.app.usuario.UsuarioResumoMapper usuarioResumoMapper;
     private final UsuarioAuditorAware usuarioAuditorAware;
     private final com.manager.app.financeiro.ContaReceberRepository contaReceberRepository;
+    private final com.manager.app.financeiro.DocumentoFinanceiroService documentoFinanceiroService;
 
     public Page<AcertoConsignacao> findAll(String busca, ModoBusca modoBusca, Long consignacaoId, Boolean confirmado,
                                             LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
@@ -405,13 +406,20 @@ public class AcertoConsignacaoService {
 
     @Transactional
     public AcertoConsignacao confirmar(Long id){
-        AcertoConsignacao acerto = this.findById(id);
+        // mesma ordem de bloqueio da geração de título (consignação, depois acerto): serializa a confirmação com a geração e com outra confirmação
+        List<Long> consignacaoIds = repository.consignacaoIdDe(id);
+        if (consignacaoIds.isEmpty()) throw new ObjetoNaoEncontradoException("Acerto de consignação não encontrado. Id: " + id);
+        consignacaoRepository.findByIdForUpdate(consignacaoIds.get(0));
+        AcertoConsignacao acerto = repository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ObjetoNaoEncontradoException("Acerto de consignação não encontrado. Id: " + id));
 
         if (Boolean.TRUE.equals(acerto.getConfirmado())) {
             throw new ItemInvalidoException("O acerto já está confirmado. Id: " + id);
         }
 
         acerto.setConfirmado(true);
+        // acerto sem valor a pagar (0,00): registra o título zerado já quitado na mesma transação (sem pré-acerto titulado; idempotente)
+        documentoFinanceiroService.gerarTituloZeradoDoAcerto(acerto);
         return acerto;
     }
 }

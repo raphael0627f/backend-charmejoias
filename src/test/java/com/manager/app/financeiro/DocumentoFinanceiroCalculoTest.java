@@ -110,4 +110,25 @@ class DocumentoFinanceiroCalculoTest {
         assertThatThrownBy(() -> ContaReceberCalculo.validarEdicaoDeTituloDeConsignacao(true, true))
                 .isInstanceOf(ItemInvalidoException.class).hasMessageContaining("Cancele o título e gere novamente");
     }
+
+    @Test
+    void tituloZeradoDoAcerto() {
+        assertThat(DocumentoFinanceiroCalculo.geraTituloZerado(new java.math.BigDecimal("0.00"), false)).isTrue();
+        assertThat(DocumentoFinanceiroCalculo.geraTituloZerado(new java.math.BigDecimal("0.004"), false)).isTrue();
+        assertThat(DocumentoFinanceiroCalculo.geraTituloZerado(new java.math.BigDecimal("0.01"), false)).isFalse();
+        assertThat(DocumentoFinanceiroCalculo.geraTituloZerado(new java.math.BigDecimal("-5.00"), false)).isFalse();
+        // com título de pré-acerto (ou do próprio acerto) ativo não gera: há excedente / já existe título
+        assertThat(DocumentoFinanceiroCalculo.geraTituloZerado(java.math.BigDecimal.ZERO, true)).isFalse();
+        assertThat(DocumentoFinanceiroCalculo.tituloZerado(new java.math.BigDecimal("0.00"))).isTrue();
+        assertThat(DocumentoFinanceiroCalculo.tituloZerado(new java.math.BigDecimal("10.00"))).isFalse();
+        assertThat(DocumentoFinanceiroCalculo.OBSERVACAO_TITULO_ZERADO).isEqualTo("Acerto sem valor a pagar. Título registrado automaticamente, sem cobrança.");
+    }
+
+    @Test
+    void acertoComTituloZeradoInformaTituloAtivoEmVezDeValorZero() {
+        assertThat(DocumentoFinanceiroCalculo.motivoBloqueio(situacao(Tipo.ACERTO, true, true, true, "0", true, false, "0")))
+                .isEqualTo("O acerto já possui título a receber ativo.");
+        assertThat(DocumentoFinanceiroCalculo.motivoBloqueio(situacao(Tipo.ACERTO, true, true, true, "0", false, false, "0")))
+                .isEqualTo("O acerto deve ter valor maior que zero para gerar título a receber.");
+    }
 }

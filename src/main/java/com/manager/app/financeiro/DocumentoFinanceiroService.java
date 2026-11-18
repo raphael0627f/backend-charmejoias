@@ -155,6 +155,21 @@ public class DocumentoFinanceiroService {
         return gerar(documentoDe(a), r);
     }
 
+    // chamado na confirmação do acerto, na mesma transação: com valor exatamente 0,00 e sem título ativo de pré-acerto ou do acerto na consignação,
+    // registra o título zerado já quitado (um por acerto). O bloqueio da consignação deve ter sido obtido antes pelo chamador (mesma ordem de gerarDoAcerto).
+    @Transactional
+    public java.util.Optional<ContaReceber> gerarTituloZeradoDoAcerto(AcertoConsignacao a) {
+        BigDecimal valor = CalculoFinanceiro.arredondar(a.getValorTotalComDesconto());
+        if (valor.signum() != 0) return java.util.Optional.empty();
+        List<ContaReceber> ativos = contaReceberRepository.findAtivosDaConsignacaoForUpdate(a.getConsignacao().getId());
+        boolean temTitulo = ativos.stream().anyMatch(t -> t.getPreAcerto() != null || t.getAcerto() != null);
+        if (!DocumentoFinanceiroCalculo.geraTituloZerado(valor, temTitulo)) return java.util.Optional.empty();
+        CategoriaReceita categoria = categoriaRepository.findFirstByNomeIgnoreCaseAndPaiNomeIgnoreCase(CATEGORIA_SUBGRUPO, CATEGORIA_GRUPO)
+                .orElseThrow(() -> new ItemInvalidoException("A categoria de receita \"" + CATEGORIA_GRUPO + " > " + CATEGORIA_SUBGRUPO + "\" não foi encontrada."));
+        String descricao = DocumentoFinanceiroCalculo.descricaoAutomatica(Tipo.ACERTO, a.getConsignacao().getId(), a.getId());
+        return java.util.Optional.of(contaReceberService.criarTituloZeradoDoAcerto(a.getConsignacao().getCliente(), a.getConsignacao(), a, categoria, descricao, LocalDate.now()));
+    }
+
     private void bloquearConsignacao(Long consignacaoId) {
         consignacaoRepository.findByIdForUpdate(consignacaoId)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Consignação não encontrada. Id: " + consignacaoId));

@@ -62,8 +62,9 @@ public final class DocumentoFinanceiroCalculo {
         // o pré-acerto pode não ter consignação de referência (título gerado normalmente); o acerto sempre tem
         if (t == Tipo.ACERTO && !s.temConsignacao()) return "O acerto não possui consignação e não gera título a receber.";
         if (t == Tipo.ACERTO && !s.acertoConfirmado()) return "O acerto precisa estar confirmado para gerar título a receber.";
-        if (s.valorDocumento().signum() <= 0) return t.nomeComArtigo() + " deve ter valor maior que zero para gerar título a receber.";
+        // o título próprio ativo vem antes do valor: o acerto sem valor a pagar já tem o título zerado automático
         if (s.tituloProprioAtivo()) return t.nomeComArtigo() + " já possui título a receber ativo.";
+        if (s.valorDocumento().signum() <= 0) return t.nomeComArtigo() + " deve ter valor maior que zero para gerar título a receber.";
         if (t == Tipo.PRE_ACERTO && s.tituloDoAcertoAtivo()) return "A consignação já possui título a receber do acerto.";
         if (s.saldo().saldoATitular().signum() <= 0) {
             if (s.saldo().excedente().signum() > 0) {
@@ -73,6 +74,18 @@ public final class DocumentoFinanceiroCalculo {
         }
         if (!s.clienteAtivo()) return "O cliente \"" + s.nomeCliente() + "\" está desativado.";
         return null;
+    }
+
+    public static final String OBSERVACAO_TITULO_ZERADO = "Acerto sem valor a pagar. Título registrado automaticamente, sem cobrança.";
+
+    // o acerto sem valor a pagar gera o título zerado somente com o valor exatamente 0,00 e sem nenhum título ativo de pré-acerto ou do próprio acerto
+    public static boolean geraTituloZerado(BigDecimal valorAcerto, boolean temTituloDePreAcertoOuDoAcerto) {
+        return CalculoFinanceiro.arredondar(valorAcerto).signum() == 0 && !temTituloDePreAcertoOuDoAcerto;
+    }
+
+    // título de acerto com valor zero: registro automático, não editável nem cancelável
+    public static boolean tituloZerado(BigDecimal valor) {
+        return valor != null && CalculoFinanceiro.arredondar(valor).signum() == 0;
     }
 
     // aviso formal quando o título ativo supera o valor do documento (crédito de cliente fica para fase posterior)
