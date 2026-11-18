@@ -14,6 +14,10 @@ public interface ExcedenteAcertoRepository extends JpaRepository<ExcedenteAcerto
     Optional<ExcedenteAcerto> findByAcertoId(Long acertoId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from ExcedenteAcerto e where e.id = :id")
+    Optional<ExcedenteAcerto> findByIdForUpdate(@Param("id") Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select e from ExcedenteAcerto e where e.consignacao.id = :consignacaoId")
     Optional<ExcedenteAcerto> findByConsignacaoIdForUpdate(@Param("consignacaoId") Long consignacaoId);
 }
