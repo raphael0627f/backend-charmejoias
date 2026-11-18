@@ -9,7 +9,7 @@ Complementa as fases 1 e 2. Migration **V78**: `conta_receber_recebimento` ganha
 - `valor` opcional: padrão = **menor entre o crédito disponível do cliente e o valor em aberto do título**. Informado, não pode exceder esse menor valor (400 com a mensagem formal). Parcial permitido. Sem crédito: 400 `O cliente não possui crédito disponível.`.
 - Consome os lotes por **FIFO** (id crescente). Cada consumo vira um movimento `SAIDA` no extrato (com `contaReceberId` e `recebimentoId`).
 - Efeito no título: `valorRecebido` e situação seguem as regras do recebimento (`RECEBIDO_PARCIAL`/`RECEBIDO`). Evento `CREDITO_APLICADO`.
-- **Links de pagamento ativos** do título viram `NAO_UTILIZAR` (evento `LINK_PAGAMENTO_NAO_UTILIZAR`) e a resposta traz `aviso` (links já enviados ainda podem ser pagos na InfinitePay).
+- **Links de pagamento ativos** do título viram `NAO_UTILIZAR` (evento `LINK_PAGAMENTO_NAO_UTILIZAR`) e a resposta traz `aviso`: `Os links de pagamento ativos deste título foram marcados como Não utilizar e não devem ser enviados ao cliente.` (sem relação com cancelamento de título).
 - A data do recebimento é a data atual. **Não** gera movimentação bancária.
 
 ## 2. Como o recebimento de crédito aparece

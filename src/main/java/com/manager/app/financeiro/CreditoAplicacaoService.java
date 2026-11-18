@@ -85,7 +85,7 @@ public class CreditoAplicacaoService {
         boolean comLink = linkCicloVida.aoAjustarValor(titulo);
         if (comLink) registrar(titulo, "LINK_PAGAMENTO_NAO_UTILIZAR", "Links de pagamento ativos marcados como não utilizar: crédito do cliente aplicado ao título.", usuario);
         excedenteService.sincronizarPorTitulo(titulo);
-        return new RecebimentoDTOs.Resultado(mapper.recebimento(rec, null), contaReceberService.detalhe(titulo), comLink ? LinkPagamentoCicloVida.avisoDoLote(1) : null);
+        return new RecebimentoDTOs.Resultado(mapper.recebimento(rec, null), contaReceberService.detalhe(titulo), comLink ? LinkPagamentoCicloVida.AVISO_LINK_NAO_UTILIZAR : null);
     }
 
     // trava os lotes ativos do cliente (chamado ANTES de qualquer trava de excedente, para manter a ordem título -> lotes -> excedente)

@@ -21,6 +21,9 @@ public class LinkPagamentoCicloVida {
 
     public static final String AVISO_CANCELAMENTO = "Os links de pagamento já enviados não podem ser cancelados na InfinitePay e ainda podem ser pagos.";
 
+    // aplicação de crédito do cliente: os links ativos do título deixam de valer (não é cancelamento do título)
+    public static final String AVISO_LINK_NAO_UTILIZAR = "Os links de pagamento ativos deste título foram marcados como Não utilizar e não devem ser enviados ao cliente.";
+
     // cancelamento em lote: texto único com a quantidade de títulos cancelados que tinham link ativo; sem links, sem aviso (null)
     public static String avisoDoLote(int titulosComLinkAtivo) {
         if (titulosComLinkAtivo <= 0) return null;
