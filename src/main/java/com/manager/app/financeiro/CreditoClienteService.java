@@ -165,6 +165,7 @@ public class CreditoClienteService {
     @Transactional(readOnly = true)
     public CreditoClienteDTOs.Extrato extrato(UUID clienteId, LocalDate de, LocalDate ate, int page, int size) {
         exigirCliente(clienteId);
+        if (de != null && ate != null && ate.isBefore(de)) throw new ItemInvalidoException("A data inicial do período não pode ser posterior à data final.");
         BigDecimal saldo = BigDecimal.ZERO;
         List<CreditoClienteDTOs.Movimento> todos = new ArrayList<>();
         for (CreditoClienteMovimento m : movimentoRepository.findByClienteIdOrderByIdAsc(clienteId)) {
