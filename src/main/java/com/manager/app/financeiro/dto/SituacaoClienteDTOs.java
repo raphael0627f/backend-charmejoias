@@ -30,7 +30,11 @@ public final class SituacaoClienteDTOs {
 
     public record Situacao(Cliente cliente, Faixa emAberto, Faixa vencido, Faixa vencemEm7Dias, Faixa vencemEm30Dias, int diasMaiorAtraso,
                            TituloVencido tituloMaisAntigoVencido, Periodo recebidoNoPeriodo, UltimoRecebimento ultimoRecebimento, Titulos titulos,
-                           BigDecimal creditoDisponivel) {
+                           BigDecimal creditoDisponivel, APagar aPagar) {
+    }
+
+    // contas a pagar do cliente como favorecido (devoluções e lançamentos vinculados)
+    public record APagar(int quantidade, BigDecimal emAberto, BigDecimal vencido) {
     }
 
     public record Linha(Cliente cliente, BigDecimal emAberto, BigDecimal vencido, int quantidadeTitulosAbertos, int diasMaiorAtraso,

@@ -18,7 +18,7 @@ public record ContaPagarDetalheDTO(Long id, Long numero, String descricao, Strin
                                    Integer parcelaTotal, Long recorrenciaId, Cancelamento cancelamento, List<Pagamento> pagamentos,
                                    List<ContaPagarResumoDTO> parcelas, List<Evento> eventos, LocalDateTime createdAt, LocalDateTime updatedAt,
                                    UsuarioResumoDTO createdBy, UsuarioResumoDTO updatedBy, RecorrenciaResumo recorrencia, List<AnexoDTO> anexos,
-                                   boolean estimado) {
+                                   boolean estimado, ContaReceberResumoDTO.ClienteRef cliente, Long excedenteId, String origem) {
 
     // posicao = ordem do título na série; totalGerado = ocorrências já geradas
     public record RecorrenciaResumo(Long id, com.manager.app.financeiro.PeriodicidadeRecorrencia periodicidade, boolean ativa,

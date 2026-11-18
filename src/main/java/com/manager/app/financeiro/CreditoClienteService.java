@@ -31,21 +31,35 @@ public class CreditoClienteService {
     private final ExcedenteAcertoRepository excedenteRepository;
     private final ExcedenteAcertoEventoRepository excedenteEventoRepository;
     private final ClienteRepository clienteRepository;
+    private final ContaPagarService contaPagarService;
+    private final ContaPagarRepository contaPagarRepository;
     private final UsuarioAuditorAware auditor;
     private final UsuarioResumoMapper usuarioMapper;
 
     // ---------- destino do excedente ----------
 
     @Transactional
-    public void destinar(Long excedenteId, String destino) {
+    public void destinar(Long excedenteId, String destino, java.time.LocalDate vencimentoDevolucao) {
         String d = destino == null ? "" : destino.trim().toUpperCase();
-        if (d.equals("DEVOLUCAO")) throw new ItemInvalidoException("A devolução ao cliente ainda não está disponível. Destine o excedente como crédito.");
-        if (!d.equals("CREDITO")) throw new ItemInvalidoException("Destino inválido. Use CREDITO.");
+        if (!d.equals("CREDITO") && !d.equals("DEVOLUCAO")) throw new ItemInvalidoException("Destino inválido. Use CREDITO ou DEVOLUCAO.");
+        if (d.equals("DEVOLUCAO")) exigirAutoridade("CONTA_PAGAR_GERENCIAR");
         ExcedenteAcerto e = excedenteRepository.findByIdForUpdate(excedenteId).orElseThrow(() -> new ObjetoNaoEncontradoException("Excedente não encontrado."));
         if (e.getSituacao() != ExcedenteAcerto.Situacao.A_DESTINAR) {
             throw new ItemInvalidoException("Somente excedente a destinar pode receber destino. Situação atual: " + e.getSituacao().name() + ".");
         }
         Usuario usuario = auditor.getCurrentAuditor().orElse(null);
+        if (d.equals("DEVOLUCAO")) {
+            ContaPagar titulo = contaPagarService.criarDevolucao(e, vencimentoDevolucao, usuario);
+            e.setSituacao(ExcedenteAcerto.Situacao.DEVOLUCAO);
+            e.setDestino(ExcedenteAcerto.Destino.DEVOLUCAO);
+            e.setDestinadoEm(LocalDateTime.now());
+            e.setDestinadoPor(usuario);
+            e.setUpdatedAt(LocalDateTime.now());
+            excedenteRepository.save(e);
+            evento(e, "EXCEDENTE_DESTINADO_DEVOLUCAO", "Excedente de " + MovimentacaoBancoService.moeda(e.getValor()) + " destinado como devolução ao cliente (título a pagar nº "
+                    + titulo.getNumero() + ", vencimento em " + com.manager.app.shared.TextoUtils.data(titulo.getVencimento()) + ").", usuario);
+            return;
+        }
         CreditoClienteLote lote = new CreditoClienteLote();
         lote.setCliente(e.getCliente());
         lote.setOrigemTipo(CreditoClienteLote.Origem.EXCEDENTE_ACERTO);
@@ -65,6 +79,15 @@ public class CreditoClienteService {
 
     @Transactional
     public void desfazerDestino(Long excedenteId, String motivo) {
+        // devolução: trava o título a pagar (e dentro dele o excedente); a ordem é sempre título/lote -> excedente
+        java.util.Optional<Long> devolucao = contaPagarRepository.findIdAtivoDoExcedente(excedenteId);
+        if (devolucao.isPresent()) {
+            contaPagarService.cancelarDevolucao(devolucao.get(), motivo.trim());
+            ExcedenteAcerto ex = excedenteRepository.findByIdForUpdate(excedenteId).orElseThrow(() -> new ObjetoNaoEncontradoException("Excedente não encontrado."));
+            evento(ex, "DESTINO_DESFEITO", "Destino de devolução desfeito (título a pagar nº " + contaPagarRepository.findById(devolucao.get()).map(ContaPagar::getNumero).orElse(null) + " cancelado). Motivo: " + motivo.trim(),
+                    auditor.getCurrentAuditor().orElse(null));
+            return;
+        }
         // ordem de trava lotes -> excedente (a mesma da aplicação do crédito)
         java.util.Optional<CreditoClienteLote> loteOpt = loteRepository.findAtivoDoExcedenteForUpdate(excedenteId);
         ExcedenteAcerto e = excedenteRepository.findByIdForUpdate(excedenteId).orElseThrow(() -> new ObjetoNaoEncontradoException("Excedente não encontrado."));
@@ -157,6 +180,12 @@ public class CreditoClienteService {
         int inicio = Math.min(todos.size(), pagina * tamanho);
         List<CreditoClienteDTOs.Movimento> fatia = todos.subList(inicio, Math.min(todos.size(), inicio + tamanho));
         return new CreditoClienteDTOs.Extrato(CalculoFinanceiro.arredondar(saldo), fatia, pagina, tamanho, todos.size(), (int) Math.ceil(todos.size() / (double) tamanho));
+    }
+
+    private static void exigirAutoridade(String permissao) {
+        var autenticacao = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        boolean ok = autenticacao != null && autenticacao.getAuthorities().stream().anyMatch(a -> permissao.equals(a.getAuthority()));
+        if (!ok) throw new org.springframework.security.access.AccessDeniedException("Acesso negado.");
     }
 
     private void exigirCliente(UUID clienteId) {

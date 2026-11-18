@@ -94,7 +94,18 @@ public class SituacaoClienteService {
         return new SituacaoClienteDTOs.Situacao(identificacao(cliente), r.emAberto(), r.vencido(), r.vencemEm7Dias(), r.vencemEm30Dias(), r.diasMaiorAtraso(),
                 antigo == null ? null : new SituacaoClienteDTOs.TituloVencido(antigo.id(), antigo.numero(), antigo.vencimento(), CalculoFinanceiro.arredondar(antigo.valorAberto())),
                 recebido, ultimo, new SituacaoClienteDTOs.Titulos(contagem[2], r.emAberto().quantidade(), contagem[0], contagem[1]),
-                CalculoFinanceiro.arredondar(creditoRepository.saldo(clienteId)));
+                CalculoFinanceiro.arredondar(creditoRepository.saldo(clienteId)), aPagar(clienteId, hoje));
+    }
+
+    // títulos a pagar do cliente (favorecido): em aberto (ABERTO/PAGO_PARCIAL) e vencido
+    private SituacaoClienteDTOs.APagar aPagar(UUID clienteId, LocalDate hoje) {
+        return jdbc.sql("""
+                        select count(*) as n, coalesce(sum(valor - valor_pago), 0) as aberto,
+                               coalesce(sum(case when vencimento < cast(:hoje as date) then valor - valor_pago end), 0) as vencido
+                        from conta_pagar where cliente_id = :id and situacao in ('ABERTO', 'PAGO_PARCIAL')
+                        """).param("id", clienteId).param("hoje", hoje)
+                .query((rs, n) -> new SituacaoClienteDTOs.APagar(rs.getInt("n"), CalculoFinanceiro.arredondar(rs.getBigDecimal("aberto")),
+                        CalculoFinanceiro.arredondar(rs.getBigDecimal("vencido")))).single();
     }
 
     private static SituacaoClienteDTOs.Cliente identificacao(Cliente c) {

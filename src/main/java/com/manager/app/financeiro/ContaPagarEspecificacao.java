@@ -37,6 +37,10 @@ public final class ContaPagarEspecificacao {
                 p.add(cb.or(cb.equal(categoria.get("id"), f.categoriaId()), cb.equal(pai.get("id"), f.categoriaId())));
             }
             if (f.estimado() != null) p.add(cb.equal(root.get("estimado"), f.estimado()));
+            if (f.clienteId() != null) p.add(cb.equal(root.get("cliente").get("id"), f.clienteId()));
+            if (f.origem() != null && !f.origem().isBlank()) {
+                p.add("DEVOLUCAO_CLIENTE".equals(f.origem().trim().toUpperCase()) ? cb.isNotNull(root.get("excedenteId")) : cb.isNull(root.get("excedenteId")));
+            }
             if (f.temBusca()) p.add(busca(f.busca().trim(), root, cb));
             if (f.temSituacao()) {
                 List<Predicate> ou = new ArrayList<>();
@@ -72,6 +76,10 @@ public final class ContaPagarEspecificacao {
         ou.add(SpecificationUtils.likeIgnoreCase(cb, root.get("descricao"), termo, ModoBusca.MEIO));
         ou.add(SpecificationUtils.likeIgnoreCase(cb, root.get("documento"), termo, ModoBusca.MEIO));
         ou.add(SpecificationUtils.likeIgnoreCase(cb, root.get("favorecido"), termo, ModoBusca.MEIO));
+        // código e nome do cliente vinculado
+        Join<ContaPagar, com.manager.app.cliente.Cliente> cliente = root.join("cliente", JoinType.LEFT);
+        ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("codigo"), termo, ModoBusca.MEIO));
+        ou.add(SpecificationUtils.likeIgnoreCase(cb, cliente.get("nome"), termo, ModoBusca.MEIO));
         String numero = termo.startsWith("#") ? termo.substring(1) : termo;
         if (!numero.isEmpty() && numero.length() <= 15 && numero.chars().allMatch(Character::isDigit)) {
             ou.add(cb.equal(root.get("numero"), Long.parseLong(numero)));

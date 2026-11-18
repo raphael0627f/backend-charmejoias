@@ -27,7 +27,7 @@ public class ExcedenteAcertoController {
     @PostMapping("/{id}/destinar")
     @PreAuthorize("hasAuthority('CREDITO_CLIENTE_GERENCIAR')")
     public ResponseEntity<ExcedenteDTOs.Detalhe> destinar(@PathVariable Long id, @RequestBody @jakarta.validation.Valid CreditoClienteDTOs.DestinarRequest request) {
-        creditoService.destinar(id, request.destino());
+        creditoService.destinar(id, request.destino(), request.vencimento());
         return ResponseEntity.ok(service.detalhe(id));
     }
 

@@ -68,6 +68,14 @@ public class ContaPagar extends AuditoriaFinanceira {
     // true = valor e vencimento ainda não confirmados (ocorrência de recorrência de valor variável); passa a false na confirmação
     private boolean estimado;
 
+    // cliente como favorecido (só no lançamento individual); favorecido (texto) guarda o nome do cliente no momento do lançamento
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cliente_id")
+    private com.manager.app.cliente.Cliente cliente;
+
+    // excedente de acerto que originou o título (devolução ao cliente); nulo nos demais títulos
+    private Long excedenteId;
+
     private String cancelamentoMotivo;
     private LocalDateTime cancelamentoEm;
 

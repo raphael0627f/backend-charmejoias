@@ -229,7 +229,7 @@ class ValorVariavelCalculoTest {
     // ---------- indicador no pedido de criação ----------
 
     private static ContaPagarRequestDTO pedido(Boolean raiz, ContaPagarRequestDTO.Recorrencia rec) {
-        return new ContaPagarRequestDTO("Água", null, 1L, null, v("180"), null, null, d("2026-12-10"), null, null, null, null, null, rec, raiz, null);
+        return new ContaPagarRequestDTO("Água", null, 1L, null, v("180"), null, null, d("2026-12-10"), null, null, null, null, null, rec, raiz, null, null);
     }
 
     @Test

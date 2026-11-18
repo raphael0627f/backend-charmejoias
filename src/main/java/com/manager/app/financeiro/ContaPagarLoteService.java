@@ -40,6 +40,7 @@ public class ContaPagarLoteService {
                 if (item == null) throw new ItemInvalidoException("A linha do lançamento está vazia.");
                 if (item.parcelamento() != null) throw new ItemInvalidoException("O lançamento em lote não aceita parcelamento.");
                 if (item.recorrencia() != null) throw new ItemInvalidoException("O lançamento em lote não aceita recorrência.");
+                if (item.clienteId() != null) throw new ItemInvalidoException("O lançamento em lote não aceita cliente como favorecido. Informe o favorecido em texto.");
                 Set<ConstraintViolation<ContaPagarRequestDTO>> violacoes = validator.validate(item);
                 if (!violacoes.isEmpty()) {
                     ConstraintViolation<ContaPagarRequestDTO> v = violacoes.stream().min(Comparator.comparing(c -> c.getPropertyPath().toString())).get();

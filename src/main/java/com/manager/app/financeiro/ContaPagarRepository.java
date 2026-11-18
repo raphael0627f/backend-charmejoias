@@ -13,6 +13,14 @@ import java.util.UUID;
 
 public interface ContaPagarRepository extends JpaRepository<ContaPagar, Long>, JpaSpecificationExecutor<ContaPagar> {
 
+    // título a pagar ativo (não cancelado) da devolução de um excedente (sem trava)
+    @Query("select c from ContaPagar c where c.excedenteId = :excedenteId and c.situacao <> com.manager.app.financeiro.SituacaoContaPagar.CANCELADO")
+    java.util.Optional<ContaPagar> findAtivoDoExcedente(@org.springframework.data.repository.query.Param("excedenteId") Long excedenteId);
+
+    // somente o id (não carrega a entidade: quem trava o título depois precisa lê-lo já atualizado)
+    @Query("select c.id from ContaPagar c where c.excedenteId = :excedenteId and c.situacao <> com.manager.app.financeiro.SituacaoContaPagar.CANCELADO")
+    java.util.Optional<Long> findIdAtivoDoExcedente(@org.springframework.data.repository.query.Param("excedenteId") Long excedenteId);
+
     @Query(value = "select nextval('conta_pagar_numero_seq')", nativeQuery = true)
     Long proximoNumero();
 

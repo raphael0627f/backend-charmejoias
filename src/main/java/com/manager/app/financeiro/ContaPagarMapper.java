@@ -3,6 +3,7 @@ package com.manager.app.financeiro;
 import com.manager.app.financeiro.dto.AnexoDTO;
 import com.manager.app.financeiro.dto.ContaPagarDetalheDTO;
 import com.manager.app.financeiro.dto.ContaPagarResumoDTO;
+import com.manager.app.financeiro.dto.ContaReceberResumoDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +28,9 @@ public class ContaPagarMapper {
                 ContaPagarCalculo.valorAberto(c.getSituacao(), c.getValor(), c.getValorPago()), c.getEmissao(), c.getCompetencia(),
                 c.getVencimento(), c.getDocumento(), c.getSituacao(),
                 ContaPagarCalculo.situacaoExibicao(c.getSituacao(), c.getVencimento(), hoje), c.getGrupoParcelamentoId(),
-                c.getParcelaNumero(), c.getParcelaTotal(), c.getCancelamentoMotivo(), c.getCancelamentoEm(), quantidadeAnexos, c.getRecorrenciaId(), c.isEstimado());
+                c.getParcelaNumero(), c.getParcelaTotal(), c.getCancelamentoMotivo(), c.getCancelamentoEm(), quantidadeAnexos, c.getRecorrenciaId(), c.isEstimado(),
+                c.getCliente() == null ? null : new ContaReceberResumoDTO.ClienteRef(c.getCliente().getId(), c.getCliente().getCodigo(), c.getCliente().getNome(), ContaReceberMapper.documentoDe(c.getCliente())),
+                c.getExcedenteId(), c.getExcedenteId() == null ? "MANUAL" : "DEVOLUCAO_CLIENTE");
     }
 
     public ContaPagarDetalheDTO detalhe(ContaPagar c, LocalDate hoje, List<ContaPagarPagamento> pagamentos, List<ContaPagar> parcelas,
@@ -43,7 +46,7 @@ public class ContaPagarMapper {
                 parcelas.stream().map(p -> resumo(p, hoje, anexosPorTitulo.getOrDefault(p.getId(), 0))).toList(),
                 eventos.stream().map(e -> new ContaPagarDetalheDTO.Evento(e.getId(), e.getEvento(), e.getDetalhe(),
                         mapper.usuario(e.getUsuario()), e.getDataHora())).toList(),
-                c.getCreatedAt(), c.getUpdatedAt(), mapper.usuario(c.getCreatedBy()), mapper.usuario(c.getUpdatedBy()), recorrencia, anexos.stream().map(this::anexo).toList(), c.isEstimado());
+                c.getCreatedAt(), c.getUpdatedAt(), mapper.usuario(c.getCreatedBy()), mapper.usuario(c.getUpdatedBy()), recorrencia, anexos.stream().map(this::anexo).toList(), c.isEstimado(), r.cliente(), r.excedenteId(), r.origem());
     }
 
     public AnexoDTO anexo(ContaPagarAnexo a) {

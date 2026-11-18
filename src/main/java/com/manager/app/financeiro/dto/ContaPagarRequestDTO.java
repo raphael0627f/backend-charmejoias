@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 // criação (simples ou parcelada, com o bloco parcelamento) e edição de título; no PUT o bloco parcelamento é ignorado
 public record ContaPagarRequestDTO(
@@ -26,8 +27,10 @@ public record ContaPagarRequestDTO(
         Parcelamento parcelamento,
         Recorrencia recorrencia,
         Boolean valorVariavel,
-        Boolean confirmarDados) {
+        Boolean confirmarDados,
+        UUID clienteId) {
 
+    // clienteId: cliente como favorecido, somente em lançamento individual (simples ou parcelado); ausente = favorecido avulso (texto). No PUT, ausente torna o título avulso.
     // valorVariavel (raiz ou no bloco recorrencia): ocorrências estimadas; confirmarDados: só no PUT, confirma valor/vencimento de título estimado
     // exclusivo com parcelamento; o vencimento informado é a primeira ocorrência
     public record Recorrencia(com.manager.app.financeiro.PeriodicidadeRecorrencia periodicidade, LocalDate dataFim, Boolean valorVariavel) {

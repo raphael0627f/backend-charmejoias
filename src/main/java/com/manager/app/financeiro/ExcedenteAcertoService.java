@@ -37,6 +37,7 @@ public class ExcedenteAcertoService {
     private final ExcedenteAcertoEventoRepository eventoRepository;
     private final ContaReceberRepository contaReceberRepository;
     private final AcertoConsignacaoRepository acertoRepository;
+    private final ContaPagarRepository contaPagarRepository;
     private final UsuarioAuditorAware auditor;
     private final UsuarioResumoMapper usuarioMapper;
 
@@ -149,7 +150,9 @@ public class ExcedenteAcertoService {
         ExcedenteAcerto e = repository.findById(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Excedente não encontrado."));
         List<ExcedenteDTOs.Evento> eventos = eventoRepository.findByExcedenteIdOrderByIdAsc(id).stream()
                 .map(ev -> new ExcedenteDTOs.Evento(ev.getId(), ev.getEvento(), ev.getDetalhe(), usuarioMapper.toResumoDTO(ev.getUsuario()), ev.getDataHora())).toList();
-        return new ExcedenteDTOs.Detalhe(item(e), eventos);
+        ExcedenteDTOs.Devolucao devolucao = contaPagarRepository.findAtivoDoExcedente(e.getId())
+                .map(c -> new ExcedenteDTOs.Devolucao(c.getId(), c.getNumero(), c.getSituacao().name(), CalculoFinanceiro.arredondar(c.getValorPago()), c.getVencimento())).orElse(null);
+        return new ExcedenteDTOs.Detalhe(item(e), eventos, devolucao);
     }
 
     private static ExcedenteAcerto.Situacao parseSituacao(String s) {

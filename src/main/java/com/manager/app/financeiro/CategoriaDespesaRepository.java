@@ -17,6 +17,8 @@ public interface CategoriaDespesaRepository extends JpaRepository<CategoriaDespe
 
     List<CategoriaDespesa> findByPaiId(Long paiId);
 
+    java.util.Optional<CategoriaDespesa> findByNomeIgnoreCaseAndPaiIsNull(String nome);
+
     boolean existsByPaiId(Long paiId);
 
     boolean existsByPaiIdAndAtivoTrue(Long paiId);

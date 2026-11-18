@@ -26,7 +26,11 @@ public final class ExcedenteDTOs {
     public record Evento(Long id, String evento, String detalhe, UsuarioResumoDTO usuario, LocalDateTime dataHora) {
     }
 
-    public record Detalhe(Item excedente, List<Evento> eventos) {
+    // título a pagar da devolução ao cliente (quando o destino é DEVOLUCAO)
+    public record Devolucao(Long contaPagarId, Long numero, String situacao, BigDecimal valorPago, java.time.LocalDate vencimento) {
+    }
+
+    public record Detalhe(Item excedente, List<Evento> eventos, Devolucao devolucao) {
     }
 
     public record Lista(List<Item> content, int page, int size, long totalElements, int totalPages) {

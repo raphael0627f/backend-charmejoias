@@ -14,7 +14,8 @@ public final class CreditoClienteDTOs {
 
     private CreditoClienteDTOs() {}
 
-    public record DestinarRequest(@NotBlank(message = "Informe o destino do excedente (CREDITO).") String destino) {
+    // vencimento: somente no destino DEVOLUCAO (padrão = hoje)
+    public record DestinarRequest(@NotBlank(message = "Informe o destino do excedente (CREDITO ou DEVOLUCAO).") String destino, java.time.LocalDate vencimento) {
     }
 
     public record MotivoRequest(@NotBlank(message = "Informe o motivo.") @Size(min = 5, max = 500, message = "O motivo deve ter entre 5 e 500 caracteres.") String motivo) {

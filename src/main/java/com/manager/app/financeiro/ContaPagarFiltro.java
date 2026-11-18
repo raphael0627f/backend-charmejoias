@@ -8,7 +8,7 @@ import java.util.List;
 public record ContaPagarFiltro(LocalDate vencimentoDe, LocalDate vencimentoAte, LocalDate emissaoDe, LocalDate emissaoAte,
                                LocalDate pagamentoDe, LocalDate pagamentoAte, List<SituacaoExibicaoContaPagar> situacao,
                                String busca, Long categoriaId, Long centroCustoId, Long formaPrevistaId, Long bancoId,
-                               BigDecimal valorMin, BigDecimal valorMax, Boolean estimado) {
+                               BigDecimal valorMin, BigDecimal valorMax, Boolean estimado, java.util.UUID clienteId, String origem) {
 
     public boolean temBusca() {
         return busca != null && !busca.isBlank();

@@ -57,6 +57,9 @@ public class ContaPagarService {
     private final ContaPagarRecorrenciaService recorrenciaService;
     private final MovimentacaoBancoRepository movimentacaoRepository;
     private final CategoriaDespesaRepository categoriaRepository;
+    private final com.manager.app.cliente.ClienteRepository clienteRepository;
+    private final ExcedenteAcertoRepository excedenteRepository;
+    private final ExcedenteAcertoEventoRepository excedenteEventoRepository;
     private final CentroCustoRepository centroCustoRepository;
     private final FormaPagamentoRepository formaPagamentoRepository;
     private final UsuarioAuditorAware auditor;
@@ -76,6 +79,11 @@ public class ContaPagarService {
     public ContaPagarCriacaoResponseDTO criar(ContaPagarRequestDTO r) {
         LocalDate hoje = LocalDate.now();
         Base base = validarBase(r);
+        if (r.clienteId() != null && r.recorrencia() != null) {
+            throw new ItemInvalidoException("O cliente como favorecido só pode ser informado em lançamento individual, não em recorrência.");
+        }
+        com.manager.app.cliente.Cliente cliente = resolverCliente(r.clienteId());
+        if (cliente != null) base = comFavorecido(base, nomeDoCliente(cliente));
         LocalDate emissao = r.emissao() == null ? hoje : r.emissao();
         String competenciaInformada = r.competencia() == null || r.competencia().isBlank() ? null : ContaPagarCalculo.validarCompetencia(r.competencia());
         Usuario usuario = usuarioAtual();
@@ -114,6 +122,7 @@ public class ContaPagarService {
 
         List<ContaPagarResumoDTO> resposta = new ArrayList<>();
         for (ContaPagar titulo : titulos) {
+            titulo.setCliente(cliente);
             titulo.setNumero(repository.proximoNumero());
             repository.save(titulo);
             registrar(titulo, "CRIACAO", detalheCriacao(titulo), usuario);
@@ -175,7 +184,10 @@ public class ContaPagarService {
         LocalDate hoje = LocalDate.now();
         LocalDate de = filtro.vencimentoDe();
         LocalDate ate = filtro.vencimentoAte();
-        if (!filtro.temFiltroDeData() && !filtro.temBusca() && !filtro.temSituacao()) {
+        if (filtro.origem() != null && !filtro.origem().isBlank() && !List.of("MANUAL", "DEVOLUCAO_CLIENTE").contains(filtro.origem().trim().toUpperCase())) {
+            throw new ItemInvalidoException("Origem inválida. Use MANUAL ou DEVOLUCAO_CLIENTE.");
+        }
+        if (!filtro.temFiltroDeData() && !filtro.temBusca() && !filtro.temSituacao() && filtro.clienteId() == null) {
             YearMonth mes = YearMonth.from(hoje);
             de = mes.atDay(1);
             ate = mes.atEndOfMonth();
@@ -268,6 +280,21 @@ public class ContaPagarService {
             throw new ItemInvalidoException("O título cancelado não pode ser editado.");
         }
         Base base = validarBase(r);
+        com.manager.app.cliente.Cliente clienteNovo;
+        if (c.getExcedenteId() != null) {
+            // título de devolução: cliente, categoria e valor são definidos pelo sistema e não podem ser alterados
+            if (!c.getCategoria().getId().equals(base.categoria().getId())) throw new ItemInvalidoException("A categoria do título de devolução ao cliente não pode ser alterada.");
+            if (base.valor().compareTo(CalculoFinanceiro.arredondar(c.getValor())) != 0) throw new ItemInvalidoException("O valor do título de devolução ao cliente não pode ser alterado.");
+            if (r.clienteId() != null && !r.clienteId().equals(c.getCliente().getId())) throw new ItemInvalidoException("O cliente do título de devolução não pode ser alterado.");
+            clienteNovo = c.getCliente();
+            base = comFavorecido(base, c.getFavorecido());
+        } else {
+            if (r.clienteId() != null && c.getRecorrenciaId() != null) {
+                throw new ItemInvalidoException("O cliente como favorecido só pode ser informado em lançamento individual, não em título de recorrência.");
+            }
+            clienteNovo = resolverCliente(r.clienteId());
+            if (clienteNovo != null) base = comFavorecido(base, nomeDoCliente(clienteNovo));
+        }
         LocalDate vencimento = r.vencimento() == null ? c.getVencimento() : r.vencimento();
         LocalDate emissao = r.emissao() == null ? c.getEmissao() : r.emissao();
         String competencia = r.competencia() == null || r.competencia().isBlank() ? c.getCompetencia() : ContaPagarCalculo.validarCompetencia(r.competencia());
@@ -282,7 +309,8 @@ public class ContaPagarService {
                     || !Objects.equals(idDe(c.getFormaPrevista()), idDe(base.forma()))
                     || c.getValor().compareTo(base.valor()) != 0 || !c.getVencimento().equals(vencimento) || !c.getEmissao().equals(emissao)
                     || !Objects.equals(c.getCompetencia(), competencia) || !Objects.equals(c.getDocumento(), base.documento())
-                    || !Objects.equals(c.getLinhaDigitavel(), linha);
+                    || !Objects.equals(c.getLinhaDigitavel(), linha)
+                    || !Objects.equals(idCliente(c.getCliente()), idCliente(clienteNovo));
             if (outrosCampos) {
                 throw new ItemInvalidoException("O título pago permite alterar apenas a observação. Para alterar os demais dados, estorne o pagamento antes.");
             }
@@ -297,6 +325,7 @@ public class ContaPagarService {
             }
             diff(alteracoes, "descrição", c.getDescricao(), base.descricao());
             diff(alteracoes, "favorecido", c.getFavorecido(), base.favorecido());
+            diff(alteracoes, "cliente", c.getCliente() == null ? null : c.getCliente().getNome(), clienteNovo == null ? null : clienteNovo.getNome());
             diff(alteracoes, "categoria", c.getCategoria().getNome(), base.categoria().getNome());
             diff(alteracoes, "centro de custo", nomeDe(c.getCentroCusto()), nomeDe(base.centroCusto()));
             diff(alteracoes, "forma prevista", nomeDe(c.getFormaPrevista()), nomeDe(base.forma()));
@@ -314,6 +343,7 @@ public class ContaPagarService {
 
             c.setDescricao(base.descricao());
             c.setFavorecido(base.favorecido());
+            c.setCliente(clienteNovo);
             c.setCategoria(base.categoria());
             c.setCentroCusto(base.centroCusto());
             c.setFormaPrevista(base.forma());
@@ -401,7 +431,87 @@ public class ContaPagarService {
         c.setCanceladoPor(usuario);
         repository.save(c);
         registrar(c, "CANCELAMENTO", "Título cancelado. Motivo: " + motivo, usuario);
+        if (c.getExcedenteId() != null) devolverExcedente(c, motivo, usuario);
         return c;
+    }
+
+    // título de devolução cancelado sem pagamento: o excedente volta a A DESTINAR (ordem de trava: título -> excedente)
+    private void devolverExcedente(ContaPagar c, String motivo, Usuario usuario) {
+        excedenteRepository.findByIdForUpdate(c.getExcedenteId()).ifPresent(e -> {
+            if (e.getSituacao() != ExcedenteAcerto.Situacao.DEVOLUCAO) return;
+            e.setSituacao(ExcedenteAcerto.Situacao.A_DESTINAR);
+            e.setDestino(null);
+            e.setDestinadoEm(null);
+            e.setDestinadoPor(null);
+            e.setUpdatedAt(LocalDateTime.now());
+            excedenteRepository.save(e);
+            ExcedenteAcertoEvento ev = new ExcedenteAcertoEvento();
+            ev.setExcedente(e);
+            ev.setEvento("DEVOLUCAO_CANCELADA");
+            ev.setDetalhe("Título a pagar nº " + c.getNumero() + " da devolução cancelado: o excedente voltou a A DESTINAR. Motivo: " + motivo);
+            ev.setUsuario(usuario);
+            ev.setDataHora(LocalDateTime.now());
+            excedenteEventoRepository.save(ev);
+        });
+    }
+
+    // desfazer o destino DEVOLUCAO: cancela o título a pagar da devolução (somente sem pagamento ativo), que devolve o excedente a A DESTINAR
+    @Transactional
+    public void cancelarDevolucao(Long tituloId, String motivo) {
+        ContaPagar c = buscarComLock(tituloId);
+        if (c.getSituacao() != SituacaoContaPagar.CANCELADO && pagamentoRepository.existsByContaPagarIdAndEstornadaFalse(tituloId)) {
+            throw new ItemInvalidoException("A devolução ao cliente já possui pagamento. Estorne o pagamento do título a pagar nº " + c.getNumero() + " antes de desfazer o destino.");
+        }
+        cancelarTitulo(tituloId, "Destino da devolução desfeito. " + motivo);
+    }
+
+    // título a pagar da devolução do excedente: categoria "Devoluções a clientes" automática, favorecido = cliente, vencimento padrão hoje
+    @Transactional
+    public ContaPagar criarDevolucao(ExcedenteAcerto e, LocalDate vencimento, Usuario usuario) {
+        LocalDate hoje = LocalDate.now();
+        LocalDate venc = vencimento == null ? hoje : vencimento;
+        CategoriaDespesa categoria = categoriaRepository.findByNomeIgnoreCaseAndPaiIsNull(CATEGORIA_DEVOLUCAO)
+                .orElseThrow(() -> new ItemInvalidoException("A categoria \"" + CATEGORIA_DEVOLUCAO + "\" não foi encontrada. Contate o administrador."));
+        com.manager.app.cliente.Cliente cliente = e.getCliente();
+        ContaPagar c = new ContaPagar();
+        c.setDescricao("DEVOLUÇÃO - CONS. Nº " + e.getConsignacao().getId() + " - ACERTO Nº " + e.getAcerto().getId());
+        c.setFavorecido(nomeDoCliente(cliente));
+        c.setCliente(cliente);
+        c.setExcedenteId(e.getId());
+        c.setCategoria(categoria);
+        c.setValor(CalculoFinanceiro.arredondar(e.getValor()));
+        c.setEmissao(hoje);
+        c.setCompetencia(ContaPagarCalculo.competenciaPadrao(venc));
+        c.setVencimento(venc);
+        c.setSituacao(SituacaoContaPagar.ABERTO);
+        c.setValorPago(BigDecimal.ZERO.setScale(CalculoFinanceiro.ESCALA));
+        c.setNumero(repository.proximoNumero());
+        repository.save(c);
+        registrar(c, "CRIACAO", "Título de devolução ao cliente criado no valor de " + MovimentacaoBancoService.moeda(c.getValor()) + ", com vencimento em "
+                + TextoUtils.data(venc) + ". Origem: excedente nº " + e.getId() + " do acerto nº " + e.getAcerto().getId() + ".", usuario);
+        return c;
+    }
+
+    static final String CATEGORIA_DEVOLUCAO = "Devoluções a clientes";
+
+    private com.manager.app.cliente.Cliente resolverCliente(UUID clienteId) {
+        if (clienteId == null) return null;
+        com.manager.app.cliente.Cliente cliente = clienteRepository.findById(clienteId).orElseThrow(() -> new ItemInvalidoException("O cliente informado não foi encontrado."));
+        if (!cliente.isAtivo()) throw new ItemInvalidoException("O cliente \"" + cliente.getNome() + "\" está desativado.");
+        return cliente;
+    }
+
+    private static String nomeDoCliente(com.manager.app.cliente.Cliente cliente) {
+        String nome = cliente.getNome() == null ? "" : cliente.getNome().trim();
+        return nome.length() > 150 ? nome.substring(0, 150) : nome;
+    }
+
+    private static Base comFavorecido(Base b, String favorecido) {
+        return new Base(b.descricao(), favorecido, b.categoria(), b.centroCusto(), b.forma(), b.valor(), b.documento(), b.observacao());
+    }
+
+    private static UUID idCliente(com.manager.app.cliente.Cliente c) {
+        return c == null ? null : c.getId();
     }
 
     // ---------- apoio ----------
