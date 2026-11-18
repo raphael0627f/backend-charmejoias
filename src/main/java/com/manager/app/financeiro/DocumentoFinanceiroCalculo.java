@@ -88,11 +88,16 @@ public final class DocumentoFinanceiroCalculo {
         return valor != null && CalculoFinanceiro.arredondar(valor).signum() == 0;
     }
 
-    // aviso formal quando o título ativo supera o valor do documento (crédito de cliente fica para fase posterior)
+    // aviso formal do acerto com excedente persistido a destinar (crédito do cliente ou devolução)
+    public static String avisoExcedenteADestinar(BigDecimal valor) {
+        return "O acerto possui excedente a destinar de " + MovimentacaoBancoService.moeda(valor) + ": gere crédito ou devolução.";
+    }
+
+    // aviso formal quando o título ativo supera o valor do documento (sem excedente persistido a destinar)
     public static String aviso(Tipo tipo, Saldo saldo) {
         if (saldo.excedente().signum() <= 0) return null;
         return "Atenção: o valor titulado supera o valor d" + (tipo == Tipo.ACERTO ? "o acerto" : "o pré-acerto") + " em "
-                + MovimentacaoBancoService.moeda(saldo.excedente()) + ". Nenhum novo título será gerado; o tratamento do excedente (crédito do cliente) não está disponível nesta versão.";
+                + MovimentacaoBancoService.moeda(saldo.excedente()) + ". Nenhum novo título será gerado.";
     }
 
     // descrição automática do título, em maiúsculas e curta

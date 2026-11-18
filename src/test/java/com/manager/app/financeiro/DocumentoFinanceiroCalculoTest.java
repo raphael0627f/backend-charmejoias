@@ -73,6 +73,13 @@ class DocumentoFinanceiroCalculoTest {
     }
 
     @Test
+    void avisosDoExcedente() {
+        assertThat(DocumentoFinanceiroCalculo.avisoExcedenteADestinar(v("180"))).isEqualTo("O acerto possui excedente a destinar de R$ 180,00: gere crédito ou devolução.");
+        String aviso = DocumentoFinanceiroCalculo.aviso(Tipo.ACERTO, DocumentoFinanceiroCalculo.saldo(v("800"), v("1000")));
+        assertThat(aviso).contains("supera o valor do acerto").doesNotContain("não está disponível");
+    }
+
+    @Test
     void regrasDeBloqueioDaGeracao() {
         // pré-acerto sem consignação gera título normalmente; acerto sem consignação continua bloqueado
         assertThat(DocumentoFinanceiroCalculo.motivoBloqueio(situacao(Tipo.PRE_ACERTO, false, false, true, "100", false, false, "0"))).isNull();

@@ -51,7 +51,7 @@ Sem permissão: **403 antes de qualquer validação do corpo** (inclusive corpo 
                  "vencimento": "2026-11-16", "situacao": "RECEBIDO_PARCIAL", "valorRecebido": 100.00 } ] }
 ```
 - `valorDocumento`: valor com desconto do documento. `valorTitulado`: soma dos títulos ativos (no acerto: de toda a consignação). `valorRecebido`: recebimentos ativos desses títulos.
-- `saldoATitular` ≥ 0. `excedente` > 0 quando o titulado ativo supera o valor do documento; `excedenteRecebido` > 0 quando o recebido supera o valor do documento. `aviso` (texto formal) vem preenchido quando há excedente.
+- `saldoATitular` ≥ 0. `excedente` > 0 quando o titulado ativo supera o valor do documento; `excedenteRecebido` > 0 quando o recebido supera o valor do documento. `aviso` (texto formal): no acerto com excedente persistido a destinar traz `O acerto possui excedente a destinar de R$ X: gere crédito ou devolução.`; excedente já destinado, sem aviso; sem excedente persistido mantém o aviso de valor titulado acima do valor do documento.
 - `valorTituladoPreAcerto`: só no acerto, a parte já titulada pelo pré-acerto da consignação.
 - `tituloAtivo`: há título **próprio** ativo (do documento). `bloqueadoParaEdicao`: o documento não pode mais ser alterado (pré-acerto: `tituloAtivo`; acerto: confirmado ou `tituloAtivo`).
 - `podeGerar`/`motivoBloqueio`: o frontend deve **desabilitar o botão** e exibir o motivo quando `podeGerar` for `false`.

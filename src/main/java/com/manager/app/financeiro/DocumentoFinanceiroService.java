@@ -10,6 +10,7 @@ import com.manager.app.financeiro.dto.ContaReceberDetalheDTO;
 import com.manager.app.financeiro.dto.ContaReceberRequestDTO;
 import com.manager.app.financeiro.dto.ContaReceberResumoDTO;
 import com.manager.app.financeiro.dto.DocumentoFinanceiroDTOs;
+import com.manager.app.financeiro.dto.ExcedenteDTOs;
 import com.manager.app.preacerto.PreAcertoConsignacao;
 import com.manager.app.preacerto.PreAcertoConsignacaoProdutoRepository;
 import com.manager.app.preacerto.PreAcertoConsignacaoRepository;
@@ -116,11 +117,15 @@ public class DocumentoFinanceiroService {
         List<DocumentoFinanceiroDTOs.Titulo> titulos = proprios.stream().map(t -> new DocumentoFinanceiroDTOs.Titulo(t.getId(), t.getNumero(),
                 t.getParcelaNumero(), t.getParcelaTotal(), CalculoFinanceiro.arredondar(t.getValor()), t.getVencimento(), t.getSituacao(),
                 CalculoFinanceiro.arredondar(t.getValorRecebido()))).toList();
+        // acerto com excedente persistido: a destinar -> orienta a destinar; já destinado -> sem aviso; sem excedente persistido mantém o aviso de titulado acima do valor
+        ExcedenteDTOs.Resumo excedenteAcerto = preAcerto ? null : excedenteService.resumoDoAcerto(d.id());
+        String aviso = excedenteAcerto == null ? DocumentoFinanceiroCalculo.aviso(d.tipo(), saldo)
+                : ("A_DESTINAR".equals(excedenteAcerto.situacao()) ? DocumentoFinanceiroCalculo.avisoExcedenteADestinar(excedenteAcerto.valor()) : null);
         return new DocumentoFinanceiroDTOs.Resumo(d.tipo().name(), d.id(), d.consignacao() == null ? null : d.consignacao().getId(),
                 cliente == null ? null : cliente.getCodigo(), cliente == null ? null : cliente.getNome(), d.valor(), titulado, recebido, saldo.saldoATitular(), saldo.excedente(),
                 DocumentoFinanceiroCalculo.excedenteRecebido(d.valor(), recebido), tituladoPreAcerto, tituloProprioAtivo, bloqueadoParaEdicao,
-                motivo == null, motivo, DocumentoFinanceiroCalculo.aviso(d.tipo(), saldo), titulos,
-                preAcerto ? null : excedenteService.resumoDoAcerto(d.id()),
+                motivo == null, motivo, aviso, titulos,
+                excedenteAcerto,
                 preAcerto || d.confirmado() ? null : ajustePreAcertoService.ajusteProposto(ativosDaConsignacao, d.valor()));
     }
 
