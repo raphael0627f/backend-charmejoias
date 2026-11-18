@@ -36,6 +36,8 @@ public class DocumentoFinanceiroService {
     static final String CATEGORIA_GRUPO = "Vendas";
     static final String CATEGORIA_SUBGRUPO = "Consignação";
 
+    private final ExcedenteAcertoService excedenteService;
+    private final AjustePreAcertoService ajustePreAcertoService;
     private final PreAcertoConsignacaoRepository preAcertoRepository;
     private final PreAcertoConsignacaoProdutoRepository preAcertoProdutoRepository;
     private final AcertoConsignacaoRepository acertoRepository;
@@ -117,7 +119,9 @@ public class DocumentoFinanceiroService {
         return new DocumentoFinanceiroDTOs.Resumo(d.tipo().name(), d.id(), d.consignacao() == null ? null : d.consignacao().getId(),
                 cliente == null ? null : cliente.getCodigo(), cliente == null ? null : cliente.getNome(), d.valor(), titulado, recebido, saldo.saldoATitular(), saldo.excedente(),
                 DocumentoFinanceiroCalculo.excedenteRecebido(d.valor(), recebido), tituladoPreAcerto, tituloProprioAtivo, bloqueadoParaEdicao,
-                motivo == null, motivo, DocumentoFinanceiroCalculo.aviso(d.tipo(), saldo), titulos);
+                motivo == null, motivo, DocumentoFinanceiroCalculo.aviso(d.tipo(), saldo), titulos,
+                preAcerto ? null : excedenteService.resumoDoAcerto(d.id()),
+                preAcerto || d.confirmado() ? null : ajustePreAcertoService.ajusteProposto(ativosDaConsignacao, d.valor()));
     }
 
     // títulos não cancelados do documento: os da consignação inteira ou, no pré-acerto sem consignação, apenas os do próprio pré-acerto

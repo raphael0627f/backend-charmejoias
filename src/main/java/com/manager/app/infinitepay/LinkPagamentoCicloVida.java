@@ -38,6 +38,13 @@ public class LinkPagamentoCicloVida {
         mudar(repository.findByContaReceberIdAndStatus(titulo.getId(), StatusLinkPagamento.ATIVO), StatusLinkPagamento.ENCERRADO_TITULO_RECEBIDO);
     }
 
+    // valor do título alterado (ajuste do pré-acerto na confirmação do acerto): links ativos ficam desatualizados e viram NAO_UTILIZAR
+    public boolean aoAjustarValor(ContaReceber titulo) {
+        List<ContaReceberLinkPagamento> ativos = repository.findByContaReceberIdAndStatus(titulo.getId(), StatusLinkPagamento.ATIVO);
+        mudar(ativos, StatusLinkPagamento.NAO_UTILIZAR);
+        return !ativos.isEmpty();
+    }
+
     // título cancelado: links ativos viram TITULO_CANCELADO; devolve true quando havia link ativo (a resposta traz o aviso formal)
     public boolean aoCancelar(ContaReceber titulo) {
         List<ContaReceberLinkPagamento> ativos = repository.findByContaReceberIdAndStatus(titulo.getId(), StatusLinkPagamento.ATIVO);

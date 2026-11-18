@@ -67,6 +67,7 @@ public class ContaReceberService {
     private final ContaReceberMapper mapper;
     private final PlatformTransactionManager transactionManager;
     private final com.manager.app.infinitepay.LinkPagamentoCicloVida linkCicloVida;
+    private final ExcedenteAcertoService excedenteAcertoService;
 
     @PersistenceContext
     private EntityManager em;
@@ -163,6 +164,31 @@ public class ContaReceberService {
         registrar(c, "RECEBIMENTO_AUTOMATICO", "Título sem valor a pagar quitado automaticamente em " + TextoUtils.data(data)
                 + ". Não houve recebimento financeiro nem movimentação bancária.", usuario);
         return c;
+    }
+
+    // ajuste do título do pré-acerto na confirmação do acerto (único caminho que altera o valor de título de consignação): reduz o valor ou, sem recebimento
+    // e totalmente reduzido, cancela a parcela. Registra evento próprio; links ativos deixam de valer.
+    @Transactional
+    public boolean ajustarTituloDoPreAcerto(ContaReceber c, BigDecimal novoValor, String contexto) {
+        Usuario usuario = usuarioAtual();
+        if (novoValor.signum() == 0) {
+            c.setSituacao(SituacaoContaReceber.CANCELADO);
+            c.setCancelamentoMotivo("Cancelado automaticamente na confirmação do acerto sem valor a pagar.");
+            c.setCancelamentoEm(LocalDateTime.now());
+            c.setCanceladoPor(usuario);
+            repository.save(c);
+            registrar(c, "TITULO_CANCELADO", "Cancelado automaticamente na confirmação do acerto sem valor a pagar (nada foi pago). " + contexto, usuario);
+            return linkCicloVida.aoCancelar(c);
+        }
+        BigDecimal anterior = c.getValor();
+        c.setValor(novoValor);
+        c.setSituacao(ContaReceberCalculo.situacaoPara(novoValor, c.getValorRecebido()));
+        repository.save(c);
+        registrar(c, "VALOR_AJUSTADO_ACERTO", "Valor do título ajustado de " + MovimentacaoBancoService.moeda(anterior) + " para " + MovimentacaoBancoService.moeda(novoValor)
+                + " na confirmação do acerto. " + contexto, usuario);
+        if (linkCicloVida.aoAjustarValor(c)) registrar(c, "LINK_PAGAMENTO_NAO_UTILIZAR", "Links de pagamento ativos marcados como não utilizar: o valor do título foi ajustado.", usuario);
+        linkCicloVida.aoQuitar(c);
+        return false;
     }
 
     private static void exigirNaoZerado(ContaReceber c, String acao) {
@@ -480,6 +506,7 @@ public class ContaReceberService {
         ContaReceber c = buscarComLock(id);
         ContaReceberCalculo.validarCancelavel(c.getSituacao(), c.getValorRecebido());
         exigirNaoZerado(c, "cancelado");
+        excedenteAcertoService.bloquearSeDestinado(c, "cancelar o título");
         Usuario usuario = usuarioAtual();
         c.setSituacao(SituacaoContaReceber.CANCELADO);
         c.setCancelamentoMotivo(motivo);
@@ -487,6 +514,7 @@ public class ContaReceberService {
         c.setCanceladoPor(usuario);
         repository.save(c);
         registrar(c, "TITULO_CANCELADO", "Título cancelado. Motivo: " + motivo, usuario);
+        excedenteAcertoService.sincronizarPorTitulo(c);
         // links de pagamento ativos deste título passam a TITULO_CANCELADO (a InfinitePay não permite cancelá-los lá)
         boolean comLink = linkCicloVida.aoCancelar(c);
         return new Cancelado(c, comLink);

@@ -20,7 +20,7 @@ public final class DocumentoFinanceiroDTOs {
     public record Resumo(String tipo, Long documentoId, Long consignacaoId, String clienteCodigo, String clienteNome, BigDecimal valorDocumento, BigDecimal valorTitulado,
                          BigDecimal valorRecebido, BigDecimal saldoATitular, BigDecimal excedente, BigDecimal excedenteRecebido,
                          BigDecimal valorTituladoPreAcerto, boolean tituloAtivo, boolean bloqueadoParaEdicao, boolean podeGerar,
-                         String motivoBloqueio, String aviso, List<Titulo> titulos) {
+                         String motivoBloqueio, String aviso, List<Titulo> titulos, ExcedenteDTOs.Resumo excedenteAcerto, ExcedenteDTOs.AjusteProposto ajusteProposto) {
     }
 
     // todos os campos são opcionais; sem corpo valem os padrões (título simples com vencimento hoje)

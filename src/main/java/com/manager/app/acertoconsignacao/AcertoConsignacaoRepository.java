@@ -23,6 +23,8 @@ public interface AcertoConsignacaoRepository extends JpaRepository<AcertoConsign
 
     boolean existsByConsignacaoId(Long consignacaoId);
 
+    java.util.Optional<AcertoConsignacao> findByConsignacaoId(Long consignacaoId);
+
     // id da consignação do acerto sem carregar a entidade (lista vazia = acerto inexistente)
     @Query("select a.consignacao.id from AcertoConsignacao a where a.id = :id")
     java.util.List<Long> consignacaoIdDe(@Param("id") Long id);

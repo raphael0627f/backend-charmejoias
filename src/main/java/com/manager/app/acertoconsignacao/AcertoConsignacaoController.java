@@ -66,9 +66,12 @@ public class AcertoConsignacaoController {
 
     @PutMapping(value = "/{id}/confirmar")
     @PreAuthorize("hasAuthority('ACERTO_CONSIGNACAO_GERENCIAR')")
-    public ResponseEntity<AcertoConsignacaoResponseDTO> confirmar(@PathVariable Long id){
-        AcertoConsignacao acerto = service.confirmar(id);
-        return ResponseEntity.ok(mapper.toResponseDTO(acerto));
+    public ResponseEntity<AcertoConsignacaoResponseDTO> confirmar(@PathVariable Long id,
+                                                                  @RequestBody(required = false) com.manager.app.acertoconsignacao.dto.AcertoConfirmacaoRequestDTO request){
+        var resultado = service.confirmarComAviso(id, request != null && Boolean.TRUE.equals(request.ajustarTituloPreAcerto()));
+        AcertoConsignacaoResponseDTO resposta = mapper.toResponseDTO(resultado.acerto());
+        resposta.setAviso(resultado.aviso());
+        return ResponseEntity.ok(resposta);
     }
 
     @GetMapping(value = "/{id}/produtos-vendidos")

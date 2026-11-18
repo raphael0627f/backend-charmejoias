@@ -41,6 +41,7 @@ public class ContaReceberRecebimentoService {
     private final UsuarioAuditorAware auditor;
     private final PlatformTransactionManager transactionManager;
     private final com.manager.app.infinitepay.LinkPagamentoCicloVida linkCicloVida;
+    private final ExcedenteAcertoService excedenteService;
 
     private record Aplicado(ContaReceberRecebimento recebimento, MovimentacaoBanco movimentacao) {
     }
@@ -97,6 +98,7 @@ public class ContaReceberRecebimentoService {
         // ciclo de vida dos links: primeiro o link usado na baixa (e os demais ficam NAO_UTILIZAR); depois, se o título foi quitado, encerra os que sobraram
         if (link != null) linkCicloVida.marcarPago(link, recebimento.getId(), "Recebimento registrado com o link.");
         linkCicloVida.aoQuitar(titulo);
+        excedenteService.sincronizarPorTitulo(titulo);
         return new Aplicado(recebimento, mov);
     }
 
@@ -107,6 +109,7 @@ public class ContaReceberRecebimentoService {
         String motivo = CalculoFinanceiro.validarMotivo(request == null ? null : request.motivo());
         Long tituloId = recebimentoRepository.findContaReceberIdById(recebimentoId).orElseThrow(() -> new ObjetoNaoEncontradoException("Recebimento não encontrado."));
         ContaReceber titulo = contaReceberService.buscarComLock(tituloId);
+        excedenteService.bloquearSeDestinado(titulo, "estornar o recebimento");
         ContaReceberRecebimento recebimento = recebimentoRepository.findByIdForUpdate(recebimentoId)
                 .orElseThrow(() -> new ObjetoNaoEncontradoException("Recebimento não encontrado."));
         if (recebimento.isEstornada()) throw new ItemInvalidoException("Este recebimento já foi estornado.");
@@ -122,6 +125,7 @@ public class ContaReceberRecebimentoService {
         registrar(titulo, "RECEBIMENTO_ESTORNADO", "Estorno do recebimento nº " + recebimento.getId() + " no valor total de " + MovimentacaoBancoService.moeda(recebimento.getValorTotal())
                 + " (principal " + MovimentacaoBancoService.moeda(recebimento.getValorPrincipal()) + "), realizado em " + TextoUtils.data(recebimento.getDataRecebimento())
                 + ". Motivo: " + motivo, usuario);
+        excedenteService.sincronizarPorTitulo(titulo);
         return new RecebimentoDTOs.Resultado(mapper.recebimento(recebimento, original.getId()), contaReceberService.detalhe(titulo),
                 movimentacaoService.avisoSaldoNegativo(List.of(banco)));
     }

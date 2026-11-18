@@ -57,6 +57,8 @@ public class AcertoConsignacaoService {
     private final UsuarioAuditorAware usuarioAuditorAware;
     private final com.manager.app.financeiro.ContaReceberRepository contaReceberRepository;
     private final com.manager.app.financeiro.DocumentoFinanceiroService documentoFinanceiroService;
+    private final com.manager.app.financeiro.ExcedenteAcertoService excedenteAcertoService;
+    private final com.manager.app.financeiro.AjustePreAcertoService ajustePreAcertoService;
 
     public Page<AcertoConsignacao> findAll(String busca, ModoBusca modoBusca, Long consignacaoId, Boolean confirmado,
                                             LocalDate dataEntregaInicio, LocalDate dataEntregaFim,
@@ -406,6 +408,14 @@ public class AcertoConsignacaoService {
 
     @Transactional
     public AcertoConsignacao confirmar(Long id){
+        return confirmarComAviso(id, false).acerto();
+    }
+
+    public record ResultadoConfirmacao(AcertoConsignacao acerto, String aviso) {
+    }
+
+    @Transactional
+    public ResultadoConfirmacao confirmarComAviso(Long id, boolean ajustarTituloPreAcerto){
         // mesma ordem de bloqueio da geração de título (consignação, depois acerto): serializa a confirmação com a geração e com outra confirmação
         List<Long> consignacaoIds = repository.consignacaoIdDe(id);
         if (consignacaoIds.isEmpty()) throw new ObjetoNaoEncontradoException("Acerto de consignação não encontrado. Id: " + id);
@@ -417,9 +427,13 @@ public class AcertoConsignacaoService {
             throw new ItemInvalidoException("O acerto já está confirmado. Id: " + id);
         }
 
+        // opção B: título do pré-acerto acima do acerto exige aceite explícito (ajustarTituloPreAcerto) e é reduzido para max(acerto, recebido)
+        String aviso = ajustePreAcertoService.ajustarNaConfirmacao(acerto, ajustarTituloPreAcerto);
         acerto.setConfirmado(true);
         // acerto sem valor a pagar (0,00): registra o título zerado já quitado na mesma transação (sem pré-acerto titulado; idempotente)
         documentoFinanceiroService.gerarTituloZeradoDoAcerto(acerto);
-        return acerto;
+        // excedente: o que o cliente efetivamente pagou dos títulos do pré-acerto acima do valor do acerto fica A_DESTINAR (regra isolada em ExcedenteAcertoCalculo)
+        excedenteAcertoService.sincronizar(acerto.getConsignacao().getId());
+        return new ResultadoConfirmacao(acerto, aviso);
     }
 }

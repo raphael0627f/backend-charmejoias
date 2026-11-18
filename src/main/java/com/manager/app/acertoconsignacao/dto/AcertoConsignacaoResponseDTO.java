@@ -47,4 +47,8 @@ public class AcertoConsignacaoResponseDTO {
     private LocalDateTime updatedAt;
     private UsuarioResumoDTO createdBy;
     private UsuarioResumoDTO updatedBy;
+
+    // aviso formal da confirmação (ex.: links de pagamento já enviados de título cancelado automaticamente ainda podem ser pagos); ausente quando não há
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private String aviso;
 }

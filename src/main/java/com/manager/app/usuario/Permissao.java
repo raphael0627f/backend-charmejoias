@@ -46,5 +46,9 @@ public enum Permissao {
     CONTA_RECEBER_RECEBER,
     CONTA_RECEBER_ESTORNAR,
     // financeiro 3A (link de pagamento InfinitePay): configuração da InfiniteTag e da chave da API, só o perfil ADMIN (V73)
-    INFINITEPAY_GERENCIAR
+    INFINITEPAY_GERENCIAR,
+    // financeiro 6.3 (crédito do cliente): concedidas só ao perfil ADMIN na V76
+    CREDITO_CLIENTE_VISUALIZAR,
+    CREDITO_CLIENTE_GERENCIAR,
+    CREDITO_CLIENTE_APLICAR
 }
