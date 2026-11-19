@@ -37,7 +37,7 @@ Todas as respostas de Acerto de Consignação (listagem resumida e detalhe) agor
   "id": 12,
   "consignacaoId": 10,
   "preAcertoId": 5,
-  "cliente": { "codigo": "10815RF", "nome": "..." },
+  "cliente": { "codigo": "10815RF", "nome": "...", "cidade": "Goiânia", "uf": "GO" },
   "desconto": 0,
   "observacoes": "...",
   "confirmado": false,
@@ -59,3 +59,7 @@ Todas as respostas de Acerto de Consignação (listagem resumida e detalhe) agor
 2. Enviar `preAcertoId` no corpo do `POST`/`PUT` só quando o usuário selecionar algum; caso contrário, omitir o campo ou enviar `null`.
 3. Exibir o `preAcertoId` (ou os dados do pré-acerto, se a tela buscar por id) na listagem/detalhe do Acerto, quando não for `null`.
 4. Nenhuma mudança é necessária nos fluxos que não usam esse campo — ele é 100% opcional e não quebra nada existente.
+
+
+## Resumo do cliente com cidade e UF (pré-acerto e acerto)
+`cliente` (resumo) dos DTOs de **resumo do pré-acerto** (`PreAcertoConsignacaoResumoDTO`) e do **acerto** (`AcertoConsignacaoResumoDTO`) passou a trazer também **`cidade`** e **`uf`**: `{ codigo, nome, cidade, uf }`, para exibir `CÓDIGO · NOME · CIDADE`. Origem: endereço **principal** do cliente; sem principal, o **primeiro** endereço; cliente sem endereço (ou campo vazio) → `cidade` e/ou `uf` **nulos** (o front deve omitir o trecho). Campos novos e aditivos: os demais usos do resumo de cliente (consignação, montagem, planejador de rota) continuam com `codigo` e `nome` (cidade/uf nulos).

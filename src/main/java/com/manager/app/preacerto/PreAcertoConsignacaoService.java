@@ -137,9 +137,7 @@ public class PreAcertoConsignacaoService {
         PreAcertoConsignacaoResumoDTO dto = new PreAcertoConsignacaoResumoDTO();
         dto.setId(preAcerto.getId());
         dto.setConsignacaoId(preAcerto.getConsignacao() != null ? preAcerto.getConsignacao().getId() : null);
-        dto.setCliente(preAcerto.getCliente() != null
-                ? new ClienteResumoDTO(preAcerto.getCliente().getCodigo(), preAcerto.getCliente().getNome())
-                : null);
+        dto.setCliente(ClienteResumoDTO.de(preAcerto.getCliente()));
         dto.setObservacoes(preAcerto.getObservacoes());
         dto.setItensCount(totais != null ? totais.getItensCount().intValue() : 0);
         BigDecimal valorTotal = totais != null ? totais.getValorTotal() : BigDecimal.ZERO;

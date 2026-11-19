@@ -122,9 +122,7 @@ public class AcertoConsignacaoService {
         dto.setId(acerto.getId());
         dto.setConsignacaoId(consignacao != null ? consignacao.getId() : null);
         dto.setPreAcertoId(acerto.getPreAcerto() != null ? acerto.getPreAcerto().getId() : null);
-        dto.setCliente(consignacao != null && consignacao.getCliente() != null
-                ? new ClienteResumoDTO(consignacao.getCliente().getCodigo(), consignacao.getCliente().getNome())
-                : null);
+        dto.setCliente(consignacao != null ? ClienteResumoDTO.de(consignacao.getCliente()) : null);
         dto.setDesconto(acerto.getDesconto());
         dto.setObservacoes(acerto.getObservacoes());
         dto.setConfirmado(acerto.getConfirmado());
