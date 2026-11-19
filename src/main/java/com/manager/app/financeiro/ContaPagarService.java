@@ -279,7 +279,7 @@ public class ContaPagarService {
         if (c.getSituacao() == SituacaoContaPagar.CANCELADO) {
             throw new ItemInvalidoException("O título cancelado não pode ser editado.");
         }
-        Base base = validarBase(r);
+        Base base = validarBase(r, c.getExcedenteId() != null);
         com.manager.app.cliente.Cliente clienteNovo;
         if (c.getExcedenteId() != null) {
             // título de devolução: cliente, categoria e valor são definidos pelo sistema e não podem ser alterados
@@ -525,7 +525,24 @@ public class ContaPagarService {
         return repository.findByIdForUpdate(id).orElseThrow(() -> new ObjetoNaoEncontradoException("Título não encontrado."));
     }
 
+    // a categoria "Devoluções a clientes" (e seus subgrupos) é reservada ao título gerado pelo sistema na devolução do excedente
+    static boolean categoriaReservada(CategoriaDespesa c) {
+        return c != null && (CATEGORIA_DEVOLUCAO.equalsIgnoreCase(c.getNome()) && c.getPai() == null
+                || c.getPai() != null && CATEGORIA_DEVOLUCAO.equalsIgnoreCase(c.getPai().getNome()) && c.getPai().getPai() == null);
+    }
+
+    static void exigirCategoriaLivre(CategoriaDespesa c) {
+        if (categoriaReservada(c)) {
+            throw new ItemInvalidoException("A categoria \"" + CATEGORIA_DEVOLUCAO + "\" é reservada às devoluções geradas pelo sistema a partir do excedente do acerto e não pode ser usada em lançamento manual.");
+        }
+    }
+
     Base validarBase(ContaPagarRequestDTO r) {
+        return validarBase(r, false);
+    }
+
+    // permitirReservada: somente na edição de um título de devolução já existente (a categoria dele não pode mudar)
+    Base validarBase(ContaPagarRequestDTO r, boolean permitirReservada) {
         String descricao = r.descricao() == null ? "" : r.descricao().trim();
         if (descricao.isEmpty()) throw new ItemInvalidoException("A descrição é obrigatória.");
         TextoUtils.validarTexto(descricao, "A descrição", 200);
@@ -535,6 +552,7 @@ public class ContaPagarService {
         BigDecimal valor = CalculoFinanceiro.validarValorPositivo(r.valor());
         CategoriaDespesa categoria = categoriaRepository.findById(r.categoriaId())
                 .orElseThrow(() -> new ItemInvalidoException("A categoria informada não foi encontrada."));
+        if (!permitirReservada) exigirCategoriaLivre(categoria);
         if (!categoria.isAtivo()) throw new ItemInvalidoException("A categoria \"" + categoria.getNome() + "\" está desativada.");
         CentroCusto centro = null;
         if (r.centroCustoId() != null) {

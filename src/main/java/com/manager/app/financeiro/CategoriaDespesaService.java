@@ -28,7 +28,13 @@ public class CategoriaDespesaService {
     // árvore: grupos com suas subcategorias; com ativo=true um grupo desativado some junto com os subgrupos
     @Transactional(readOnly = true)
     public List<CategoriaDespesaResponseDTO> arvore(Boolean ativo) {
-        List<CategoriaDespesa> todas = repository.findAll();
+        return arvore(ativo, false);
+    }
+
+    // paraLancamento=true omite a categoria reservada "Devoluções a clientes" (e seus subgrupos): lista usada no lançamento manual
+    @Transactional(readOnly = true)
+    public List<CategoriaDespesaResponseDTO> arvore(Boolean ativo, boolean paraLancamento) {
+        List<CategoriaDespesa> todas = repository.findAll().stream().filter(c -> !paraLancamento || !ContaPagarService.categoriaReservada(c)).toList();
         return todas.stream()
                 .filter(c -> c.getPai() == null)
                 .filter(c -> ativo == null || c.isAtivo() == ativo)
@@ -45,7 +51,12 @@ public class CategoriaDespesaService {
     // lista plana: grupo seguido dos seus subgrupos
     @Transactional(readOnly = true)
     public List<CategoriaDespesaResponseDTO> plana(Boolean ativo, String busca) {
-        List<CategoriaDespesa> todas = repository.findAll();
+        return plana(ativo, busca, false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoriaDespesaResponseDTO> plana(Boolean ativo, String busca, boolean paraLancamento) {
+        List<CategoriaDespesa> todas = repository.findAll().stream().filter(c -> !paraLancamento || !ContaPagarService.categoriaReservada(c)).toList();
         String termo = busca == null ? "" : BancoService.semAcento(busca.trim());
         return todas.stream()
                 .filter(c -> ativo == null || c.isAtivo() == ativo)

@@ -171,3 +171,8 @@ Nenhum valor monetário informado pode ultrapassar **R$ 9.999.999,99**. Acima di
 `"O valor não pode ser superior a R$ 9.999.999,99."` (ou `"O valor de juros não pode ser superior a R$ 9.999.999,99."`).
 Vale para: valor do título (simples, parcelado, recorrência, lote e edição, inclusive o reajuste da recorrência), valores personalizados de parcelas,
 principal, juros, multa e desconto do pagamento, ajuste, transferência e saldo inicial do banco (em módulo). O front pode limitar o campo a esse teto.
+
+## Categoria reservada "Devoluções a clientes"
+A categoria de despesa **"Devoluções a clientes"** (grupo de nível 1, e qualquer subgrupo dela) é **reservada** ao título a pagar gerado pelo sistema na devolução do excedente do acerto.
+- **Lançamento manual recusa (400, `menssage`):** `POST /contas-pagar`, `PUT /contas-pagar/{id}` (em título que não seja de devolução), lançamento em lote, recorrência (criação e edição) e duplicação (que usa o `POST`) respondem: *A categoria "Devoluções a clientes" é reservada às devoluções geradas pelo sistema a partir do excedente do acerto e não pode ser usada em lançamento manual.* O `PUT` de um título de devolução existente continua aceitando a própria categoria (ela não pode mudar).
+- **Novo parâmetro opcional** `paraLancamento=true` em `GET /categorias-despesa` (árvore) e `GET /categorias-despesa/plana`: omite a categoria reservada e seus subgrupos. **Use-o nos seletores de categoria do formulário de lançamento manual** (título, lote, recorrência). Sem o parâmetro (padrão `false`) a lista é completa, para consultas, filtros e relatórios.

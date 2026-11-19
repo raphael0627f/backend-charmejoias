@@ -25,15 +25,17 @@ public class CategoriaDespesaController {
     // árvore: grupos com suas subcategorias
     @GetMapping
     @PreAuthorize(CONSULTA)
-    public ResponseEntity<List<CategoriaDespesaResponseDTO>> arvore(@RequestParam(required = false) Boolean ativo) {
-        return ResponseEntity.ok(service.arvore(ativo));
+    public ResponseEntity<List<CategoriaDespesaResponseDTO>> arvore(@RequestParam(required = false) Boolean ativo,
+                                                                    @RequestParam(required = false, defaultValue = "false") boolean paraLancamento) {
+        return ResponseEntity.ok(service.arvore(ativo, paraLancamento));
     }
 
     @GetMapping("/plana")
     @PreAuthorize(CONSULTA)
     public ResponseEntity<List<CategoriaDespesaResponseDTO>> plana(@RequestParam(required = false) Boolean ativo,
-                                                                   @RequestParam(required = false) String busca) {
-        return ResponseEntity.ok(service.plana(ativo, busca));
+                                                                   @RequestParam(required = false) String busca,
+                                                                   @RequestParam(required = false, defaultValue = "false") boolean paraLancamento) {
+        return ResponseEntity.ok(service.plana(ativo, busca, paraLancamento));
     }
 
     @GetMapping("/{id}")

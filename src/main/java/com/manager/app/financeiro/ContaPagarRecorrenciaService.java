@@ -164,6 +164,7 @@ public class ContaPagarRecorrenciaService {
         CategoriaDespesa categoria = null;
         if (r.categoriaId() != null) {
             categoria = categoriaRepository.findById(r.categoriaId()).orElseThrow(() -> new ItemInvalidoException("A categoria informada não foi encontrada."));
+            ContaPagarService.exigirCategoriaLivre(categoria);
             if (!categoria.isAtivo()) throw new ItemInvalidoException("A categoria \"" + categoria.getNome() + "\" está desativada.");
         }
         CentroCusto centro = null;
