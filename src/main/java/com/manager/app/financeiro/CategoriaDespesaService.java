@@ -77,6 +77,7 @@ public class CategoriaDespesaService {
     public CategoriaDespesaResponseDTO criar(CategoriaDespesaRequestDTO request) {
         CategoriaDespesa categoria = new CategoriaDespesa();
         CategoriaDespesa pai = resolverPai(request.paiId(), null);
+        if (ContaPagarService.categoriaReservada(pai)) throw new ItemInvalidoException(MSG_RESERVADA_FILHO);
         String nome = nomeValido(request.nome());
         validarNomeUnico(nome, pai, null);
         categoria.setNome(nome);
@@ -92,10 +93,16 @@ public class CategoriaDespesaService {
     public CategoriaDespesaResponseDTO atualizar(Long id, CategoriaDespesaRequestDTO request) {
         CategoriaDespesa categoria = buscar(id);
         CategoriaDespesa pai = resolverPai(request.paiId(), id);
+        String nomeNovo = nomeValido(request.nome());
+        boolean paiMudou = !java.util.Objects.equals(categoria.getPai() == null ? null : categoria.getPai().getId(), pai == null ? null : pai.getId());
+        if (ContaPagarService.categoriaReservada(categoria) && (paiMudou || !categoria.getNome().equals(nomeNovo))) {
+            throw new ItemInvalidoException(MSG_RESERVADA);
+        }
+        if (paiMudou && ContaPagarService.categoriaReservada(pai)) throw new ItemInvalidoException(MSG_RESERVADA_FILHO);
         if (pai != null && repository.existsByPaiId(id)) {
             throw new ItemInvalidoException("Um grupo com subgrupos não pode se tornar subgrupo. São permitidos no máximo dois níveis.");
         }
-        String nome = nomeValido(request.nome());
+        String nome = nomeNovo;
         validarNomeUnico(nome, pai, id);
         categoria.setNome(nome);
         categoria.setPai(pai);
@@ -119,6 +126,7 @@ public class CategoriaDespesaService {
     @Transactional
     public CategoriaDespesaResponseDTO inativar(Long id) {
         CategoriaDespesa categoria = buscar(id);
+        exigirNaoReservada(categoria);
         if (repository.existsByPaiIdAndAtivoTrue(id)) {
             throw new ObjetoEmUsoException("Não é possível desativar o grupo \"" + categoria.getNome() + "\", pois ele possui subgrupos ativos. Desative os subgrupos primeiro.");
         }
@@ -130,11 +138,20 @@ public class CategoriaDespesaService {
     @Transactional
     public void excluir(Long id) {
         CategoriaDespesa categoria = buscar(id);
+        exigirNaoReservada(categoria);
         if (repository.existsByPaiId(id)) {
             throw new ObjetoEmUsoException("Não é possível excluir o grupo \"" + categoria.getNome() + "\", pois ele possui subgrupos. Exclua ou desative os subgrupos primeiro.");
         }
         repository.delete(categoria);
         repository.flush();
+    }
+
+    // categoria reservada ao sistema ("Devoluções a clientes" e subgrupos): nome, vínculo e situação não podem ser alterados; a consulta continua livre
+    static final String MSG_RESERVADA = "A categoria \"" + ContaPagarService.CATEGORIA_DEVOLUCAO + "\" é reservada ao sistema (devoluções do excedente do acerto) e não pode ser renomeada, movida, desativada ou excluída.";
+    static final String MSG_RESERVADA_FILHO = "A categoria \"" + ContaPagarService.CATEGORIA_DEVOLUCAO + "\" é reservada ao sistema e não pode receber subgrupos nem ser usada como grupo de outra categoria.";
+
+    private static void exigirNaoReservada(CategoriaDespesa categoria) {
+        if (ContaPagarService.categoriaReservada(categoria)) throw new ItemInvalidoException(MSG_RESERVADA);
     }
 
     public CategoriaDespesa buscar(Long id) {
