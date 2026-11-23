@@ -72,6 +72,8 @@ public class VerificarPagamentoService {
         boolean emRevisao = !ids.isEmpty() && eventos.findByLinkIdInOrderByIdDesc(ids).stream()
                 .anyMatch(e -> e.getStatus() == InfinitePayEvento.Status.REVISAO && e.getResolvidoEm() == null);
         if (emRevisao) return new RevisaoDTOs.VerificarResposta("EM_REVISAO", "Há um pagamento deste título aguardando revisão do administrador.", detalhe, null);
+        boolean tentandoDeNovo = !ids.isEmpty() && eventos.findByLinkIdInOrderByIdDesc(ids).stream().anyMatch(e -> e.getStatus() == InfinitePayEvento.Status.ERRO_TEMPORARIO);
+        if (tentandoDeNovo) return new RevisaoDTOs.VerificarResposta("EM_ANDAMENTO", "A confirmação do pagamento na InfinitePay está em nova tentativa. Consulte novamente em instantes.", detalhe, null);
         if (r.isEmAndamento()) return new RevisaoDTOs.VerificarResposta("EM_ANDAMENTO", "Verificação em andamento. Tente novamente em instantes.", detalhe, null);
         if (r.getErros() > 0) return new RevisaoDTOs.VerificarResposta("INDISPONIVEL", r.getMensagem(), detalhe, null);
         return new RevisaoDTOs.VerificarResposta("AINDA_NAO_PAGO", "Pagamento ainda não identificado.", detalhe, null);

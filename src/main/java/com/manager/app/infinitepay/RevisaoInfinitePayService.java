@@ -294,7 +294,7 @@ public class RevisaoInfinitePayService {
             exigirAberta(e);
             MotivoRevisao codigo = MotivoRevisao.de(e.getMotivoCodigo());
             if (codigo == null || !codigo.aplicavel() || e.getLink() == null) {
-                throw new ItemInvalidoException("Este pagamento não pode ser aplicado ao título (" + (codigo == null ? "motivo não identificado" : codigo.rotulo().toLowerCase(Locale.ROOT))
+                throw new ItemInvalidoException("Este pagamento não pode ser aplicado ao título (" + (codigo == null ? "motivo não identificado" : codigo.rotulo())
                         + "). Ignore-o informando o motivo, se for o caso.");
             }
             BaixaAutomaticaCalculo.Payload p = BaixaAutomaticaCalculo.ler(e.getPayload(), objectMapper);

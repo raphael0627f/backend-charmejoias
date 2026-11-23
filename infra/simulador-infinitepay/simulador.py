@@ -12,6 +12,7 @@ Controle (sem autenticacao, so localhost):
         semurl    200 {"mensagem": "criado"}
         401 | 403 | 422 | 400 | 429 | 500 | 503   responde com esse status e um corpo sigiloso falso
         timeout   demora 40 s (acima do limite de 20 s do backend)
+        lento-check  so o payment_check demora 40 s (exercita o timeout da confirmacao); a criacao de link responde ok
         lento     demora 3 s e responde ok
   GET  /__requisicoes           -> ultimas requisicoes recebidas (cabecalho X-Api-Key mascarado)
   POST /__reset                 -> zera o registro e volta ao modo ok
@@ -107,6 +108,8 @@ class H(BaseHTTPRequestHandler):
         if self.path == "/__pagamento":
             # cria um pagamento simulado: {"order_nsu","transaction_nsu","amount","paid_amount","capture_method","installments","paid"(padrao true),"event"(padrao paid),"webhook"(padrao true)}
             d = json.loads(corpo or "{}")
+            if not d.get("order_nsu") or d.get("amount") is None:
+                return self._responder(400, json.dumps({"erro": "informe order_nsu e amount (centavos)"}))
             tx = d.get("transaction_nsu") or "SIM-TX-" + str(int(time.time() * 1000))
             PAGAMENTOS[tx] = {"success": True, "paid": d.get("paid", True), "amount": d["amount"], "paid_amount": d.get("paid_amount", d["amount"]),
                               "installments": d.get("installments", 1), "capture_method": d.get("capture_method", "pix")}
@@ -124,6 +127,8 @@ class H(BaseHTTPRequestHandler):
             ESTADO["requisicoes"].append({"quando": time.strftime("%H:%M:%S"), "modo": ESTADO["modo"], "payment_check": {k: p.get(k) for k in ("handle", "order_nsu", "transaction_nsu")}})
             if ESTADO["modo"].isdigit():
                 return self._responder(int(ESTADO["modo"]), json.dumps({"erro": "DETALHE-INTERNO-SIGILOSO-DO-SIMULADOR"}))
+            if ESTADO["modo"] == "lento-check":
+                time.sleep(40)
             r = PAGAMENTOS.get(p.get("transaction_nsu"))
             return self._responder(200, json.dumps(r if r else {"success": False, "paid": False}))
         if self.path != "/links":
@@ -140,7 +145,7 @@ class H(BaseHTTPRequestHandler):
             return self._responder(401, json.dumps({"erro": "sem chave"}))
         nsu = (pedido or {}).get("order_nsu", "sem-nsu")
         url = "https://checkout.simulado.local/" + nsu
-        if modo in ("ok", "lento"):
+        if modo in ("ok", "lento", "lento-check"):
             if modo == "lento":
                 time.sleep(3)
             return self._responder(200, json.dumps({"url": url}))

@@ -135,17 +135,24 @@ public final class BaixaAutomaticaCalculo {
         if (e == null || e.equals("desconhecido")) return p.faltando().isEmpty() ? Tipo.PAGAMENTO : Tipo.INESPERADO;
         return switch (e) {
             case "paid", "settled" -> Tipo.PAGAMENTO;
-            case "canceled", "cancelled", "refunded", "payment_failed" -> Tipo.SINAL;
+            case "canceled", "cancelled", "refunded", "payment_failed", "failed" -> Tipo.SINAL;
             case "created" -> Tipo.IGNORADO;
             default -> Tipo.INESPERADO;
         };
     }
 
+    // aviso com order_nsu mas sem transaction_nsu: o receptor o guarda com a chave "sha256:<resumo do corpo>"
+    public static boolean semIdentificadorDeTransacao(Payload p) {
+        return p.jsonValido() && p.orderNsu() != null && p.transactionNsu() == null;
+    }
+
+    public static final String PREFIXO_RESUMO = "sha256:";
+
     public static String motivoSinal(String evento) {
         return switch (evento == null ? "" : evento) {
             case "refunded" -> "A InfinitePay informou ESTORNO (refunded) de um pagamento. Nenhuma ação automática foi feita: confira o recebimento e, se for o caso, estorne-o manualmente.";
             case "canceled", "cancelled" -> "A InfinitePay informou o CANCELAMENTO (canceled) da cobrança. Nenhuma ação automática foi feita.";
-            default -> "A InfinitePay informou falha no pagamento (payment_failed). Nenhuma ação automática foi feita.";
+            default -> "A InfinitePay informou falha no pagamento (" + (evento == null || evento.isBlank() ? "payment_failed" : evento) + "). Nenhuma ação automática foi feita.";
         };
     }
 

@@ -131,4 +131,22 @@ class BaixaAutomaticaCalculoTest {
         assertEquals(BaixaAutomaticaCalculo.MOTIVO_NAO_CONFIRMADO, d.motivo());
         assertFalse(d.motivo().contains("payment_check"));
     }
+
+    @Test
+    void failedTambemEhEventoInformativo() {
+        var p = ler("{\"event\":\"failed\",\"order_nsu\":\"A\",\"transaction_nsu\":\"T\",\"invoice_slug\":\"s\",\"amount\":100,\"paid_amount\":100,\"capture_method\":\"pix\"}");
+        assertEquals(BaixaAutomaticaCalculo.Tipo.SINAL, BaixaAutomaticaCalculo.classificar(p));
+        assertTrue(BaixaAutomaticaCalculo.motivoSinal("failed").contains("(failed)"));
+        assertTrue(BaixaAutomaticaCalculo.motivoSinal("payment_failed").contains("(payment_failed)"));
+    }
+
+    @Test
+    void avisoSemTransactionNsuEhIdentificadoParaNaoDuplicarBaixaNemRevisao() {
+        // segundo aviso do mesmo pagamento: sem event e sem transaction_nsu (o receptor o guarda com a chave "sha256:...")
+        var p = ler("{\"order_nsu\":\"A\",\"invoice_slug\":\"s\",\"amount\":100,\"paid_amount\":100,\"capture_method\":\"pix\"}");
+        assertEquals(BaixaAutomaticaCalculo.Tipo.INESPERADO, BaixaAutomaticaCalculo.classificar(p));
+        assertTrue(BaixaAutomaticaCalculo.semIdentificadorDeTransacao(p));
+        assertFalse(BaixaAutomaticaCalculo.semIdentificadorDeTransacao(ler(COMPLETO)));
+        assertFalse(BaixaAutomaticaCalculo.semIdentificadorDeTransacao(ler("{\"amount\":1}")));
+    }
 }

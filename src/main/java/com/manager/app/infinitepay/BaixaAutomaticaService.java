@@ -249,8 +249,10 @@ public class BaixaAutomaticaService {
     // ---------- processamento ----------
 
     private void processarPendentes(Resumo r) {
+        // avisos sem identificador de transação (chave "sha256:") vão por último: o aviso completo do mesmo pagamento é processado antes
         List<Long> ids = eventoRepository.findByStatusInOrderByIdAsc(List.of(InfinitePayEvento.Status.RECEBIDO, InfinitePayEvento.Status.ERRO_TEMPORARIO))
-                .stream().map(InfinitePayEvento::getId).toList();
+                .stream().sorted(java.util.Comparator.comparing((InfinitePayEvento e) -> e.getTransactionNsu() != null && e.getTransactionNsu().startsWith(BaixaAutomaticaCalculo.PREFIXO_RESUMO)))
+                .map(InfinitePayEvento::getId).toList();
         for (Long id : ids) {
             try {
                 processarEvento(id, r);
@@ -277,6 +279,16 @@ public class BaixaAutomaticaService {
             BaixaAutomaticaCalculo.Tipo tipo = BaixaAutomaticaCalculo.classificar(p);
             switch (tipo) {
                 case INESPERADO -> {
+                    // segundo aviso do mesmo pagamento, sem transaction_nsu (chave "sha256:"): se o link já foi pago, não gera revisão nem baixa
+                    if (BaixaAutomaticaCalculo.semIdentificadorDeTransacao(p)) {
+                        boolean jaPago = linkRepository.findIdByOrderNsu(p.orderNsu()).flatMap(linkRepository::findById)
+                                .map(l -> l.getStatus() == StatusLinkPagamento.PAGO_AUTOMATICO || l.getStatus() == StatusLinkPagamento.PAGO_MANUAL).orElse(false);
+                        if (jaPago) {
+                            concluir(ev, InfinitePayEvento.Status.IGNORADO, null, "Aviso sem identificador de transação referente a um pagamento já baixado.");
+                            r.ignorados++;
+                            return null;
+                        }
+                    }
                     concluir(ev, InfinitePayEvento.Status.REVISAO, MotivoRevisao.PAYLOAD_INESPERADO, "Payload inesperado ou incompleto" + (p.faltando().isEmpty() ? "" : " (campos ausentes ou inválidos: " + String.join(", ", p.faltando()) + ")")
                             + ". O payload bruto foi guardado para diagnóstico.");
                     r.revisao++;
