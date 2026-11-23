@@ -32,6 +32,8 @@ public class VerificarPagamentoService {
     private final InfinitePayEventoRepository eventos;
     private final UsuarioAuditorAware auditor;
     private final TransactionTemplate txLeitura;
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
     private final Map<UUID, Long> ultimaChamada = new ConcurrentHashMap<>();
 
     public VerificarPagamentoService(BaixaAutomaticaService baixa, InfinitePayAutomaticoService automatico, ContaReceberService contaReceberService,
@@ -59,6 +61,8 @@ public class VerificarPagamentoService {
     }
 
     private RevisaoDTOs.VerificarResposta resposta(Long tituloId, BaixaAutomaticaService.Resumo r) {
+        // o ciclo rodou em outra thread/transação: descarta o que esta requisição já carregou (open-in-view) para ler o estado atual
+        entityManager.clear();
         ContaReceber titulo = contaReceberService.buscar(tituloId);
         List<ContaReceberLinkPagamento> todos = links.findByContaReceberIdOrderByIdDesc(tituloId);
         ContaReceberLinkPagamento pago = todos.stream().filter(l -> l.getStatus() == StatusLinkPagamento.PAGO_AUTOMATICO && l.getRecebimentoId() != null).findFirst().orElse(null);

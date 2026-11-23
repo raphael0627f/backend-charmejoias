@@ -24,7 +24,7 @@ ESTADO = {"modo": "ok", "requisicoes": []}
 PAGAMENTOS = {}
 FILA = []  # itens: {id, recebidoEm, evento, orderNsu, transactionNsu, invoiceSlug, corpo, ack}
 SEQ = [0]
-SEGREDO_ERP = "segredo-simulador-local"
+SEGREDO_ERP = "segredo-simulador-local-0123456789abcdef"
 
 
 class H(BaseHTTPRequestHandler):
