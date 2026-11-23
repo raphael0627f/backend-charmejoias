@@ -14,7 +14,23 @@ public final class DocumentoFinanceiroDTOs {
 
     public record Titulo(Long id, Long numero, Integer parcelaNumero, Integer parcelaTotal, BigDecimal valor, LocalDate vencimento,
                          SituacaoContaReceber situacao, BigDecimal valorRecebido, boolean linkAutomaticoAtivo, BigDecimal valorTaxaCliente,
-                         boolean pagoPeloLink) {
+                         boolean pagoPeloLink, BigDecimal valorPago, BigDecimal valorCreditoAplicado) {
+    }
+
+    // título da consignação (de qualquer pré-acerto ou do acerto, inclusive cancelado). doDocumento: pertence ao documento aberto (só esses têm ações)
+    public record TituloConsignacao(Long id, Long numero, String descricao, Integer parcelaNumero, Integer parcelaTotal, BigDecimal valor, LocalDate vencimento,
+                                    SituacaoContaReceber situacao, boolean cancelado, boolean doDocumento, Origem origem, BigDecimal valorRecebido,
+                                    BigDecimal valorPago, BigDecimal valorCreditoAplicado, BigDecimal valorTaxaCliente, boolean linkAutomaticoAtivo,
+                                    boolean pagoPeloLink) {
+    }
+
+    // tipo: PRE_ACERTO, ACERTO ou OUTRO (título da consignação sem documento); numero = id do documento
+    public record Origem(String tipo, Long documentoId, Long numero) {
+    }
+
+    // soma da consignação inteira, à parte dos totais do documento; títulos cancelados ficam fora dos valores
+    public record TotalConsignacao(int quantidade, int quantidadeCancelados, BigDecimal valorTitulado, BigDecimal valorRecebido, BigDecimal valorPago,
+                                   BigDecimal valorCreditoAplicado, BigDecimal valorTaxaCliente, BigDecimal emAberto) {
     }
 
     // tipo: PRE_ACERTO ou ACERTO. valorTituladoPreAcerto só existe no acerto.
@@ -22,7 +38,10 @@ public final class DocumentoFinanceiroDTOs {
                          BigDecimal valorRecebido, BigDecimal saldoATitular, BigDecimal excedente, BigDecimal excedenteRecebido,
                          BigDecimal valorTituladoPreAcerto, boolean tituloAtivo, boolean bloqueadoParaEdicao, boolean podeGerar,
                          String motivoBloqueio, String aviso, List<Titulo> titulos, ExcedenteDTOs.Resumo excedenteAcerto, ExcedenteDTOs.AjusteProposto ajusteProposto,
-                         boolean existeLinkAutomaticoAtivo, BigDecimal valorTaxaClienteTotal, boolean pagoPeloLink) {
+                         boolean existeLinkAutomaticoAtivo, BigDecimal valorTaxaClienteTotal, boolean pagoPeloLink,
+                         BigDecimal valorPago, BigDecimal valorCreditoAplicado, boolean creditoAplicado,
+                         BigDecimal valorVendido, BigDecimal valorComissao, BigDecimal valorAPagar,
+                         List<TituloConsignacao> titulosConsignacao, TotalConsignacao totalConsignacao) {
     }
 
     // todos os campos são opcionais; sem corpo valem os padrões (título simples com vencimento hoje)

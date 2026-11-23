@@ -11,6 +11,7 @@ public record ContaReceberListaResponseDTO(List<ContaReceberResumoDTO> content, 
     public record Periodo(LocalDate de, LocalDate ate) {
     }
 
-    public record Totais(long quantidade, BigDecimal valorTotal, BigDecimal valorRecebido, BigDecimal valorAberto, BigDecimal valorVencido) {
+    public record Totais(long quantidade, BigDecimal valorTotal, BigDecimal valorRecebido, BigDecimal valorAberto, BigDecimal valorVencido,
+                         BigDecimal valorPago, BigDecimal valorCreditoAplicado) {
     }
 }

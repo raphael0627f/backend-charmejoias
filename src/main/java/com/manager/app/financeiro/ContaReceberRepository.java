@@ -30,6 +30,10 @@ public interface ContaReceberRepository extends JpaRepository<ContaReceber, Long
     @Query("select c from ContaReceber c where c.consignacao.id = :consignacaoId and c.situacao <> com.manager.app.financeiro.SituacaoContaReceber.CANCELADO order by c.id")
     List<ContaReceber> findAtivosDaConsignacaoForUpdate(@Param("consignacaoId") Long consignacaoId);
 
+    // todos os títulos da consignação, inclusive cancelados (resumo financeiro: visão completa da consignação)
+    @Query("select c from ContaReceber c where c.consignacao.id = :consignacaoId order by c.vencimento, c.numero")
+    List<ContaReceber> findTodosDaConsignacao(@Param("consignacaoId") Long consignacaoId);
+
     // somente leitura (resumo)
     @Query("select c from ContaReceber c where c.consignacao.id = :consignacaoId and c.situacao <> com.manager.app.financeiro.SituacaoContaReceber.CANCELADO order by c.id")
     List<ContaReceber> findAtivosDaConsignacao(@Param("consignacaoId") Long consignacaoId);

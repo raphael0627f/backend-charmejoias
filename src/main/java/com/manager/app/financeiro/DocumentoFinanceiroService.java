@@ -50,6 +50,7 @@ public class DocumentoFinanceiroService {
     private final ContaReceberMapper mapper;
     private final com.manager.app.infinitepay.ContaReceberLinkPagamentoRepository linkRepository;
     private final ContaReceberRecebimentoRepository recebimentoRepository;
+    private final DocumentoValoresService documentoValores;
 
     // documento carregado com tudo o que o resumo precisa
     private record Documento(Tipo tipo, Long id, Consignacao consignacao, Cliente cliente, BigDecimal valor, boolean confirmado,
@@ -123,10 +124,45 @@ public class DocumentoFinanceiroService {
         if (!idsProprios.isEmpty()) {
             for (Object[] linha : recebimentoRepository.resumoPagoPeloLink(idsProprios)) taxaPorTitulo.put((Long) linha[0], (BigDecimal) linha[1]);
         }
+        // "valor realmente pago" (principal + juros + multa - desconto, recebimentos não estornados; crédito do cliente conta) de todos os títulos da consignação
+        List<ContaReceber> todosDaConsignacao = d.consignacao() != null ? contaReceberRepository.findTodosDaConsignacao(d.consignacao().getId()) : proprios;
+        java.util.Set<Long> idsConsignacao = todosDaConsignacao.stream().map(ContaReceber::getId).collect(java.util.stream.Collectors.toSet());
+        java.util.Set<Long> idsTodos = new java.util.HashSet<>(idsConsignacao);
+        idsTodos.addAll(idsProprios);
+        java.util.Map<Long, TotaisRecebimento> pagos = new java.util.HashMap<>();
+        if (!idsTodos.isEmpty()) recebimentoRepository.totaisPorTitulo(idsTodos).forEach(t -> pagos.put(t.tituloId(), t));
         List<DocumentoFinanceiroDTOs.Titulo> titulos = proprios.stream().map(t -> new DocumentoFinanceiroDTOs.Titulo(t.getId(), t.getNumero(),
                 t.getParcelaNumero(), t.getParcelaTotal(), CalculoFinanceiro.arredondar(t.getValor()), t.getVencimento(), t.getSituacao(),
                 CalculoFinanceiro.arredondar(t.getValorRecebido()), comLinkAtivo.contains(t.getId()),
-                CalculoFinanceiro.arredondar(taxaPorTitulo.getOrDefault(t.getId(), BigDecimal.ZERO)), taxaPorTitulo.containsKey(t.getId()))).toList();
+                CalculoFinanceiro.arredondar(taxaPorTitulo.getOrDefault(t.getId(), BigDecimal.ZERO)), taxaPorTitulo.containsKey(t.getId()),
+                CalculoFinanceiro.arredondar(TotaisRecebimento.de(pagos, t.getId()).total()), CalculoFinanceiro.arredondar(TotaisRecebimento.de(pagos, t.getId()).credito()))).toList();
+        BigDecimal pagoDocumento = BigDecimal.ZERO;
+        BigDecimal creditoDocumento = BigDecimal.ZERO;
+        for (ContaReceber t : consideradosNoSaldo) {
+            pagoDocumento = pagoDocumento.add(TotaisRecebimento.de(pagos, t.getId()).total());
+            creditoDocumento = creditoDocumento.add(TotaisRecebimento.de(pagos, t.getId()).credito());
+        }
+        DocumentoValoresService.Valores valores = preAcerto ? documentoValores.doPreAcerto(d.preAcerto()) : documentoValores.doAcerto(d.acerto());
+        java.util.Set<Long> idsDoDocumento = new java.util.HashSet<>(idsProprios);
+        java.util.Set<Long> comLinkConsignacao = idsConsignacao.isEmpty() ? java.util.Set.of()
+                : new java.util.HashSet<>(linkRepository.findTitulosComLinkAutomaticoAtivo(idsConsignacao.stream().toList()));
+        java.util.Map<Long, BigDecimal> taxaConsignacao = new java.util.HashMap<>();
+        if (!idsConsignacao.isEmpty()) {
+            for (Object[] linha : recebimentoRepository.resumoPagoPeloLink(idsConsignacao)) taxaConsignacao.put((Long) linha[0], (BigDecimal) linha[1]);
+        }
+        List<DocumentoFinanceiroDTOs.TituloConsignacao> titulosConsignacao = todosDaConsignacao.stream().map(t -> {
+            TotaisRecebimento pg = TotaisRecebimento.de(pagos, t.getId());
+            boolean cancelado = t.getSituacao() == SituacaoContaReceber.CANCELADO;
+            DocumentoFinanceiroDTOs.Origem origem = t.getAcerto() != null ? new DocumentoFinanceiroDTOs.Origem("ACERTO", t.getAcerto().getId(), t.getAcerto().getId())
+                    : t.getPreAcerto() != null ? new DocumentoFinanceiroDTOs.Origem("PRE_ACERTO", t.getPreAcerto().getId(), t.getPreAcerto().getId())
+                    : new DocumentoFinanceiroDTOs.Origem("OUTRO", null, null);
+            return new DocumentoFinanceiroDTOs.TituloConsignacao(t.getId(), t.getNumero(), t.getDescricao(), t.getParcelaNumero(), t.getParcelaTotal(),
+                    CalculoFinanceiro.arredondar(t.getValor()), t.getVencimento(), t.getSituacao(), cancelado, idsDoDocumento.contains(t.getId()), origem,
+                    CalculoFinanceiro.arredondar(t.getValorRecebido()), CalculoFinanceiro.arredondar(pg.total()), CalculoFinanceiro.arredondar(pg.credito()),
+                    CalculoFinanceiro.arredondar(taxaConsignacao.getOrDefault(t.getId(), BigDecimal.ZERO)), comLinkConsignacao.contains(t.getId()),
+                    taxaConsignacao.containsKey(t.getId()));
+        }).toList();
+        DocumentoFinanceiroDTOs.TotalConsignacao totalConsignacao = totalConsignacao(todosDaConsignacao, pagos, taxaConsignacao);
         BigDecimal taxaTotal = CalculoFinanceiro.arredondar(taxaPorTitulo.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add));
         // acerto com excedente persistido: a destinar -> orienta a destinar; já destinado -> sem aviso; sem excedente persistido mantém o aviso de titulado acima do valor
         ExcedenteDTOs.Resumo excedenteAcerto = preAcerto ? null : excedenteService.resumoDoAcerto(d.id());
@@ -138,7 +174,36 @@ public class DocumentoFinanceiroService {
                 motivo == null, motivo, aviso, titulos,
                 excedenteAcerto,
                 preAcerto || d.confirmado() ? null : ajustePreAcertoService.ajusteProposto(ativosDaConsignacao, d.valor()),
-                !comLinkAtivo.isEmpty(), taxaTotal, !taxaPorTitulo.isEmpty());
+                !comLinkAtivo.isEmpty(), taxaTotal, !taxaPorTitulo.isEmpty(),
+                CalculoFinanceiro.arredondar(pagoDocumento), CalculoFinanceiro.arredondar(creditoDocumento), creditoDocumento.signum() > 0,
+                valores.valorVendido(), valores.valorComissao(), valores.valorAPagar(), titulosConsignacao, totalConsignacao);
+    }
+
+    // soma da consignação inteira (todos os documentos); cancelados contam só na quantidade
+    static DocumentoFinanceiroDTOs.TotalConsignacao totalConsignacao(List<ContaReceber> todos, java.util.Map<Long, TotaisRecebimento> pagos,
+                                                                     java.util.Map<Long, BigDecimal> taxa) {
+        int cancelados = 0;
+        BigDecimal titulado = BigDecimal.ZERO;
+        BigDecimal recebido = BigDecimal.ZERO;
+        BigDecimal pago = BigDecimal.ZERO;
+        BigDecimal credito = BigDecimal.ZERO;
+        BigDecimal taxaCliente = BigDecimal.ZERO;
+        BigDecimal aberto = BigDecimal.ZERO;
+        for (ContaReceber t : todos) {
+            if (t.getSituacao() == SituacaoContaReceber.CANCELADO) {
+                cancelados++;
+                continue;
+            }
+            TotaisRecebimento pg = TotaisRecebimento.de(pagos, t.getId());
+            titulado = titulado.add(CalculoFinanceiro.arredondar(t.getValor()));
+            recebido = recebido.add(CalculoFinanceiro.arredondar(t.getValorRecebido()));
+            pago = pago.add(pg.total());
+            credito = credito.add(pg.credito());
+            taxaCliente = taxaCliente.add(taxa.getOrDefault(t.getId(), BigDecimal.ZERO));
+            aberto = aberto.add(ContaReceberCalculo.valorAberto(t.getSituacao(), t.getValor(), t.getValorRecebido()));
+        }
+        return new DocumentoFinanceiroDTOs.TotalConsignacao(todos.size(), cancelados, CalculoFinanceiro.arredondar(titulado), CalculoFinanceiro.arredondar(recebido),
+                CalculoFinanceiro.arredondar(pago), CalculoFinanceiro.arredondar(credito), CalculoFinanceiro.arredondar(taxaCliente), CalculoFinanceiro.arredondar(aberto));
     }
 
     // títulos não cancelados do documento: os da consignação inteira ou, no pré-acerto sem consignação, apenas os do próprio pré-acerto
