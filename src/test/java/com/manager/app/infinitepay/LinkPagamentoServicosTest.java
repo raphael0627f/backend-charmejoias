@@ -4,6 +4,8 @@ import com.manager.app.cliente.Cliente;
 import com.manager.app.email.ConfiguracaoEmailService;
 import com.manager.app.email.EmailTemplateService;
 import com.manager.app.email.SegredoCriptografiaService;
+import com.manager.app.financeiro.Banco;
+import com.manager.app.financeiro.BancoRepository;
 import com.manager.app.financeiro.ContaReceber;
 import com.manager.app.financeiro.ContaReceberEvento;
 import com.manager.app.financeiro.ContaReceberEventoRepository;
@@ -50,6 +52,8 @@ class LinkPagamentoServicosTest {
     private final ConfiguracaoEmailService emailService = mock(ConfiguracaoEmailService.class);
     private final EmailTemplateService templateService = mock(EmailTemplateService.class);
     private final UsuarioResumoMapper usuarioMapper = mock(UsuarioResumoMapper.class);
+    private final InfinitePayAutomaticoService automatico = mock(InfinitePayAutomaticoService.class);
+    private final BancoRepository bancoRepo = mock(BancoRepository.class);
     private final SegredoCriptografiaService criptografia = new SegredoCriptografiaService("segredo-de-teste-para-criptografia", "");
 
     private LinkPagamentoCicloVida cicloVida;
@@ -66,7 +70,7 @@ class LinkPagamentoServicosTest {
         when(configRepo.findById(InfinitePayConfiguracao.ID_UNICO)).thenAnswer(i -> Optional.of(config));
         when(configRepo.save(any())).thenAnswer(i -> i.getArgument(0));
         configService = new InfinitePayConfiguracaoService(configRepo, criptografia, usuarioMapper, false);
-        service = new LinkPagamentoService(contaReceberService, repo, recebimentoRepo, configService, client, cicloVida, auditor, usuarioMapper, emailService, templateService);
+        service = new LinkPagamentoService(contaReceberService, repo, recebimentoRepo, configService, client, cicloVida, auditor, usuarioMapper, emailService, templateService, automatico, bancoRepo);
         when(repo.save(any())).thenAnswer(i -> {
             ContaReceberLinkPagamento l = i.getArgument(0);
             if (l.getId() == null) l.setId((long) (salvos.size() + 1));
@@ -242,6 +246,93 @@ class LinkPagamentoServicosTest {
         assertSame(t, salvos.get(0).getContaReceber());
     }
 
+    // ---------- modo automático (fase 3B) ----------
+
+    private Banco banco(long id, boolean ativo) {
+        Banco b = new Banco();
+        b.setId(id);
+        b.setNome("Banco " + id);
+        b.setAtivo(ativo);
+        when(bancoRepo.findById(id)).thenReturn(Optional.of(b));
+        return b;
+    }
+
+    private InfinitePayDTOs.LinkRequest reqModo(String modo, Long bancoId) {
+        return new InfinitePayDTOs.LinkRequest(null, null, null, null, null, null, null, null, null, null, modo, bancoId);
+    }
+
+    @Test
+    void linkManualNaoEnviaWebhook() {
+        configurar();
+        titulo(21, SituacaoContaReceber.ABERTO, "100.00", "0");
+        when(client.criarLink(eq(CHAVE), anyMap())).thenReturn(new InfinitePayClient.LinkCriado("https://checkout.simulado/m", "{}"));
+        service.gerar(21L, null);
+        ArgumentCaptor<Map<String, Object>> pedido = ArgumentCaptor.forClass(Map.class);
+        verify(client).criarLink(eq(CHAVE), pedido.capture());
+        assertFalse(pedido.getValue().containsKey("webhook"));
+        assertEquals(ModoLinkPagamento.MANUAL, salvos.get(0).getModo());
+        assertNull(salvos.get(0).getBanco());
+        verifyNoInteractions(bancoRepo);
+    }
+
+    @Test
+    void linkAutomaticoEnviaWebhookEGravaOBancoEscolhido() {
+        configurar();
+        titulo(22, SituacaoContaReceber.ABERTO, "100.00", "0");
+        Banco b = banco(5, true);
+        Map<String, Object> webhook = Map.of("url", "https://pagamentos.exemplo.com.br/w/token", "events", List.of("paid"));
+        when(automatico.webhookParaLink()).thenReturn(webhook);
+        when(client.criarLink(eq(CHAVE), anyMap())).thenReturn(new InfinitePayClient.LinkCriado("https://checkout.simulado/a", "{}"));
+        InfinitePayDTOs.LinkResponse r = service.gerar(22L, reqModo("automatico", 5L)).link();
+        ArgumentCaptor<Map<String, Object>> pedido = ArgumentCaptor.forClass(Map.class);
+        verify(client).criarLink(eq(CHAVE), pedido.capture());
+        assertEquals(webhook, pedido.getValue().get("webhook"));
+        assertEquals(ModoLinkPagamento.AUTOMATICO, salvos.get(0).getModo());
+        assertSame(b, salvos.get(0).getBanco());
+        assertEquals("AUTOMATICO", r.modo());
+        assertEquals(5L, r.bancoId());
+    }
+
+    @Test
+    void linkAutomaticoUsaOBancoPadraoESemBancoRecusa() {
+        configurar();
+        titulo(23, SituacaoContaReceber.ABERTO, "100.00", "0");
+        when(automatico.webhookParaLink()).thenReturn(Map.of("url", "https://p.exemplo.com.br/w/t", "events", List.of("paid")));
+        assertThrows(ItemInvalidoException.class, () -> service.gerar(23L, reqModo("AUTOMATICO", null)));
+        verifyNoInteractions(client);
+        Banco padrao = banco(6, true);
+        when(automatico.bancoPadrao()).thenReturn(padrao);
+        when(client.criarLink(eq(CHAVE), anyMap())).thenReturn(new InfinitePayClient.LinkCriado("https://checkout.simulado/p", "{}"));
+        service.gerar(23L, reqModo("AUTOMATICO", null));
+        assertSame(padrao, salvos.get(0).getBanco());
+    }
+
+    @Test
+    void linkAutomaticoRecusaBancoInativoModoInvalidoEConfiguracaoIncompleta() {
+        configurar();
+        titulo(24, SituacaoContaReceber.ABERTO, "100.00", "0");
+        when(automatico.webhookParaLink()).thenReturn(Map.of("url", "https://p.exemplo.com.br/w/t", "events", List.of("paid")));
+        banco(7, false);
+        assertThrows(ItemInvalidoException.class, () -> service.gerar(24L, reqModo("AUTOMATICO", 7L)));
+        assertThrows(ItemInvalidoException.class, () -> service.gerar(24L, reqModo("QUALQUER", null)));
+        when(automatico.webhookParaLink()).thenThrow(new ObjetoEmUsoException("A baixa automática está desligada."));
+        assertThrows(ObjetoEmUsoException.class, () -> service.gerar(24L, reqModo("AUTOMATICO", 7L)));
+        verifyNoInteractions(client);
+        assertTrue(salvos.isEmpty());
+    }
+
+    @Test
+    void semModoUsaOPadraoDaConfiguracao() {
+        configurar();
+        titulo(25, SituacaoContaReceber.ABERTO, "100.00", "0");
+        when(automatico.modoAutomaticoPadrao()).thenReturn(true);
+        when(automatico.webhookParaLink()).thenReturn(Map.of("url", "https://p.exemplo.com.br/w/t", "events", List.of("paid")));
+        banco(8, true);
+        when(client.criarLink(eq(CHAVE), anyMap())).thenReturn(new InfinitePayClient.LinkCriado("https://checkout.simulado/d", "{}"));
+        service.gerar(25L, reqModo(null, 8L));
+        assertEquals(ModoLinkPagamento.AUTOMATICO, salvos.get(0).getModo());
+    }
+
     // ---------- ciclo de vida ----------
 
     @Test
@@ -320,7 +411,7 @@ class LinkPagamentoServicosTest {
         assertFalse(configService.envioEmailHabilitado());
         // com a flag ligada o serviço consulta o link antes de qualquer envio (aqui inexistente => 404, sem e-mail)
         InfinitePayConfiguracaoService ligado = new InfinitePayConfiguracaoService(configRepo, criptografia, usuarioMapper, true);
-        LinkPagamentoService comEmail = new LinkPagamentoService(contaReceberService, repo, recebimentoRepo, ligado, client, cicloVida, auditor, usuarioMapper, emailService, templateService);
+        LinkPagamentoService comEmail = new LinkPagamentoService(contaReceberService, repo, recebimentoRepo, ligado, client, cicloVida, auditor, usuarioMapper, emailService, templateService, automatico, bancoRepo);
         when(repo.findContaReceberIdById(anyLong())).thenReturn(Optional.empty());
         assertThrows(com.manager.app.shared.exception.ObjetoNaoEncontradoException.class,
                 () -> comEmail.enviarEmail(1L, new InfinitePayDTOs.EnviarEmailRequest(List.of("maria@exemplo.com"), null, null)));
