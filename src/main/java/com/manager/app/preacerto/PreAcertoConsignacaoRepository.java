@@ -8,10 +8,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface PreAcertoConsignacaoRepository extends JpaRepository<PreAcertoConsignacao, Long>, JpaSpecificationExecutor<PreAcertoConsignacao> {
 
     boolean existsByConsignacaoId(Long consignacaoId);
+
+    // pré-acertos de um conjunto de consignações (no máximo um por consignação)
+    @Query("select p from PreAcertoConsignacao p where p.consignacao.id in :ids")
+    List<PreAcertoConsignacao> findDasConsignacoes(@Param("ids") java.util.Collection<Long> ids);
 
     // id da consignação do pré-acerto sem carregar a entidade (lista vazia = pré-acerto inexistente; elemento nulo = sem consignação)
     @Query("select c.id from PreAcertoConsignacao p left join p.consignacao c where p.id = :id")

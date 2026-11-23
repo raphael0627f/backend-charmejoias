@@ -31,6 +31,8 @@ public interface ConsignacaoRepository  extends JpaRepository<Consignacao, Long>
     java.util.Optional<Consignacao> findByIdForUpdate(@Param("id") Long id);
 
     // consignações ainda não confirmadas do cliente para uma data de entrega (vínculo automático à montagem)
+    List<Consignacao> findByCliente_Id(UUID clienteId);
+
     List<Consignacao> findByCliente_IdAndDataEntregaAndConfirmadaFalseAndCanceladaFalse(UUID clienteId, LocalDate dataEntrega);
 
     // O Hibernate só marca a linha da consignação como "suja" (e dispara

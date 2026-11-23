@@ -45,6 +45,7 @@ public class ContaReceberController {
     private final CreditoAplicacaoService creditoAplicacaoService;
     private final ContaReceberAnexoService anexoService;
     private final SituacaoClienteService situacaoClienteService;
+    private final ClienteFinanceiroService clienteFinanceiroService;
 
     @PostMapping
     @PreAuthorize(GERENCIA)
@@ -96,6 +97,28 @@ public class ContaReceberController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate recebimentoDe,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate recebimentoAte) {
         return ResponseEntity.ok(situacaoClienteService.situacao(clienteId, recebimentoDe, recebimentoAte));
+    }
+
+    // aba Financeiro do cliente: consignações (mais recente primeiro) com valores, selo e filtro rápido; títulos por consignação e sem consignação
+    @GetMapping("/clientes/{clienteId}/consignacoes")
+    @PreAuthorize(CONSULTA)
+    public ResponseEntity<com.manager.app.financeiro.dto.ClienteFinanceiroDTOs.ConsignacoesPagina> consignacoesDoCliente(@PathVariable UUID clienteId,
+            @RequestParam(defaultValue = "TODAS") String filtro, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(clienteFinanceiroService.consignacoes(clienteId, filtro, page, size));
+    }
+
+    @GetMapping("/clientes/{clienteId}/consignacoes/{consignacaoId}/titulos")
+    @PreAuthorize(CONSULTA)
+    public ResponseEntity<com.manager.app.financeiro.dto.ClienteFinanceiroDTOs.TitulosPagina> titulosDaConsignacaoDoCliente(@PathVariable UUID clienteId,
+            @PathVariable Long consignacaoId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(clienteFinanceiroService.titulosDaConsignacao(clienteId, consignacaoId, page, size));
+    }
+
+    @GetMapping("/clientes/{clienteId}/sem-consignacao/titulos")
+    @PreAuthorize(CONSULTA)
+    public ResponseEntity<com.manager.app.financeiro.dto.ClienteFinanceiroDTOs.TitulosPagina> titulosSemConsignacaoDoCliente(@PathVariable UUID clienteId,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(clienteFinanceiroService.titulosSemConsignacao(clienteId, page, size));
     }
 
     @GetMapping("/clientes/situacao")

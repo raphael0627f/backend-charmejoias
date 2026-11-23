@@ -13,6 +13,19 @@ import java.util.UUID;
 
 public interface ContaPagarRepository extends JpaRepository<ContaPagar, Long>, JpaSpecificationExecutor<ContaPagar> {
 
+    // contas a pagar do cliente (favorecido cliente): mais recente primeiro
+    @Query(value = "select c from ContaPagar c where c.cliente.id = :clienteId order by c.emissao desc, c.id desc",
+            countQuery = "select count(c) from ContaPagar c where c.cliente.id = :clienteId")
+    org.springframework.data.domain.Page<ContaPagar> findDoCliente(@Param("clienteId") UUID clienteId, Pageable pageable);
+
+    // [quantidade, valor, valorPago, emAberto]: cancelados fora das somas
+    @Query("select count(c), coalesce(sum(c.valor), 0), coalesce(sum(c.valorPago), 0), "
+            + "coalesce(sum(case when c.situacao in (com.manager.app.financeiro.SituacaoContaPagar.ABERTO, com.manager.app.financeiro.SituacaoContaPagar.PAGO_PARCIAL) "
+            + "then c.valor - c.valorPago else 0 end), 0) "
+            + "from ContaPagar c where c.cliente.id = :clienteId and c.situacao <> com.manager.app.financeiro.SituacaoContaPagar.CANCELADO")
+    List<Object[]> totaisDoCliente(@Param("clienteId") UUID clienteId);
+
+
     // título a pagar ativo (não cancelado) da devolução de um excedente (sem trava)
     @Query("select c from ContaPagar c where c.excedenteId = :excedenteId and c.situacao <> com.manager.app.financeiro.SituacaoContaPagar.CANCELADO")
     java.util.Optional<ContaPagar> findAtivoDoExcedente(@org.springframework.data.repository.query.Param("excedenteId") Long excedenteId);

@@ -30,6 +30,20 @@ public interface ContaReceberRepository extends JpaRepository<ContaReceber, Long
     @Query("select c from ContaReceber c where c.consignacao.id = :consignacaoId and c.situacao <> com.manager.app.financeiro.SituacaoContaReceber.CANCELADO order by c.id")
     List<ContaReceber> findAtivosDaConsignacaoForUpdate(@Param("consignacaoId") Long consignacaoId);
 
+    // aba Financeiro do cliente: todos os títulos do cliente; e as páginas por consignação / sem consignação (vencimento, número)
+    @Query("select c from ContaReceber c where c.cliente.id = :clienteId")
+    List<ContaReceber> findDoCliente(@Param("clienteId") java.util.UUID clienteId);
+
+    @Query(value = "select c from ContaReceber c where c.cliente.id = :clienteId and c.consignacao.id = :consignacaoId order by c.vencimento, c.numero",
+            countQuery = "select count(c) from ContaReceber c where c.cliente.id = :clienteId and c.consignacao.id = :consignacaoId")
+    org.springframework.data.domain.Page<ContaReceber> findDaConsignacaoDoCliente(@Param("clienteId") java.util.UUID clienteId,
+            @Param("consignacaoId") Long consignacaoId, org.springframework.data.domain.Pageable pageable);
+
+    @Query(value = "select c from ContaReceber c where c.cliente.id = :clienteId and c.consignacao is null order by c.vencimento, c.numero",
+            countQuery = "select count(c) from ContaReceber c where c.cliente.id = :clienteId and c.consignacao is null")
+    org.springframework.data.domain.Page<ContaReceber> findSemConsignacaoDoCliente(@Param("clienteId") java.util.UUID clienteId,
+            org.springframework.data.domain.Pageable pageable);
+
     // todos os títulos da consignação, inclusive cancelados (resumo financeiro: visão completa da consignação)
     @Query("select c from ContaReceber c where c.consignacao.id = :consignacaoId order by c.vencimento, c.numero")
     List<ContaReceber> findTodosDaConsignacao(@Param("consignacaoId") Long consignacaoId);
