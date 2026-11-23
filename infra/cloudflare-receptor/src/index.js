@@ -6,10 +6,11 @@
 //   POST /w/{token}        InfinitePay -> guarda o evento (idempotente por transaction_nsu + evento). 404 se o token estiver errado.
 //   GET  /fila?limite=N    ERP (Bearer SEGREDO_ERP) -> itens ainda sem ack, mais antigos primeiro.
 //   POST /fila/ack         ERP (Bearer) -> {"ids":[...]} marca como confirmados (idempotente).
+//   POST /fila/limpar      ERP (Bearer) -> {"dias":90} apaga SOMENTE itens com ack ha mais de N dias (minimo 90); nunca itens sem ack.
 //   GET  /saude            ERP (Bearer) -> {ok, pendentes, maisAntigoEm, versao}.
 // Segredos (Cloudflare secrets): TOKEN_ENTRADA (aceita vários separados por vírgula, para rotação) e SEGREDO_ERP.
 
-const VERSAO = "1.0.0";
+const VERSAO = "1.1.0";
 const MAX_CORPO = 16 * 1024;
 const LIMITE_PADRAO = 50;
 const LIMITE_MAXIMO = 200;
@@ -136,10 +137,19 @@ async function saude(env) {
   return json({ ok: true, pendentes: p?.n ?? 0, maisAntigoEm: p?.mais_antigo ?? null, versao: VERSAO });
 }
 
-async function limpar(env, agora = new Date()) {
-  const limite = new Date(agora.getTime() - RETENCAO_DIAS * 24 * 3600 * 1000).toISOString();
+// retenção acionada pelo ERP (sem cron): apaga só o que tem ack há mais de N dias (N >= 90); itens sem ack nunca são apagados
+async function limpar(request, env, agora = new Date()) {
+  let dias = RETENCAO_DIAS;
+  try {
+    const corpo = await request.json();
+    if (corpo && corpo.dias !== undefined) dias = corpo.dias;
+  } catch {
+    // sem corpo: usa o padrão
+  }
+  if (!Number.isInteger(dias) || dias < RETENCAO_DIAS || dias > 3650) return json({ erro: "dias deve ser um inteiro entre " + RETENCAO_DIAS + " e 3650" }, 400);
+  const limite = new Date(agora.getTime() - dias * 24 * 3600 * 1000).toISOString();
   const r = await env.DB.prepare("DELETE FROM fila WHERE ack_em IS NOT NULL AND ack_em < ?").bind(limite).run();
-  return r.meta?.changes ?? 0;
+  return json({ ok: true, apagados: r.meta?.changes ?? 0 });
 }
 
 export default {
@@ -148,21 +158,17 @@ export default {
     try {
       if (request.method === "POST" && pathname.startsWith("/w/")) return await receber(request, env);
       const rotaErp =
-        (request.method === "GET" && (pathname === "/fila" || pathname === "/saude")) || (request.method === "POST" && pathname === "/fila/ack");
+        (request.method === "GET" && (pathname === "/fila" || pathname === "/saude")) || (request.method === "POST" && (pathname === "/fila/ack" || pathname === "/fila/limpar"));
       if (!rotaErp) return naoEncontrado();
       if (!(await erpAutorizado(request, env))) return naoAutorizado();
       if (pathname === "/fila") return await listar(request, env);
       if (pathname === "/saude") return await saude(env);
+      if (pathname === "/fila/limpar") return await limpar(request, env);
       return await confirmar(request, env);
     } catch (e) {
       // nunca devolve detalhes internos nem o corpo recebido
       console.error("falha no receptor", e?.name);
       return json({ erro: "falha interna" }, 500);
     }
-  },
-
-  // retenção: itens confirmados (ack) há mais de 90 dias são apagados; itens SEM ack nunca são apagados automaticamente
-  async scheduled(_evento, env, ctx) {
-    ctx.waitUntil(limpar(env));
   },
 };

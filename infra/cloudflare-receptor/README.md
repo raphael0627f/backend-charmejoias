@@ -21,14 +21,14 @@ Qualquer outra rota/método: 404. Sem CORS.
 - Ambos: 32 a 200 caracteres, letras, números, `-` e `_` (o ERP valida o mesmo formato). Gere, por exemplo, com `node -e "console.log(require('crypto').randomBytes(36).toString('base64url'))"`.
 
 ## Retenção
-Cron diário (06:00 UTC) apaga itens **confirmados (ack) há mais de 90 dias**. Itens **sem ack nunca são apagados** automaticamente (o ERP alerta o administrador quando a fila fica parada).
+Não há cron. O ERP, durante a busca (no máximo 1 vez a cada 24 h), chama `POST /fila/limpar` (Bearer `SEGREDO_ERP`, corpo `{"dias":90}`), que apaga **somente** itens **confirmados (ack) há mais de 90 dias** (`dias` mínimo 90). Itens **sem ack nunca são apagados** (o ERP alerta o administrador quando a fila fica parada).
 
 ## Teste local (sem Cloudflare, sem InfinitePay)
 ```
 npm install
 # crie .dev.vars (ignorado pelo git) com TOKEN_ENTRADA=<t1>,<t2> e SEGREDO_ERP=<s>
 npm run db:local
-npm run dev            # outro terminal (wrangler dev --local --test-scheduled)
+npm run dev            # outro terminal (wrangler dev --local)
 npm test               # teste de contrato (33 verificações)
 ```
 
@@ -36,7 +36,7 @@ npm test               # teste de contrato (33 verificações)
 1. `npx wrangler d1 create charme-pagamentos-db` → copiar o `database_id` para `wrangler.toml` (não é segredo).
 2. `npx wrangler d1 execute charme-pagamentos-db --remote --file=schema.sql`.
 3. `npx wrangler secret put TOKEN_ENTRADA` e `npx wrangler secret put SEGREDO_ERP` (valor digitado/colado no prompt; não vai para arquivo).
-4. `npx wrangler deploy` → cria o Worker, o Custom Domain `pagamentos.charmejoias.com.br` (registro DNS e certificado) e o cron.
+4. `npx wrangler deploy` → cria o Worker, o Custom Domain `pagamentos.charmejoias.com.br` (registro DNS e certificado) (sem cron).
 5. Conferir: `GET https://pagamentos.charmejoias.com.br/saude` sem Bearer = 401; com Bearer = `{"ok":true,...}`; `POST /w/<token-errado>` = 404.
 6. No ERP (Sistema > InfinitePay): URL `https://pagamentos.charmejoias.com.br`, token de entrada e segredo, depois "Testar receptor".
 
