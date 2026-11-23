@@ -186,3 +186,29 @@ A resposta de `POST /infinitepay/revisoes/{id}/reprocessar` (o detalhe da revis�
 - **Item reprocessado com sucesso (F-D)**: fica `status = PROCESSADO` ("Baixado automaticamente"), com `baixado = true` e `recebimentoId` preenchido. Não existe status novo "reprocessado".
 - **Devolução (O1)**: o vencimento informado em `POST /excedentes-acerto/{id}/destinar` (`vencimento`) é gravado integralmente no título a pagar; sem informar, usa hoje. O backend não altera a data (teste incluso); a diferença vista na tela (20/12 → 23/12) deve ser verificada no envio da data pelo front (fuso/formatação).
 - **Aviso duplicado do mesmo pagamento (C10)**: o receptor guarda avisos sem `transaction_nsu` com a chave `sha256:<resumo>` (evento `desconhecido` se o corpo não traz `event`/`type`). No ERP: (1) esses avisos são processados por último no ciclo; (2) se o corpo tem `order_nsu` mas não tem `transaction_nsu` e o link já está pago, o aviso é marcado `IGNORADO` ("Aviso sem identificador de transação referente a um pagamento já baixado.") — sem baixa duplicada, sem revisão, sem erro; (3) se o link não estiver pago, segue para revisão `PAYLOAD_INESPERADO`, como antes (nunca baixa sem `transaction_nsu`). A baixa em si é idempotente pelo `transaction_nsu` e pelo estado do link/título. No Worker, evento ausente = `desconhecido` (guarda qualquer formato; a classificação é do ERP: com todos os campos de pagamento é tratado como pagamento e confirmado no `payment_check`).
+
+---
+
+## 10. Rodada 2 do QA
+
+### 10.1 Formato real do webhook e corrida "settled" × "paid" (R1) ✅
+Formato real observado no Worker real: o campo do tipo é **`event_type`** (não `event`); a InfinitePay envia dois avisos do mesmo pagamento, com ~1 s de diferença:
+1. `event_type = "settled"`, **sem** `transaction_nsu`, `paid_amount` e `capture_method` (o Worker guarda com chave `sha256:<resumo>` e evento `desconhecido`);
+2. `event_type = "paid"`, completo, com `transaction_nsu` (é este que baixa, após o `payment_check`).
+
+Regras no ERP:
+- O tipo do evento é lido de `event`, `event_type`, `type` ou `evento` (o Worker v1.2.0 também; **o campo do Worker é só rótulo, o ERP classifica pelo corpo**).
+- Aviso **sem `transaction_nsu`** com `order_nsu`:
+  - link **já pago** → `IGNORADO` ("Aviso sem identificador de transação referente a um pagamento já baixado.");
+  - link **não pago**, dentro da janela (**15 minutos** desde que o ERP guardou o aviso; propriedade `app.infinitepay.aviso-sem-transacao-janela-segundos`, padrão 900) → **continua aguardando**: não vira revisão, não baixa; é reavaliado a cada ciclo;
+  - link não pago após a janela → `REVISAO` `PAYLOAD_INESPERADO` ("Aviso de pagamento sem identificador de transação e sem aviso completo posterior...") — sinal de que o "paid" se perdeu.
+- Esse aviso **é confirmado (ack) no receptor** assim que guardado no ERP (não há reentrega); a espera acontece no ERP.
+- "Aguardando processamento" (`/infinitepay/fila/estado`) **não conta** esses avisos em espera. Avisos `sha256:` são processados por último em cada ciclo.
+- Aviso `sha256:` de link não pago **nunca** baixa (mantido por segurança).
+Cenários validados: (1) settled+paid na mesma busca; (2) settled sozinho e paid depois; (3) settled sozinho e paid nunca (após a janela → revisão). Sem impacto de API para o front.
+
+### 10.2 Ordenação inválida nas listas de ordem fixa (R2) ✅
+`GET /bancos`, `GET /contas-receber/clientes/{id}/situacao`, `GET /contas-receber/clientes/{id}/consignacoes`, `.../consignacoes/{cid}/titulos`, `.../sem-consignacao/titulos` e `GET /contas-pagar/clientes/{id}` não ordenam por parâmetro: qualquer `sort` informado → **400** `"Campo de ordenação inválido."`.
+
+### 10.3 Simulador (QA)
+`POST http://127.0.0.1:9099/__pagamento` aceita `"formato":"real"`: emite o `settled` (sem `transaction_nsu`) e depois o `paid` (`event_type`), com `atraso_paid_segundos` (padrão 1), `settled` (padrão true) e `paid_webhook` (padrão true; `false` simula o paid perdido). Exemplo: `{"formato":"real","order_nsu":"<orderNsu>","transaction_nsu":"QA-REAL-1","amount":1500,"atraso_paid_segundos":30}`.

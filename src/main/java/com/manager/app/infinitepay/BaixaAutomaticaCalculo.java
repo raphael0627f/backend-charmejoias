@@ -86,6 +86,7 @@ public final class BaixaAutomaticaCalculo {
             return new Payload(false, null, null, null, null, null, null, null, null, List.of("payload não é um objeto JSON"));
         }
         String evento = texto(raiz, "event");
+        if (evento == null) evento = texto(raiz, "event_type"); // formato real do webhook
         if (evento == null) evento = texto(raiz, "type");
         if (evento == null) evento = texto(raiz, "evento");
         String slug = texto(raiz, "invoice_slug");
@@ -147,6 +148,8 @@ public final class BaixaAutomaticaCalculo {
     }
 
     public static final String PREFIXO_RESUMO = "sha256:";
+
+    public static final String MOTIVO_SEM_TRANSACAO = "Aviso de pagamento sem identificador de transação e sem aviso completo posterior. O payload bruto foi guardado para diagnóstico.";
 
     public static String motivoSinal(String evento) {
         return switch (evento == null ? "" : evento) {

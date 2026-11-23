@@ -36,6 +36,10 @@ public class BaixaAutomaticaService {
     static final int LOTE = 50;
     static final int MAX_RODADAS = 10;
     static final int MAX_TENTATIVAS = 10;
+
+    // tempo que um aviso sem transaction_nsu espera pelo aviso completo do mesmo pagamento antes de ir para revisão
+    @org.springframework.beans.factory.annotation.Value("${app.infinitepay.aviso-sem-transacao-janela-segundos:900}")
+    long janelaAvisoSemTransacaoSegundos = 900;
     static final int RETENCAO_DIAS = 90;
     static final int PAYLOAD_MAXIMO = 16000;
     static final Duration ESPERA_MANUAL = Duration.ofSeconds(30);
@@ -125,7 +129,9 @@ public class BaixaAutomaticaService {
 
     public Estado estado() {
         return new Estado(ultimaExecucao, ultimoSucesso, ultimoErro,
-                eventoRepository.countByStatus(InfinitePayEvento.Status.RECEBIDO) + eventoRepository.countByStatus(InfinitePayEvento.Status.ERRO_TEMPORARIO),
+                // avisos aguardando o aviso completo (chave "sha256:") não entram na contagem
+                eventoRepository.countByStatusAndTransactionNsuNotLike(InfinitePayEvento.Status.RECEBIDO, BaixaAutomaticaCalculo.PREFIXO_RESUMO + "%")
+                        + eventoRepository.countByStatus(InfinitePayEvento.Status.ERRO_TEMPORARIO),
                 eventoRepository.countByStatus(InfinitePayEvento.Status.REVISAO), naoConfirmados, estadoDoReceptor());
     }
 
@@ -277,18 +283,25 @@ public class BaixaAutomaticaService {
             ev.setPaidAmountCentavos(p.paidAmount());
             ev.setCaptureMethod(truncar(p.captureMethod(), 40));
             BaixaAutomaticaCalculo.Tipo tipo = BaixaAutomaticaCalculo.classificar(p);
+            // aviso "settled"/sem transaction_nsu (formato real do webhook, chega ~1 s antes do "paid"): não vira revisão por corrida
+            if (BaixaAutomaticaCalculo.semIdentificadorDeTransacao(p)
+                    && (tipo == BaixaAutomaticaCalculo.Tipo.INESPERADO || tipo == BaixaAutomaticaCalculo.Tipo.PAGAMENTO)) {
+                boolean jaPago = linkRepository.findIdByOrderNsu(p.orderNsu()).flatMap(linkRepository::findById)
+                        .map(l -> l.getStatus() == StatusLinkPagamento.PAGO_AUTOMATICO || l.getStatus() == StatusLinkPagamento.PAGO_MANUAL).orElse(false);
+                if (jaPago) {
+                    concluir(ev, InfinitePayEvento.Status.IGNORADO, null, "Aviso sem identificador de transação referente a um pagamento já baixado.");
+                    r.ignorados++;
+                    return null;
+                }
+                if (ev.getCriadoEm() != null && ev.getCriadoEm().plusSeconds(janelaAvisoSemTransacaoSegundos).isAfter(LocalDateTime.now())) {
+                    return null; // continua aguardando o aviso completo (com transaction_nsu) do mesmo pagamento
+                }
+                concluir(ev, InfinitePayEvento.Status.REVISAO, MotivoRevisao.PAYLOAD_INESPERADO, BaixaAutomaticaCalculo.MOTIVO_SEM_TRANSACAO);
+                r.revisao++;
+                return null;
+            }
             switch (tipo) {
                 case INESPERADO -> {
-                    // segundo aviso do mesmo pagamento, sem transaction_nsu (chave "sha256:"): se o link já foi pago, não gera revisão nem baixa
-                    if (BaixaAutomaticaCalculo.semIdentificadorDeTransacao(p)) {
-                        boolean jaPago = linkRepository.findIdByOrderNsu(p.orderNsu()).flatMap(linkRepository::findById)
-                                .map(l -> l.getStatus() == StatusLinkPagamento.PAGO_AUTOMATICO || l.getStatus() == StatusLinkPagamento.PAGO_MANUAL).orElse(false);
-                        if (jaPago) {
-                            concluir(ev, InfinitePayEvento.Status.IGNORADO, null, "Aviso sem identificador de transação referente a um pagamento já baixado.");
-                            r.ignorados++;
-                            return null;
-                        }
-                    }
                     concluir(ev, InfinitePayEvento.Status.REVISAO, MotivoRevisao.PAYLOAD_INESPERADO, "Payload inesperado ou incompleto" + (p.faltando().isEmpty() ? "" : " (campos ausentes ou inválidos: " + String.join(", ", p.faltando()) + ")")
                             + ". O payload bruto foi guardado para diagnóstico.");
                     r.revisao++;

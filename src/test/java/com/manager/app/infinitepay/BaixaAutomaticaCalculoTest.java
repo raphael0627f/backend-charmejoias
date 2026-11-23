@@ -149,4 +149,14 @@ class BaixaAutomaticaCalculoTest {
         assertFalse(BaixaAutomaticaCalculo.semIdentificadorDeTransacao(ler(COMPLETO)));
         assertFalse(BaixaAutomaticaCalculo.semIdentificadorDeTransacao(ler("{\"amount\":1}")));
     }
+
+    @Test
+    void formatoRealUsaEventTypeParaClassificar() {
+        var settled = ler("{\"event_type\":\"settled\",\"order_nsu\":\"A\",\"invoice_slug\":\"s\",\"amount\":100}");
+        assertEquals("settled", settled.evento());
+        assertTrue(BaixaAutomaticaCalculo.semIdentificadorDeTransacao(settled));
+        var pago = ler("{\"event_type\":\"paid\",\"order_nsu\":\"A\",\"transaction_nsu\":\"T\",\"invoice_slug\":\"s\",\"amount\":100,\"paid_amount\":100,\"capture_method\":\"pix\"}");
+        assertEquals(BaixaAutomaticaCalculo.Tipo.PAGAMENTO, BaixaAutomaticaCalculo.classificar(pago));
+        assertFalse(BaixaAutomaticaCalculo.semIdentificadorDeTransacao(pago));
+    }
 }

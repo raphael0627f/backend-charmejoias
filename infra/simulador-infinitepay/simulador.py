@@ -17,7 +17,7 @@ Controle (sem autenticacao, so localhost):
   GET  /__requisicoes           -> ultimas requisicoes recebidas (cabecalho X-Api-Key mascarado)
   POST /__reset                 -> zera o registro e volta ao modo ok
 """
-import json, sys, time
+import hashlib, json, sys, time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 ESTADO = {"modo": "ok", "requisicoes": []}
@@ -76,7 +76,7 @@ class H(BaseHTTPRequestHandler):
             pend = [i for i in FILA if not i["ack"]]
             return self._responder(200, json.dumps({"ok": True, "pendentes": len(pend), "maisAntigoEm": pend[0]["recebidoEm"] if pend else None, "versao": "sim"}))
         if metodo == "GET" and caminho == "/fila":
-            itens = [{k: v for k, v in i.items() if k != "ack"} for i in FILA if not i["ack"]][:200]
+            itens = [{k: v for k, v in i.items() if k not in ("ack", "_visivelEm")} for i in FILA if not i["ack"] and i.get("_visivelEm", 0) <= time.time()][:200]
             return self._responder(200, json.dumps({"itens": itens}))
         if metodo == "POST" and caminho == "/fila/ack":
             ids = json.loads(corpo or "{}").get("ids", [])
@@ -113,6 +113,23 @@ class H(BaseHTTPRequestHandler):
             tx = d.get("transaction_nsu") or "SIM-TX-" + str(int(time.time() * 1000))
             PAGAMENTOS[tx] = {"success": True, "paid": d.get("paid", True), "amount": d["amount"], "paid_amount": d.get("paid_amount", d["amount"]),
                               "installments": d.get("installments", 1), "capture_method": d.get("capture_method", "pix")}
+            if d.get("formato") == "real":
+                # formato real do webhook: "settled" SEM transaction_nsu (chave sha256 no receptor) e depois "paid" (com atraso opcional, em segundos)
+                agora = time.time()
+                if d.get("settled", True):
+                    SEQ[0] += 1
+                    corpo_s = {"event_type": "settled", "invoice_slug": "sim-slug", "invoice_type": "external_checkout", "amount": d["amount"], "order_nsu": d["order_nsu"], "items": []}
+                    txt = json.dumps(corpo_s, sort_keys=True)
+                    FILA.append({"id": SEQ[0], "recebidoEm": time.strftime("%Y-%m-%dT%H:%M:%SZ"), "evento": "desconhecido", "orderNsu": d["order_nsu"],
+                                 "transactionNsu": "sha256:" + hashlib.sha256((txt + str(SEQ[0])).encode()).hexdigest(), "invoiceSlug": "sim-slug", "corpo": txt, "ack": False, "_visivelEm": agora})
+                if d.get("paid_webhook", True):
+                    SEQ[0] += 1
+                    corpo_p = {"event_type": "paid", "invoice_slug": "sim-slug", "invoice_type": "external_checkout", "amount": d["amount"], "paid_amount": d.get("paid_amount", d["amount"]),
+                               "installments": d.get("installments", 1), "capture_method": d.get("capture_method", "pix"), "transaction_nsu": tx, "order_nsu": d["order_nsu"],
+                               "receipt_url": "https://recibo.simulado.local/" + tx, "items": []}
+                    FILA.append({"id": SEQ[0], "recebidoEm": time.strftime("%Y-%m-%dT%H:%M:%SZ"), "evento": "desconhecido", "orderNsu": d["order_nsu"], "transactionNsu": tx,
+                                 "invoiceSlug": "sim-slug", "corpo": json.dumps(corpo_p), "ack": False, "_visivelEm": agora + float(d.get("atraso_paid_segundos", 1))})
+                return self._responder(200, json.dumps({"transaction_nsu": tx}))
             if d.get("webhook", True):
                 SEQ[0] += 1
                 evento = d.get("event", "paid")

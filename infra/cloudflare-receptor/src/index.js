@@ -65,7 +65,7 @@ function extrair(corpo) {
   }
   const o = dados && typeof dados === "object" && !Array.isArray(dados) ? dados : {};
   return {
-    evento: texto(o.event) ?? texto(o.type) ?? texto(o.evento) ?? (dados ? "desconhecido" : "invalido"),
+    evento: texto(o.event) ?? texto(o.event_type) ?? texto(o.type) ?? texto(o.evento) ?? (dados ? "desconhecido" : "invalido"),
     orderNsu: texto(o.order_nsu),
     transactionNsu: texto(o.transaction_nsu),
     invoiceSlug: texto(o.invoice_slug) ?? texto(o.slug),

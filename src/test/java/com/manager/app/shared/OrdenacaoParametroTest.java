@@ -31,4 +31,11 @@ class OrdenacaoParametroTest {
         ItemInvalidoException e = assertThrows(ItemInvalidoException.class, () -> OrdenacaoParametro.resolver(null, null, "xyz", CAMPOS));
         assertEquals("Campo de ordenação inválido.", e.getMessage());
     }
+
+    @Test
+    void listaDeOrdemFixaRecusaQualquerSort() {
+        OrdenacaoParametro.ordemFixa(null);
+        OrdenacaoParametro.ordemFixa(" ");
+        assertThrows(ItemInvalidoException.class, () -> OrdenacaoParametro.ordemFixa("xpto"));
+    }
 }

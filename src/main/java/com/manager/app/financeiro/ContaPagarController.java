@@ -90,7 +90,9 @@ public class ContaPagarController {
     @GetMapping("/clientes/{clienteId}")
     @PreAuthorize(CONSULTA)
     public ResponseEntity<com.manager.app.financeiro.dto.ClienteFinanceiroDTOs.PagarPagina> doCliente(@PathVariable java.util.UUID clienteId,
-            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sort) {
+        com.manager.app.shared.OrdenacaoParametro.ordemFixa(sort);
         return ResponseEntity.ok(clienteFinanceiroService.contasAPagar(clienteId, page, size));
     }
 

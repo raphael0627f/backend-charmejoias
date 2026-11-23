@@ -13,6 +13,11 @@ public final class OrdenacaoParametro {
     public record Resolvida(String ordenar, String direcao) {
     }
 
+    // listas de ordem fixa: qualquer "sort" informado é campo inexistente
+    public static void ordemFixa(String sort) {
+        if (sort != null && !sort.isBlank()) throw new ItemInvalidoException("Campo de ordenação inválido.");
+    }
+
     public static Resolvida resolver(String ordenar, String direcao, String sort, Set<String> camposAceitos) {
         if (sort == null || sort.isBlank()) return new Resolvida(ordenar, direcao);
         String[] partes = sort.split(",", 2);

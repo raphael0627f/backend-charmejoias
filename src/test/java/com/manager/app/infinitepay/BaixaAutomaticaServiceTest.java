@@ -101,6 +101,7 @@ class BaixaAutomaticaServiceTest {
             r.setId(99L);
             titulo.setSituacao(SituacaoContaReceber.RECEBIDO);
             titulo.setValorRecebido(i.getArgument(4));
+            link.setStatus(StatusLinkPagamento.PAGO_AUTOMATICO); // como o serviço real marca o link
             return r;
         });
         service = new BaixaAutomaticaService(receptor, automatico, configuracao, client, eventos, links, contaReceberService, recebimentoService, trava,
@@ -291,5 +292,60 @@ class BaixaAutomaticaServiceTest {
         pool.shutdown();
         verify(recebimentoService, times(1)).receberAutomatico(any(), anyLong(), any(), any(), any(), any(), any(), any(), any());
         assertEquals(1, banco.size());
+    }
+
+    // formato real do webhook: "settled" sem transaction_nsu (chave sha256 no receptor) chega antes do "paid"
+    private static String settledSemTransacao() {
+        return "{\"event_type\":\"settled\",\"invoice_slug\":\"slug\",\"invoice_type\":\"external_checkout\",\"amount\":1500,\"order_nsu\":\"CR-7-0\",\"items\":[]}";
+    }
+
+    private static String paidReal(String nsu) {
+        return "{\"event_type\":\"paid\",\"invoice_slug\":\"slug\",\"amount\":1500,\"paid_amount\":1500,\"installments\":1,\"capture_method\":\"pix\",\"transaction_nsu\":\"" + nsu + "\",\"order_nsu\":\"CR-7-0\"}";
+    }
+
+    @Test
+    void settledSozinhoDentroDaJanelaNaoViraRevisaoNemPerdeOAviso() {
+        fila(item(1, "desconhecido", settledSemTransacao(), "sha256:abc"));
+        BaixaAutomaticaService.Resumo r = service.ciclo();
+        assertEquals(0, r.getRevisao());
+        assertEquals(InfinitePayEvento.Status.RECEBIDO, unico().getStatus());
+        verify(receptor).ack(List.of(1L)); // guardado no ERP: o receptor não reentrega
+        verifyNoInteractions(recebimentoService);
+        verifyNoInteractions(client);
+    }
+
+    @Test
+    void settledSozinhoAposAJanelaVaiParaRevisao() {
+        service.janelaAvisoSemTransacaoSegundos = 0;
+        fila(item(1, "desconhecido", settledSemTransacao(), "sha256:abc"));
+        BaixaAutomaticaService.Resumo r = service.ciclo();
+        assertEquals(1, r.getRevisao());
+        assertEquals(InfinitePayEvento.Status.REVISAO, unico().getStatus());
+        assertEquals("PAYLOAD_INESPERADO", unico().getMotivoCodigo());
+        verifyNoInteractions(recebimentoService);
+    }
+
+    @Test
+    void settledEPaidNaMesmaBuscaBaixaUmaVezESettledEhIgnorado() {
+        confirmaPago(1500, 1500);
+        fila(item(1, "desconhecido", settledSemTransacao(), "sha256:abc"), item(2, "desconhecido", paidReal("T9"), "T9"));
+        BaixaAutomaticaService.Resumo r = service.ciclo();
+        assertEquals(1, r.getBaixados());
+        assertEquals(0, r.getRevisao());
+        verify(recebimentoService, times(1)).receberAutomatico(any(), anyLong(), any(), any(), any(), any(), anyString(), any(), eq("T9"));
+        assertEquals(InfinitePayEvento.Status.IGNORADO, banco.get(1L).getStatus());
+        assertEquals(InfinitePayEvento.Status.PROCESSADO, banco.get(2L).getStatus());
+    }
+
+    @Test
+    void settledSozinhoEDepoisPaidEmOutraBuscaBaixaEIgnoraOSettled() {
+        fila(item(1, "desconhecido", settledSemTransacao(), "sha256:abc"));
+        service.ciclo();
+        assertEquals(InfinitePayEvento.Status.RECEBIDO, banco.get(1L).getStatus());
+        confirmaPago(1500, 1500);
+        fila(item(2, "desconhecido", paidReal("T9"), "T9"));
+        BaixaAutomaticaService.Resumo r = service.ciclo();
+        assertEquals(1, r.getBaixados());
+        assertEquals(InfinitePayEvento.Status.IGNORADO, banco.get(1L).getStatus());
     }
 }

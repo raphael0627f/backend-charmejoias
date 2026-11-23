@@ -14,4 +14,6 @@ public interface InfinitePayEventoRepository extends JpaRepository<InfinitePayEv
     java.util.List<InfinitePayEvento> findByLinkIdInOrderByIdDesc(java.util.Collection<Long> linkIds);
 
     long countByStatus(InfinitePayEvento.Status status);
+
+    long countByStatusAndTransactionNsuNotLike(InfinitePayEvento.Status status, String padrao);
 }
