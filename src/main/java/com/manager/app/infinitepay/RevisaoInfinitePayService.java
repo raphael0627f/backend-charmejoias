@@ -83,7 +83,21 @@ public class RevisaoInfinitePayService {
 
     // ---------- consulta ----------
 
+    static final java.util.Set<String> CAMPOS_ORDENAVEIS = java.util.Set.of("id", "criadoEm", "status", "motivoCodigo", "transactionNsu", "orderNsu", "tentativas", "resolvidoEm");
+
+    // filtros e ordenação inválidos viram 400 formal (nunca erro técnico)
+    static void validarListagem(String motivo, LocalDate de, LocalDate ate, Pageable pageable) {
+        if (de != null && ate != null && de.isAfter(ate)) throw new ItemInvalidoException("A data inicial não pode ser posterior à data final.");
+        if (motivo != null && !motivo.isBlank() && MotivoRevisao.de(motivo.trim().toUpperCase(Locale.ROOT)) == null) throw new ItemInvalidoException("Motivo de revisão inválido.");
+        if (pageable != null) {
+            for (org.springframework.data.domain.Sort.Order o : pageable.getSort()) {
+                if (!CAMPOS_ORDENAVEIS.contains(o.getProperty())) throw new ItemInvalidoException("Campo de ordenação inválido.");
+            }
+        }
+    }
+
     public Page<RevisaoDTOs.Resumo> listar(String status, String motivo, LocalDate de, LocalDate ate, Long tituloId, java.util.UUID clienteId, Pageable pageable) {
+        validarListagem(motivo, de, ate, pageable);
         String st = status == null || status.isBlank() ? "REVISAO" : status.trim().toUpperCase(Locale.ROOT);
         Specification<InfinitePayEvento> spec = (root, q, cb) -> {
             List<Predicate> p = new ArrayList<>();
@@ -203,21 +217,47 @@ public class RevisaoInfinitePayService {
         }));
     }
 
-    public RevisaoDTOs.Detalhe reprocessar(Long id) {
+    static final String AVISO_NAO_CONFIRMADO = "A InfinitePay não confirmou o pagamento neste momento. O item permanece em revisão.";
+    static final String AVISO_CONSULTA_FALHOU = "Não foi possível consultar a InfinitePay agora. O item permanece em revisão; tente novamente mais tarde.";
+
+    // o reprocessamento nunca move o item sozinho para "ignorado": se a InfinitePay não confirmar (ou a consulta falhar) ele volta exatamente como estava
+    public RevisaoDTOs.Detalhe reprocessar(Long id, RevisaoDTOs.ReprocessarRequest req) {
+        if (req == null || !Boolean.TRUE.equals(req.confirmar())) throw new ItemInvalidoException("Confirme o reprocessamento para continuar.");
+        String[] aviso = new String[1];
         baixa.serializado(() -> {
-            tx.executeWithoutResult(s -> {
+            record Original(InfinitePayEvento.Status status, String codigo, String motivo, int tentativas, LocalDateTime processadoEm) {
+            }
+            Original original = tx.execute(s -> {
                 InfinitePayEvento e = buscar(id);
                 exigirAberta(e);
                 MotivoRevisao codigo = MotivoRevisao.de(e.getMotivoCodigo());
                 if (codigo != null && !codigo.reprocessavel()) throw new ItemInvalidoException("Este item não pode ser reprocessado.");
+                Original o = new Original(e.getStatus(), e.getMotivoCodigo(), e.getMotivo(), e.getTentativas(), e.getProcessadoEm());
                 e.setStatus(InfinitePayEvento.Status.RECEBIDO);
                 e.setTentativas(0);
                 eventos.save(e);
+                return o;
             });
             baixa.processarEvento(id, new BaixaAutomaticaService.Resumo());
+            tx.executeWithoutResult(s -> {
+                InfinitePayEvento e = buscar(id);
+                boolean naoConfirmou = e.getStatus() == InfinitePayEvento.Status.IGNORADO && e.getResolvidoEm() == null
+                        && BaixaAutomaticaCalculo.MOTIVO_NAO_CONFIRMADO.equals(e.getMotivo());
+                boolean consultaFalhou = e.getStatus() == InfinitePayEvento.Status.ERRO_TEMPORARIO;
+                if (naoConfirmou || consultaFalhou) {
+                    e.setStatus(original.status());
+                    e.setMotivoCodigo(original.codigo());
+                    e.setMotivo(original.motivo());
+                    e.setTentativas(original.tentativas());
+                    e.setProcessadoEm(original.processadoEm());
+                    eventos.save(e);
+                    aviso[0] = naoConfirmou ? AVISO_NAO_CONFIRMADO : AVISO_CONSULTA_FALHOU;
+                }
+            });
             return null;
         });
-        return detalhe(id);
+        RevisaoDTOs.Detalhe d = detalhe(id);
+        return aviso[0] == null ? d : d.comAviso(aviso[0]);
     }
 
     public RevisaoDTOs.Detalhe aplicar(Long id, RevisaoDTOs.AplicarRequest req) {

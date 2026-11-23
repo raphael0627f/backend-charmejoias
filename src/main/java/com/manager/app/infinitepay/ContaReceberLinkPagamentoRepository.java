@@ -16,6 +16,11 @@ public interface ContaReceberLinkPagamentoRepository extends JpaRepository<Conta
             + "and l.status = com.manager.app.infinitepay.StatusLinkPagamento.ATIVO and l.modo = com.manager.app.infinitepay.ModoLinkPagamento.AUTOMATICO")
     List<Long> findTitulosComLinkAutomaticoAtivo(@Param("ids") java.util.Collection<Long> ids);
 
+    // links de baixa automática ainda ativos (aguardando pagamento)
+    @Query("select count(l) from ContaReceberLinkPagamento l where l.status = com.manager.app.infinitepay.StatusLinkPagamento.ATIVO "
+            + "and l.modo = com.manager.app.infinitepay.ModoLinkPagamento.AUTOMATICO")
+    long contarAutomaticosAtivos();
+
     List<ContaReceberLinkPagamento> findByContaReceberIdAndStatus(Long contaReceberId, StatusLinkPagamento status);
 
     List<ContaReceberLinkPagamento> findByContaReceberIdAndStatusAndCriadoEmAfter(Long contaReceberId, StatusLinkPagamento status, LocalDateTime depoisDe);

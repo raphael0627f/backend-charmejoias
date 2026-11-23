@@ -44,12 +44,25 @@ class ReceptorCalculoTest {
         assertThrows(ItemInvalidoException.class, () -> ReceptorCalculo.validarSegredo("O segredo", null));
     }
 
+    private static java.math.BigDecimal bd(String v) {
+        return v == null ? null : new java.math.BigDecimal(v);
+    }
+
     @Test
     void intervaloEntre1e60() {
-        assertEquals(2, ReceptorCalculo.validarIntervalo(2));
-        assertThrows(ItemInvalidoException.class, () -> ReceptorCalculo.validarIntervalo(0));
-        assertThrows(ItemInvalidoException.class, () -> ReceptorCalculo.validarIntervalo(61));
-        assertThrows(ItemInvalidoException.class, () -> ReceptorCalculo.validarIntervalo(null));
+        assertEquals(2, ReceptorCalculo.validarIntervalo(bd("2")));
+        assertEquals(2, ReceptorCalculo.validarIntervalo(bd("2.0")));
+        assertEquals(60, ReceptorCalculo.validarIntervalo(bd("60")));
+        assertThrows(ItemInvalidoException.class, () -> ReceptorCalculo.validarIntervalo(bd("0")));
+        assertThrows(ItemInvalidoException.class, () -> ReceptorCalculo.validarIntervalo(bd("61")));
+        assertThrows(ItemInvalidoException.class, () -> ReceptorCalculo.validarIntervalo(bd(null)));
+    }
+
+    @Test
+    void intervaloFracionarioEhRecusadoEmVezDeTruncado() {
+        var e = assertThrows(ItemInvalidoException.class, () -> ReceptorCalculo.validarIntervalo(bd("1.5")));
+        assertEquals("O intervalo de verificação deve ser um número inteiro de minutos, entre 1 e 60.", e.getMessage());
+        assertThrows(ItemInvalidoException.class, () -> ReceptorCalculo.validarIntervalo(bd("2.01")));
     }
 
     @Test

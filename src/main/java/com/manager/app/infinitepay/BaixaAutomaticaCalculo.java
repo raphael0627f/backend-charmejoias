@@ -26,21 +26,45 @@ public final class BaixaAutomaticaCalculo {
                           String captureMethod, Integer installments, List<String> faltando) {
     }
 
-    public record Decisao(Acao acao, MotivoRevisao codigo, String motivo, BigDecimal taxaCliente) {
-        static Decisao baixar(BigDecimal taxa) {
-            return new Decisao(Acao.BAIXAR, null, null, taxa);
+    // desconto: diferença entre o valor do link e o pago, quando o link tem desconto de PIX/cartão e o pago é exatamente o valor com desconto
+    public record Decisao(Acao acao, MotivoRevisao codigo, String motivo, BigDecimal taxaCliente, BigDecimal desconto) {
+        public Decisao(Acao acao, MotivoRevisao codigo, String motivo, BigDecimal taxaCliente) {
+            this(acao, codigo, motivo, taxaCliente, BigDecimal.ZERO);
+        }
+
+        static Decisao baixar(BigDecimal taxa, BigDecimal desconto) {
+            return new Decisao(Acao.BAIXAR, null, null, taxa, desconto);
         }
 
         static Decisao revisao(MotivoRevisao codigo, String motivo) {
-            return new Decisao(Acao.REVISAO, codigo, motivo, BigDecimal.ZERO);
+            return new Decisao(Acao.REVISAO, codigo, motivo, BigDecimal.ZERO, BigDecimal.ZERO);
         }
 
         static Decisao ignorar(String motivo) {
-            return new Decisao(Acao.IGNORAR, null, motivo, BigDecimal.ZERO);
+            return new Decisao(Acao.IGNORAR, null, motivo, BigDecimal.ZERO, BigDecimal.ZERO);
         }
     }
 
-    public record LinkInfo(StatusLinkPagamento status, ModoLinkPagamento modo, BigDecimal valor, String transactionNsuPago, boolean bancoAtivo) {
+    // motivo da decisão "pagamento não confirmado": o reprocessamento manual o reconhece para manter o item em revisão
+    public static final String MOTIVO_NAO_CONFIRMADO = "O pagamento não foi confirmado pela InfinitePay.";
+
+    // descontoPix/descontoCartao: percentuais configurados no link (nulo = sem desconto); meio: capture_method confirmado (pix, credit_card)
+    public record LinkInfo(StatusLinkPagamento status, ModoLinkPagamento modo, BigDecimal valor, String transactionNsuPago, boolean bancoAtivo,
+                           BigDecimal descontoPix, BigDecimal descontoCartao, String meio) {
+        public LinkInfo(StatusLinkPagamento status, ModoLinkPagamento modo, BigDecimal valor, String transactionNsuPago, boolean bancoAtivo) {
+            this(status, modo, valor, transactionNsuPago, bancoAtivo, null, null, null);
+        }
+    }
+
+    // valor esperado (em centavos) do link com o desconto do meio de pagamento; nulo quando o meio não tem desconto configurado
+    public static Long valorComDescontoCentavos(long amount, String meio, BigDecimal descontoPix, BigDecimal descontoCartao) {
+        BigDecimal pct = meio == null ? null : switch (meio.toLowerCase(Locale.ROOT)) {
+            case "pix" -> descontoPix;
+            case "credit_card" -> descontoCartao;
+            default -> null;
+        };
+        if (pct == null || pct.signum() <= 0) return null;
+        return BigDecimal.valueOf(amount).multiply(BigDecimal.valueOf(100).subtract(pct)).movePointLeft(2).setScale(0, RoundingMode.HALF_UP).longValueExact();
     }
 
     public record TituloInfo(SituacaoContaReceber situacao, BigDecimal saldoEmAberto) {
@@ -137,7 +161,7 @@ public final class BaixaAutomaticaCalculo {
             return Decisao.revisao(MotivoRevisao.LINK_MANUAL, "O pagamento refere-se a um link de baixa manual. Registre o recebimento manualmente, se for o caso.");
         }
         if (!v.success() || !v.paid()) {
-            return Decisao.ignorar("O pagamento não foi confirmado pela InfinitePay (payment_check).");
+            return Decisao.ignorar(MOTIVO_NAO_CONFIRMADO);
         }
         if (titulo.situacao() == SituacaoContaReceber.CANCELADO) {
             return Decisao.revisao(MotivoRevisao.TITULO_CANCELADO, "Pagamento recebido após o cancelamento do título.");
@@ -154,8 +178,15 @@ public final class BaixaAutomaticaCalculo {
         if (v.amount() != centavos(link.valor())) {
             return Decisao.revisao(MotivoRevisao.VALOR_DIVERGENTE, "Valor da cobrança confirmado pela InfinitePay (" + moeda(v.amount()) + ") diverge do valor do link (" + moeda(centavos(link.valor())) + ").");
         }
+        BigDecimal desconto = BigDecimal.ZERO;
         if (v.paidAmount() < v.amount()) {
-            return Decisao.revisao(MotivoRevisao.VALOR_MENOR, "Valor pago (" + moeda(v.paidAmount()) + ") menor que o valor da cobrança (" + moeda(v.amount()) + "): possível desconto de PIX ou cartão.");
+            // pago exatamente o valor com o desconto de PIX/cartão configurado no link: baixa direta (principal = valor do link, desconto = diferença)
+            Long esperado = valorComDescontoCentavos(v.amount(), link.meio(), link.descontoPix(), link.descontoCartao());
+            if (esperado != null && esperado == v.paidAmount()) {
+                desconto = BigDecimal.valueOf(v.amount() - v.paidAmount()).movePointLeft(2).setScale(2, RoundingMode.UNNECESSARY);
+            } else {
+                return Decisao.revisao(MotivoRevisao.VALOR_MENOR, "Valor pago (" + moeda(v.paidAmount()) + ") menor que o valor da cobrança (" + moeda(v.amount()) + "): possível desconto de PIX ou cartão.");
+            }
         }
         if (titulo.saldoEmAberto().compareTo(link.valor()) < 0) {
             return Decisao.revisao(MotivoRevisao.SALDO_INSUFICIENTE, "O saldo em aberto do título (" + moeda(centavos(titulo.saldoEmAberto())) + ") é menor que o valor pago pelo link.");
@@ -166,11 +197,19 @@ public final class BaixaAutomaticaCalculo {
         if (!link.bancoAtivo()) {
             return Decisao.revisao(MotivoRevisao.BANCO_DESATIVADO, "O banco de destino do link está desativado.");
         }
-        BigDecimal taxa = BigDecimal.valueOf(v.paidAmount() - v.amount()).movePointLeft(2).setScale(2, RoundingMode.UNNECESSARY);
-        return Decisao.baixar(taxa);
+        BigDecimal taxa = v.paidAmount() > v.amount() ? BigDecimal.valueOf(v.paidAmount() - v.amount()).movePointLeft(2).setScale(2, RoundingMode.UNNECESSARY)
+                : BigDecimal.ZERO.setScale(2);
+        return Decisao.baixar(taxa, desconto);
     }
 
     // texto da baixa (descrição/observação do recebimento): deixa claro que foi automática e informa a taxa do cliente
+    public static String observacao(Payload p, BigDecimal taxa, BigDecimal desconto) {
+        String base = observacao(p, taxa);
+        if (desconto == null || desconto.signum() <= 0) return base;
+        String extra = " Desconto concedido pelo link: " + moeda(centavos(desconto)) + ".";
+        return (base.length() + extra.length() > 500 ? base.substring(0, 500 - extra.length()) : base) + extra;
+    }
+
     public static String observacao(Payload p, BigDecimal taxa) {
         String meio = p.captureMethod() == null ? "" : p.captureMethod().toLowerCase(Locale.ROOT);
         String forma;

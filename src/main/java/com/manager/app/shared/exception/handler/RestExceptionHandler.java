@@ -39,6 +39,26 @@ import java.util.List;
 @ControllerAdvice
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {
 
+    // ordenação por campo inexistente (sort=xyz em qualquer lista paginada): 400 formal, sem detalhes técnicos
+    @ExceptionHandler(org.springframework.data.core.PropertyReferenceException.class)
+    public ResponseEntity<RestErrorMenssage> ordenacaoInvalida(org.springframework.data.core.PropertyReferenceException exception, WebRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, "Campo de ordenação inválido.", request.getDescription(false)));
+    }
+
+    // o Spring Data às vezes embrulha a falha de ordenação em InvalidDataAccessApiUsageException; o resto continua tratado como banco indisponível
+    @ExceptionHandler(org.springframework.dao.InvalidDataAccessApiUsageException.class)
+    public ResponseEntity<?> usoInvalidoDeAcesso(org.springframework.dao.InvalidDataAccessApiUsageException exception, WebRequest request) {
+        for (Throwable t = exception; t != null; t = t.getCause() == t ? null : t.getCause()) {
+            if (t instanceof org.springframework.data.core.PropertyReferenceException
+                    || (t.getMessage() != null && t.getMessage().contains("Could not resolve attribute"))) {
+                HttpStatus status = HttpStatus.BAD_REQUEST;
+                return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, "Campo de ordenação inválido.", request.getDescription(false)));
+            }
+        }
+        return databaseError(exception, request);
+    }
+
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<?> databaseError(DataAccessException exception, WebRequest request) {
         HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;

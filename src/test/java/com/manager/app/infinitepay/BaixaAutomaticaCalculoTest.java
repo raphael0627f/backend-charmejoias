@@ -79,4 +79,56 @@ class BaixaAutomaticaCalculoTest {
         String o = BaixaAutomaticaCalculo.observacao(ler(COMPLETO.replace("pix", "credit_card").replace("\"capture", "\"installments\":3,\"capture")), new BigDecimal("0.10"));
         assertTrue(o.contains("baixa automática") && o.contains("cartão 3x") && o.contains("R$ 0,10") && o.contains("NSU T"), o);
     }
+
+    // ---------- 6.6 item 13: desconto de PIX/cartão configurado no link ----------
+
+    private static BaixaAutomaticaCalculo.Decisao comDesconto(String meio, String descontoPix, String descontoCartao, long amount, long pago) {
+        return BaixaAutomaticaCalculo.decidir(new BaixaAutomaticaCalculo.LinkInfo(StatusLinkPagamento.ATIVO, ModoLinkPagamento.AUTOMATICO, new BigDecimal("15.00"), null, true,
+                        descontoPix == null ? null : new BigDecimal(descontoPix), descontoCartao == null ? null : new BigDecimal(descontoCartao), meio),
+                new BaixaAutomaticaCalculo.TituloInfo(SituacaoContaReceber.ABERTO, new BigDecimal("15.00")), new BaixaAutomaticaCalculo.Verificacao(true, true, amount, pago), "T", true);
+    }
+
+    @Test
+    void pagoExatamenteOValorComDescontoDoPixBaixaDiretoComDesconto() {
+        var d = comDesconto("pix", "10", null, 1500, 1350);
+        assertEquals(BaixaAutomaticaCalculo.Acao.BAIXAR, d.acao());
+        assertEquals(new BigDecimal("1.50"), d.desconto());
+        assertEquals(0, d.taxaCliente().signum());
+    }
+
+    @Test
+    void pagoExatamenteOValorComDescontoDoCartaoBaixaDireto() {
+        var d = comDesconto("credit_card", null, "5", 1500, 1425);
+        assertEquals(BaixaAutomaticaCalculo.Acao.BAIXAR, d.acao());
+        assertEquals(new BigDecimal("0.75"), d.desconto());
+    }
+
+    @Test
+    void qualquerOutroValorMenorContinuaEmRevisao() {
+        assertEquals(MotivoRevisao.VALOR_MENOR, comDesconto("pix", "10", null, 1500, 1349).codigo());
+        assertEquals(MotivoRevisao.VALOR_MENOR, comDesconto("pix", "10", null, 1500, 1351).codigo());
+        // o desconto é do PIX, mas o pagamento foi no cartão
+        assertEquals(MotivoRevisao.VALOR_MENOR, comDesconto("credit_card", "10", null, 1500, 1350).codigo());
+        // link sem desconto configurado
+        assertEquals(MotivoRevisao.VALOR_MENOR, comDesconto("pix", null, null, 1500, 1350).codigo());
+        assertEquals(MotivoRevisao.VALOR_MENOR, comDesconto("pix", "0", null, 1500, 1350).codigo());
+    }
+
+    @Test
+    void valorComDescontoArredondaMeioCentavoParaCima() {
+        assertEquals(1350L, BaixaAutomaticaCalculo.valorComDescontoCentavos(1500, "PIX", new BigDecimal("10"), null));
+        assertEquals(1434L, BaixaAutomaticaCalculo.valorComDescontoCentavos(1550, "pix", new BigDecimal("7.5"), null));
+        assertEquals(1392L, BaixaAutomaticaCalculo.valorComDescontoCentavos(1505, "pix", new BigDecimal("7.5"), null));
+        assertNull(BaixaAutomaticaCalculo.valorComDescontoCentavos(1500, "boleto", new BigDecimal("10"), new BigDecimal("10")));
+        assertNull(BaixaAutomaticaCalculo.valorComDescontoCentavos(1500, null, new BigDecimal("10"), null));
+    }
+
+    @Test
+    void naoConfirmadoUsaOMotivoPadronizadoSemTermoTecnico() {
+        var d = BaixaAutomaticaCalculo.decidir(new BaixaAutomaticaCalculo.LinkInfo(StatusLinkPagamento.ATIVO, ModoLinkPagamento.AUTOMATICO, new BigDecimal("15.00"), null, true),
+                new BaixaAutomaticaCalculo.TituloInfo(SituacaoContaReceber.ABERTO, new BigDecimal("15.00")), new BaixaAutomaticaCalculo.Verificacao(true, false, 1500, 0), "T", true);
+        assertEquals(BaixaAutomaticaCalculo.Acao.IGNORAR, d.acao());
+        assertEquals(BaixaAutomaticaCalculo.MOTIVO_NAO_CONFIRMADO, d.motivo());
+        assertFalse(d.motivo().contains("payment_check"));
+    }
 }

@@ -81,9 +81,10 @@ public final class InfinitePayDTOs {
 
     // todos opcionais: ausente mantem o valor atual; segredo vazio/ausente mantem o salvo. Para limpar banco/forma use o id 0.
     public record AutomaticoRequest(Boolean baixaAutomaticaAtiva, Boolean modoAutomaticoPadrao, String receptorUrl, String tokenEntrada, String segredoErp,
-                                    Integer intervaloFilaMinutos, Long bancoPadraoId, Long formaPixId, Long formaCartaoId) {
+                                    java.math.BigDecimal intervaloFilaMinutos, Long bancoPadraoId, Long formaPixId, Long formaCartaoId) {
     }
 
-    public record ReceptorSaude(boolean ok, Long pendentes, String maisAntigoEm, String versao) {
+    public record ReceptorSaude(boolean ok, Long pendentes, String maisAntigoEm, String versao, Long total, Long confirmados, String maisAntigoRetidoEm,
+                                Integer retencaoDias) {
     }
 }

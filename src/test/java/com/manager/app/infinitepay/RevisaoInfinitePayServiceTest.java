@@ -213,4 +213,91 @@ class RevisaoInfinitePayServiceTest {
         when(links.findByContaReceberIdAndStatus(7L, StatusLinkPagamento.ATIVO)).thenReturn(java.util.List.of());
         assertThrows(ItemInvalidoException.class, () -> verificar.verificar(7L));
     }
+
+    // ---------- 6.6: reprocessar nunca move sozinho para ignorado ----------
+
+    private void prepararReprocessar() {
+        when(links.findIdByOrderNsu("O")).thenReturn(Optional.of(5L));
+        ev.setMotivo("Meio de pagamento sem forma configurada.");
+        ev.setTentativas(2);
+    }
+
+    @Test
+    void reprocessarExigeConfirmacaoNoCorpo() {
+        assertThrows(ItemInvalidoException.class, () -> service.reprocessar(3L, null));
+        assertThrows(ItemInvalidoException.class, () -> service.reprocessar(3L, new RevisaoDTOs.ReprocessarRequest(false)));
+        assertThrows(ItemInvalidoException.class, () -> service.reprocessar(3L, new RevisaoDTOs.ReprocessarRequest(null)));
+        verifyNoInteractions(client);
+    }
+
+    @Test
+    void reprocessarSemConfirmacaoDaInfinitePayMantemEmRevisaoComAvisoFormal() {
+        prepararReprocessar();
+        doReturn(new InfinitePayClient.PagamentoVerificado(true, false, 1500, 0, null, null)).when(client)
+                .verificarPagamento(anyString(), anyString(), anyString(), anyString(), anyString());
+        RevisaoDTOs.Detalhe d = service.reprocessar(3L, new RevisaoDTOs.ReprocessarRequest(true));
+        assertEquals(InfinitePayEvento.Status.REVISAO, ev.getStatus());
+        assertEquals("FORMA_NAO_MAPEADA", ev.getMotivoCodigo());
+        assertEquals("Meio de pagamento sem forma configurada.", ev.getMotivo());
+        assertEquals(2, ev.getTentativas());
+        assertNull(ev.getResolvidoEm());
+        assertEquals(RevisaoInfinitePayService.AVISO_NAO_CONFIRMADO, d.aviso());
+        assertFalse(d.aviso().toLowerCase().contains("payment_check"));
+        assertEquals("REVISAO", d.status());
+    }
+
+    @Test
+    void reprocessarComFalhaNaConsultaMantemEmRevisaoComAvisoFormal() {
+        prepararReprocessar();
+        doThrow(new InfinitePayApiException("falhou", null)).when(client).verificarPagamento(anyString(), anyString(), anyString(), anyString(), anyString());
+        RevisaoDTOs.Detalhe d = service.reprocessar(3L, new RevisaoDTOs.ReprocessarRequest(true));
+        assertEquals(InfinitePayEvento.Status.REVISAO, ev.getStatus());
+        assertEquals("FORMA_NAO_MAPEADA", ev.getMotivoCodigo());
+        assertEquals(RevisaoInfinitePayService.AVISO_CONSULTA_FALHOU, d.aviso());
+    }
+
+    @Test
+    void listagemValidaOrdenacaoDatasEMotivo() {
+        var pagina = org.springframework.data.domain.PageRequest.of(0, 20, org.springframework.data.domain.Sort.by("campoInexistente"));
+        assertThrows(ItemInvalidoException.class, () -> RevisaoInfinitePayService.validarListagem(null, null, null, pagina));
+        assertThrows(ItemInvalidoException.class, () -> RevisaoInfinitePayService.validarListagem(null, null, null,
+                org.springframework.data.domain.PageRequest.of(0, 20, org.springframework.data.domain.Sort.by("link.contaReceber.cliente.nome"))));
+        assertDoesNotThrow(() -> RevisaoInfinitePayService.validarListagem(null, null, null,
+                org.springframework.data.domain.PageRequest.of(0, 20, org.springframework.data.domain.Sort.by("criadoEm").descending())));
+        java.time.LocalDate hoje = java.time.LocalDate.now();
+        ItemInvalidoException datas = assertThrows(ItemInvalidoException.class, () -> RevisaoInfinitePayService.validarListagem(null, hoje, hoje.minusDays(1), null));
+        assertEquals("A data inicial não pode ser posterior à data final.", datas.getMessage());
+        ItemInvalidoException motivo = assertThrows(ItemInvalidoException.class, () -> RevisaoInfinitePayService.validarListagem("XPTO", null, null, null));
+        assertEquals("Motivo de revisão inválido.", motivo.getMessage());
+        assertDoesNotThrow(() -> RevisaoInfinitePayService.validarListagem("valor_menor", null, null, null));
+    }
+
+    @Test
+    void alertaBaixaDesligadaSoComIntegracaoEAlgoAguardando() {
+        assertTrue(VerificarPagamentoService.deveAlertarBaixaDesligada(false, true, 1, 0));
+        assertTrue(VerificarPagamentoService.deveAlertarBaixaDesligada(false, true, 0, 3));
+        assertFalse(VerificarPagamentoService.deveAlertarBaixaDesligada(false, true, 0, 0));
+        assertFalse(VerificarPagamentoService.deveAlertarBaixaDesligada(true, true, 5, 5));
+        assertFalse(VerificarPagamentoService.deveAlertarBaixaDesligada(false, false, 5, 5));
+        assertEquals("A baixa automática está desligada. Os pagamentos recebidos pelos links automáticos permanecem aguardando e serão baixados somente após a ativação.",
+                VerificarPagamentoService.MSG_BAIXA_DESLIGADA);
+    }
+
+    @Test
+    void estadoDoReceptorIndisponivelViraCamposNulosSemErro() {
+        assertEquals(ReceptorEstado.INDISPONIVEL, ReceptorEstado.de(null));
+        assertFalse(ReceptorEstado.INDISPONIVEL.disponivel());
+        var s = new com.manager.app.infinitepay.dto.InfinitePayDTOs.ReceptorSaude(true, 2L, "2026-01-01T00:00:00Z", "1.2.0", 7L, 5L, "2025-12-01T00:00:00Z", 90);
+        ReceptorEstado e = ReceptorEstado.de(s);
+        assertTrue(e.disponivel());
+        assertEquals(7L, e.totalRetidos());
+        assertEquals(2L, e.pendentes());
+        assertEquals(5L, e.confirmadosRetidos());
+        assertEquals(90, e.retencaoDias());
+        // Worker antigo (sem as contagens novas): disponível, campos novos nulos
+        ReceptorEstado antigo = ReceptorEstado.de(new com.manager.app.infinitepay.dto.InfinitePayDTOs.ReceptorSaude(true, 2L, null, "1.1.0", null, null, null, null));
+        assertTrue(antigo.disponivel());
+        assertNull(antigo.totalRetidos());
+        assertFalse(ReceptorEstado.de(new com.manager.app.infinitepay.dto.InfinitePayDTOs.ReceptorSaude(false, null, null, null, null, null, null, null)).disponivel());
+    }
 }

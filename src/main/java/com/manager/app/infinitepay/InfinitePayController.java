@@ -20,9 +20,9 @@ public class InfinitePayController {
     private static final String CONFIGURACAO = "hasAuthority('INFINITEPAY_GERENCIAR')";
     private static final String PADROES = "hasAnyAuthority('INFINITEPAY_GERENCIAR', 'CONTA_RECEBER_VISUALIZAR', 'CONTA_RECEBER_GERENCIAR', 'CONTA_RECEBER_RECEBER')";
     private static final String CONSULTA = "hasAnyAuthority('CONTA_RECEBER_VISUALIZAR', 'CONTA_RECEBER_GERENCIAR', 'CONTA_RECEBER_RECEBER')";
-    private static final String REVISAO_VER = "hasAuthority('INFINITEPAY_REVISAO_VISUALIZAR')";
+    private static final String REVISAO_VER = "hasAnyAuthority('INFINITEPAY_REVISAO_VISUALIZAR', 'INFINITEPAY_REVISAO_RESOLVER')";
     private static final String REVISAO_RESOLVER = "hasAuthority('INFINITEPAY_REVISAO_RESOLVER')";
-    private static final String ALERTAS = "hasAnyAuthority('INFINITEPAY_REVISAO_VISUALIZAR', 'INFINITEPAY_GERENCIAR')";
+    private static final String ALERTAS = "hasAnyAuthority('INFINITEPAY_REVISAO_VISUALIZAR', 'INFINITEPAY_REVISAO_RESOLVER', 'INFINITEPAY_GERENCIAR')";
     private static final String RECEBER = "hasAuthority('CONTA_RECEBER_RECEBER')";
     private static final String GERENCIA = "hasAuthority('CONTA_RECEBER_GERENCIAR')";
 
@@ -74,7 +74,7 @@ public class InfinitePayController {
     }
 
     @GetMapping("/infinitepay/fila/estado")
-    @PreAuthorize("hasAnyAuthority('INFINITEPAY_GERENCIAR', 'INFINITEPAY_REVISAO_VISUALIZAR')")
+    @PreAuthorize("hasAnyAuthority('INFINITEPAY_GERENCIAR', 'INFINITEPAY_REVISAO_VISUALIZAR', 'INFINITEPAY_REVISAO_RESOLVER')")
     public ResponseEntity<BaixaAutomaticaService.Estado> estadoDaFila() {
         return ResponseEntity.ok(baixaService.estado());
     }
@@ -113,8 +113,8 @@ public class InfinitePayController {
 
     @PostMapping("/infinitepay/revisoes/{id}/reprocessar")
     @PreAuthorize(REVISAO_RESOLVER)
-    public ResponseEntity<RevisaoDTOs.Detalhe> reprocessar(@PathVariable Long id) {
-        return ResponseEntity.ok(revisaoService.reprocessar(id));
+    public ResponseEntity<RevisaoDTOs.Detalhe> reprocessar(@PathVariable Long id, @RequestBody(required = false) RevisaoDTOs.ReprocessarRequest request) {
+        return ResponseEntity.ok(revisaoService.reprocessar(id, request));
     }
 
     @GetMapping("/infinitepay/alertas")
