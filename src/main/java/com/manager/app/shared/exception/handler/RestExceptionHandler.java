@@ -98,6 +98,12 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, exception.getMessage(), request.getDescription(false)));
     }
 
+    @ExceptionHandler(com.manager.app.shared.exception.LimiteExcedidoException.class)
+    private ResponseEntity<RestErrorMenssage> limiteExcedido(com.manager.app.shared.exception.LimiteExcedidoException exception, WebRequest request){
+        HttpStatus status = HttpStatus.TOO_MANY_REQUESTS;
+        return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, exception.getMessage(), request.getDescription(false)));
+    }
+
     @ExceptionHandler(ItemInvalidoException.class)
     private ResponseEntity<RestErrorMenssage> itemInvalido(ItemInvalidoException exception, WebRequest request){
         HttpStatus status = HttpStatus.BAD_REQUEST;

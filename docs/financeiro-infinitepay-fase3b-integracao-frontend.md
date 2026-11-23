@@ -47,7 +47,7 @@ O formato real do webhook (método, Content-Type, eventos além de `paid`) e a p
 
 # Complemento (fase 3/4) — contratos que o Frontend precisa
 
-**Situação de cada endpoint:** ✅ = já no backend (commit da F3); 🔜 = contrato fechado, implementação na F4 (o Frontend pode construir contra este contrato). Erros seguem `RestErrorMenssage` (`{"menssage": "..."}`, com dois "s"); sem prefixo `/api`.
+**Situação de cada endpoint:** ✅ = já no backend (commit da F3); 🔜 = (**F4 já implementada no backend, commits locais da branch; vale o contrato abaixo**). Erros seguem `RestErrorMenssage` (`{"menssage": "..."}`, com dois "s"); sem prefixo `/api`.
 
 ## 6. Sincronização e saúde do receptor (tela Sistema > InfinitePay)
 - ✅ `POST /infinitepay/fila/sincronizar` — "Verificar agora". Permissão: `INFINITEPAY_GERENCIAR` **ou** `INFINITEPAY_REVISAO_RESOLVER`. Corpo: nenhum. Busca a fila do receptor e processa tudo (mesma rotina e **mesma trava** do ciclo agendado; nunca em paralelo). Espera até 30 s. Resposta 200:
@@ -102,3 +102,11 @@ Não há janela comercial (a busca roda sempre que o servidor estiver ligado) e 
 
 ## 14. `GET /infinitepay/padroes` ganhou campos da baixa automática (✅)
 Permissões inalteradas (`INFINITEPAY_GERENCIAR`, `CONTA_RECEBER_VISUALIZAR/GERENCIAR/RECEBER`); sem segredos. Novos campos: `baixaAutomaticaAtiva` (boolean), `prontoParaAutomatico` (boolean: configuração do receptor completa), `modoAutomaticoPadrao` (boolean) e `bancoPadrao` (`{ id, nome }` ou `null`). Quem gera link sem `INFINITEPAY_GERENCIAR` usa só este endpoint (não precisa de `GET /infinitepay/automatico`).
+
+## 15. Ajustes finais da F4 (implementação)
+- `GET /infinitepay/revisoes`: o filtro `clienteId` é **UUID** (id do cliente); `tituloId` é numérico. `RevisaoResumo`/`RevisaoDetalhe` ganharam `motivoRotulo` (rótulo do código). O **detalhe é achatado** (todos os campos do resumo no nível raiz + `payloadBruto`, `acoesPermitidas`, `exigeBancoForma`, `titulo`, `link`). `titulo.clienteId` é UUID.
+- Estados `RESOLVIDO_APLICADO` / `RESOLVIDO_IGNORADO` são derivados no backend (evento já resolvido); o filtro `status` aceita os dois.
+- `acoesPermitidas` só vem preenchida enquanto a revisão está aberta (`REVISAO`/`ERRO_TEMPORARIO`); `APLICAR` apenas para `VALOR_MENOR`, `FORMA_NAO_MAPEADA`, `BANCO_DESATIVADO` e `ERRO_AO_BAIXAR`.
+- `GET /infinitepay/fila/estado` ganhou `itensNaoConfirmados`.
+- Migration nova **V83** (coluna `motivo_codigo` em `infinitepay_evento`, aditiva).
+- `POST /infinitepay/verificar-pagamento` com a baixa automática desligada responde 409 ("A baixa automática está desligada em Sistema > InfinitePay.").

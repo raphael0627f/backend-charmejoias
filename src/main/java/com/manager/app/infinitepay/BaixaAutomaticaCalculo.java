@@ -26,17 +26,17 @@ public final class BaixaAutomaticaCalculo {
                           String captureMethod, Integer installments, List<String> faltando) {
     }
 
-    public record Decisao(Acao acao, String motivo, BigDecimal taxaCliente) {
+    public record Decisao(Acao acao, MotivoRevisao codigo, String motivo, BigDecimal taxaCliente) {
         static Decisao baixar(BigDecimal taxa) {
-            return new Decisao(Acao.BAIXAR, null, taxa);
+            return new Decisao(Acao.BAIXAR, null, null, taxa);
         }
 
-        static Decisao revisao(String motivo) {
-            return new Decisao(Acao.REVISAO, motivo, BigDecimal.ZERO);
+        static Decisao revisao(MotivoRevisao codigo, String motivo) {
+            return new Decisao(Acao.REVISAO, codigo, motivo, BigDecimal.ZERO);
         }
 
         static Decisao ignorar(String motivo) {
-            return new Decisao(Acao.IGNORAR, motivo, BigDecimal.ZERO);
+            return new Decisao(Acao.IGNORAR, null, motivo, BigDecimal.ZERO);
         }
     }
 
@@ -134,37 +134,37 @@ public final class BaixaAutomaticaCalculo {
     // forma de pagamento nula = meio de captura sem forma mapeada
     public static Decisao decidir(LinkInfo link, TituloInfo titulo, Verificacao v, String transactionNsu, boolean formaMapeada) {
         if (link.modo() != ModoLinkPagamento.AUTOMATICO) {
-            return Decisao.revisao("O pagamento refere-se a um link de baixa manual. Registre o recebimento manualmente, se for o caso.");
+            return Decisao.revisao(MotivoRevisao.LINK_MANUAL, "O pagamento refere-se a um link de baixa manual. Registre o recebimento manualmente, se for o caso.");
         }
         if (!v.success() || !v.paid()) {
             return Decisao.ignorar("O pagamento não foi confirmado pela InfinitePay (payment_check).");
         }
         if (titulo.situacao() == SituacaoContaReceber.CANCELADO) {
-            return Decisao.revisao("Pagamento recebido após o cancelamento do título.");
+            return Decisao.revisao(MotivoRevisao.TITULO_CANCELADO, "Pagamento recebido após o cancelamento do título.");
         }
         if (link.status() == StatusLinkPagamento.PAGO_AUTOMATICO && transactionNsu.equals(link.transactionNsuPago())) {
             return Decisao.ignorar("Pagamento já registrado anteriormente (mesma transação).");
         }
         if (titulo.situacao() == SituacaoContaReceber.RECEBIDO) {
-            return Decisao.revisao("O título já estava quitado: possível pagamento em duplicidade.");
+            return Decisao.revisao(MotivoRevisao.DUPLICIDADE, "O título já estava quitado: possível pagamento em duplicidade.");
         }
         if (link.status() != StatusLinkPagamento.ATIVO) {
-            return Decisao.revisao("O link de pagamento já não estava ativo (situação " + link.status().name() + "): possível pagamento em duplicidade ou link obsoleto.");
+            return Decisao.revisao(MotivoRevisao.DUPLICIDADE, "O link de pagamento já não estava ativo (situação " + link.status().name() + "): possível pagamento em duplicidade ou link obsoleto.");
         }
         if (v.amount() != centavos(link.valor())) {
-            return Decisao.revisao("Valor da cobrança confirmado pela InfinitePay (" + moeda(v.amount()) + ") diverge do valor do link (" + moeda(centavos(link.valor())) + ").");
+            return Decisao.revisao(MotivoRevisao.VALOR_DIVERGENTE, "Valor da cobrança confirmado pela InfinitePay (" + moeda(v.amount()) + ") diverge do valor do link (" + moeda(centavos(link.valor())) + ").");
         }
         if (v.paidAmount() < v.amount()) {
-            return Decisao.revisao("Valor pago (" + moeda(v.paidAmount()) + ") menor que o valor da cobrança (" + moeda(v.amount()) + "): possível desconto de PIX ou cartão.");
+            return Decisao.revisao(MotivoRevisao.VALOR_MENOR, "Valor pago (" + moeda(v.paidAmount()) + ") menor que o valor da cobrança (" + moeda(v.amount()) + "): possível desconto de PIX ou cartão.");
         }
         if (titulo.saldoEmAberto().compareTo(link.valor()) < 0) {
-            return Decisao.revisao("O saldo em aberto do título (" + moeda(centavos(titulo.saldoEmAberto())) + ") é menor que o valor pago pelo link.");
+            return Decisao.revisao(MotivoRevisao.SALDO_INSUFICIENTE, "O saldo em aberto do título (" + moeda(centavos(titulo.saldoEmAberto())) + ") é menor que o valor pago pelo link.");
         }
         if (!formaMapeada) {
-            return Decisao.revisao("O meio de pagamento utilizado não tem forma de pagamento correspondente na configuração.");
+            return Decisao.revisao(MotivoRevisao.FORMA_NAO_MAPEADA, "O meio de pagamento utilizado não tem forma de pagamento correspondente na configuração.");
         }
         if (!link.bancoAtivo()) {
-            return Decisao.revisao("O banco de destino do link está desativado.");
+            return Decisao.revisao(MotivoRevisao.BANCO_DESATIVADO, "O banco de destino do link está desativado.");
         }
         BigDecimal taxa = BigDecimal.valueOf(v.paidAmount() - v.amount()).movePointLeft(2).setScale(2, RoundingMode.UNNECESSARY);
         return Decisao.baixar(taxa);

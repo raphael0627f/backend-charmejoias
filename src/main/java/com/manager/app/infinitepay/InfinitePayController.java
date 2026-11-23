@@ -2,6 +2,7 @@ package com.manager.app.infinitepay;
 
 import com.manager.app.infinitepay.dto.InfinitePayDTOs;
 import jakarta.validation.Valid;
+import com.manager.app.infinitepay.dto.RevisaoDTOs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,10 @@ public class InfinitePayController {
     private static final String CONFIGURACAO = "hasAuthority('INFINITEPAY_GERENCIAR')";
     private static final String PADROES = "hasAnyAuthority('INFINITEPAY_GERENCIAR', 'CONTA_RECEBER_VISUALIZAR', 'CONTA_RECEBER_GERENCIAR', 'CONTA_RECEBER_RECEBER')";
     private static final String CONSULTA = "hasAnyAuthority('CONTA_RECEBER_VISUALIZAR', 'CONTA_RECEBER_GERENCIAR', 'CONTA_RECEBER_RECEBER')";
+    private static final String REVISAO_VER = "hasAuthority('INFINITEPAY_REVISAO_VISUALIZAR')";
+    private static final String REVISAO_RESOLVER = "hasAuthority('INFINITEPAY_REVISAO_RESOLVER')";
+    private static final String ALERTAS = "hasAnyAuthority('INFINITEPAY_REVISAO_VISUALIZAR', 'INFINITEPAY_GERENCIAR')";
+    private static final String RECEBER = "hasAuthority('CONTA_RECEBER_RECEBER')";
     private static final String GERENCIA = "hasAuthority('CONTA_RECEBER_GERENCIAR')";
 
     private final InfinitePayConfiguracaoService configuracaoService;
@@ -26,6 +31,8 @@ public class InfinitePayController {
     private final InfinitePayAutomaticoService automaticoService;
     private final ReceptorClient receptorClient;
     private final BaixaAutomaticaService baixaService;
+    private final RevisaoInfinitePayService revisaoService;
+    private final VerificarPagamentoService verificarService;
 
     @GetMapping("/infinitepay/configuracao")
     @PreAuthorize(CONFIGURACAO)
@@ -70,6 +77,56 @@ public class InfinitePayController {
     @PreAuthorize("hasAnyAuthority('INFINITEPAY_GERENCIAR', 'INFINITEPAY_REVISAO_VISUALIZAR')")
     public ResponseEntity<BaixaAutomaticaService.Estado> estadoDaFila() {
         return ResponseEntity.ok(baixaService.estado());
+    }
+
+    // ---------- fila de revisão da baixa automática ----------
+
+    @GetMapping("/infinitepay/revisoes")
+    @PreAuthorize(REVISAO_VER)
+    public ResponseEntity<org.springframework.data.domain.Page<RevisaoDTOs.Resumo>> revisoes(
+            @RequestParam(required = false) String status, @RequestParam(required = false) String motivo,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate de,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate ate,
+            @RequestParam(required = false) Long tituloId, @RequestParam(required = false) java.util.UUID clienteId,
+            @org.springframework.data.web.PageableDefault(size = 20, sort = "criadoEm", direction = org.springframework.data.domain.Sort.Direction.DESC)
+            org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(revisaoService.listar(status, motivo, de, ate, tituloId, clienteId, pageable));
+    }
+
+    @GetMapping("/infinitepay/revisoes/{id}")
+    @PreAuthorize(REVISAO_VER)
+    public ResponseEntity<RevisaoDTOs.Detalhe> revisao(@PathVariable Long id) {
+        return ResponseEntity.ok(revisaoService.detalhe(id));
+    }
+
+    @PostMapping("/infinitepay/revisoes/{id}/aplicar")
+    @PreAuthorize(REVISAO_RESOLVER)
+    public ResponseEntity<RevisaoDTOs.Detalhe> aplicar(@PathVariable Long id, @RequestBody(required = false) RevisaoDTOs.AplicarRequest request) {
+        return ResponseEntity.ok(revisaoService.aplicar(id, request));
+    }
+
+    @PostMapping("/infinitepay/revisoes/{id}/ignorar")
+    @PreAuthorize(REVISAO_RESOLVER)
+    public ResponseEntity<RevisaoDTOs.Detalhe> ignorar(@PathVariable Long id, @RequestBody(required = false) RevisaoDTOs.IgnorarRequest request) {
+        return ResponseEntity.ok(revisaoService.ignorar(id, request));
+    }
+
+    @PostMapping("/infinitepay/revisoes/{id}/reprocessar")
+    @PreAuthorize(REVISAO_RESOLVER)
+    public ResponseEntity<RevisaoDTOs.Detalhe> reprocessar(@PathVariable Long id) {
+        return ResponseEntity.ok(revisaoService.reprocessar(id));
+    }
+
+    @GetMapping("/infinitepay/alertas")
+    @PreAuthorize(ALERTAS)
+    public ResponseEntity<RevisaoDTOs.Alertas> alertas() {
+        return ResponseEntity.ok(verificarService.alertas());
+    }
+
+    @PostMapping("/infinitepay/verificar-pagamento")
+    @PreAuthorize(RECEBER)
+    public ResponseEntity<RevisaoDTOs.VerificarResposta> verificarPagamento(@RequestBody RevisaoDTOs.VerificarRequest request) {
+        return ResponseEntity.ok(verificarService.verificar(request == null ? null : request.tituloId()));
     }
 
     @GetMapping("/infinitepay/padroes")

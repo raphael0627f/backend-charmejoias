@@ -62,6 +62,7 @@ public class BaixaAutomaticaService {
     private volatile LocalDateTime ultimoSucesso;
     private volatile String ultimoErro;
     private volatile LocalDateTime ultimaLimpeza;
+    private volatile int naoConfirmados;
 
     @Getter
     public static class Resumo {
@@ -77,7 +78,8 @@ public class BaixaAutomaticaService {
         private boolean emAndamento;
     }
 
-    public record Estado(LocalDateTime ultimaExecucao, LocalDateTime ultimoSucesso, String ultimoErro, long aguardandoProcessamento, long emRevisao) {
+    public record Estado(LocalDateTime ultimaExecucao, LocalDateTime ultimoSucesso, String ultimoErro, long aguardandoProcessamento, long emRevisao,
+                         int itensNaoConfirmados) {
     }
 
     public BaixaAutomaticaService(ReceptorClient receptor, InfinitePayAutomaticoService automatico, InfinitePayConfiguracaoService configuracaoService,
@@ -100,7 +102,23 @@ public class BaixaAutomaticaService {
     public Estado estado() {
         return new Estado(ultimaExecucao, ultimoSucesso, ultimoErro,
                 eventoRepository.countByStatus(InfinitePayEvento.Status.RECEBIDO) + eventoRepository.countByStatus(InfinitePayEvento.Status.ERRO_TEMPORARIO),
-                eventoRepository.countByStatus(InfinitePayEvento.Status.REVISAO));
+                eventoRepository.countByStatus(InfinitePayEvento.Status.REVISAO), naoConfirmados);
+    }
+
+    // executa uma tarefa na MESMA thread dedicada do ciclo (nunca em paralelo com ele) e devolve o resultado; erros de negócio são repassados como estão
+    public <T> T serializado(java.util.concurrent.Callable<T> tarefa) {
+        Future<T> f = executor.submit(tarefa);
+        try {
+            return f.get(60, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            throw new ObjetoEmUsoException("Há uma verificação em andamento. Tente novamente em instantes.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ObjetoEmUsoException("A operação foi interrompida.");
+        } catch (java.util.concurrent.ExecutionException e) {
+            if (e.getCause() instanceof RuntimeException re) throw re;
+            throw new IllegalStateException("Falha ao executar a operação.", e.getCause());
+        }
     }
 
     // ---------- entrada: ciclo agendado e botão manual ----------
@@ -135,6 +153,7 @@ public class BaixaAutomaticaService {
     Resumo ciclo() {
         Resumo r = new Resumo();
         ultimaExecucao = LocalDateTime.now();
+        int semConfirmar = 0;
         try {
             automatico.receptor(); // lança 409 se não configurado
         } catch (ObjetoEmUsoException e) {
@@ -156,9 +175,11 @@ public class BaixaAutomaticaService {
                         r.erros++;
                     }
                 }
+                semConfirmar += itens.size() - confirmar.size();
                 if (!confirmar.isEmpty()) receptor.ack(confirmar);
                 if (itens.size() < LOTE || confirmar.isEmpty()) break;
             }
+            naoConfirmados = semConfirmar;
             if (automatico.baixaAutomaticaAtiva()) processarPendentes(r);
             limparReceptorSeNecessario();
             ultimoSucesso = LocalDateTime.now();
@@ -212,7 +233,7 @@ public class BaixaAutomaticaService {
             } catch (RuntimeException e) {
                 log.error("Falha ao processar o evento {}: {}", id, e.getClass().getSimpleName());
                 r.erros++;
-                marcar(id, InfinitePayEvento.Status.ERRO_TEMPORARIO, "Falha inesperada ao processar o evento. Será tentado novamente.", true);
+                marcar(id, InfinitePayEvento.Status.ERRO_TEMPORARIO, null, "Falha inesperada ao processar o evento. Será tentado novamente.", true);
             }
         }
     }
@@ -232,18 +253,18 @@ public class BaixaAutomaticaService {
             BaixaAutomaticaCalculo.Tipo tipo = BaixaAutomaticaCalculo.classificar(p);
             switch (tipo) {
                 case INESPERADO -> {
-                    concluir(ev, InfinitePayEvento.Status.REVISAO, "Payload inesperado ou incompleto" + (p.faltando().isEmpty() ? "" : " (campos ausentes ou inválidos: " + String.join(", ", p.faltando()) + ")")
+                    concluir(ev, InfinitePayEvento.Status.REVISAO, MotivoRevisao.PAYLOAD_INESPERADO, "Payload inesperado ou incompleto" + (p.faltando().isEmpty() ? "" : " (campos ausentes ou inválidos: " + String.join(", ", p.faltando()) + ")")
                             + ". O payload bruto foi guardado para diagnóstico.");
                     r.revisao++;
                     return null;
                 }
                 case SINAL -> {
-                    concluir(ev, InfinitePayEvento.Status.REVISAO, BaixaAutomaticaCalculo.motivoSinal(p.evento()));
+                    concluir(ev, InfinitePayEvento.Status.REVISAO, MotivoRevisao.EVENTO_INFORMATIVO, BaixaAutomaticaCalculo.motivoSinal(p.evento()));
                     r.revisao++;
                     return null;
                 }
                 case IGNORADO -> {
-                    concluir(ev, InfinitePayEvento.Status.IGNORADO, "Evento informativo, sem ação.");
+                    concluir(ev, InfinitePayEvento.Status.IGNORADO, null, "Evento informativo, sem ação.");
                     r.ignorados++;
                     return null;
                 }
@@ -251,13 +272,13 @@ public class BaixaAutomaticaService {
                 }
             }
             if (!p.faltando().isEmpty()) {
-                concluir(ev, InfinitePayEvento.Status.REVISAO, "Pagamento com campos ausentes ou inválidos: " + String.join(", ", p.faltando()) + ".");
+                concluir(ev, InfinitePayEvento.Status.REVISAO, MotivoRevisao.PAYLOAD_INESPERADO, "Pagamento com campos ausentes ou inválidos: " + String.join(", ", p.faltando()) + ".");
                 r.revisao++;
                 return null;
             }
             Long linkId = linkRepository.findIdByOrderNsu(p.orderNsu()).orElse(null);
             if (linkId == null) {
-                concluir(ev, InfinitePayEvento.Status.REVISAO, "Link de pagamento desconhecido (order_nsu " + p.orderNsu() + ").");
+                concluir(ev, InfinitePayEvento.Status.REVISAO, MotivoRevisao.LINK_DESCONHECIDO, "Link de pagamento desconhecido (order_nsu " + p.orderNsu() + ").");
                 r.revisao++;
                 return null;
             }
@@ -278,10 +299,10 @@ public class BaixaAutomaticaService {
             r.erros++;
             Integer tentativas = tx.execute(s -> eventoRepository.findById(id).map(InfinitePayEvento::getTentativas).orElse(0));
             if (tentativas != null && tentativas >= MAX_TENTATIVAS) {
-                marcar(id, InfinitePayEvento.Status.REVISAO, "Não foi possível confirmar o pagamento na InfinitePay após " + MAX_TENTATIVAS + " tentativas: " + e.getMessage(), false);
+                marcar(id, InfinitePayEvento.Status.REVISAO, MotivoRevisao.CONFIRMACAO_FALHOU, "Não foi possível confirmar o pagamento na InfinitePay após " + MAX_TENTATIVAS + " tentativas: " + e.getMessage(), false);
                 r.revisao++;
             } else {
-                marcar(id, InfinitePayEvento.Status.ERRO_TEMPORARIO, "Confirmação pendente: " + e.getMessage(), false);
+                marcar(id, InfinitePayEvento.Status.ERRO_TEMPORARIO, null, "Confirmação pendente: " + e.getMessage(), false);
             }
             return;
         }
@@ -292,7 +313,7 @@ public class BaixaAutomaticaService {
             // nada foi gravado (transação desfeita): vai para revisão com o motivo, sem perder o evento
             log.warn("Baixa automática do evento {} não pôde ser registrada: {}", id, e.getClass().getSimpleName());
             String msg = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-            marcar(id, InfinitePayEvento.Status.REVISAO, "Não foi possível registrar a baixa automática: " + msg, false);
+            marcar(id, InfinitePayEvento.Status.REVISAO, MotivoRevisao.ERRO_AO_BAIXAR, "Não foi possível registrar a baixa automática: " + msg, false);
             r.revisao++;
         }
     }
@@ -312,7 +333,7 @@ public class BaixaAutomaticaService {
         BaixaAutomaticaCalculo.Verificacao v = new BaixaAutomaticaCalculo.Verificacao(check.success(), check.paid(), check.amount(), check.paidAmount());
         BaixaAutomaticaCalculo.Decisao d;
         if (check.success() && check.paid() && p.amount() != null && p.amount() != check.amount()) {
-            d = new BaixaAutomaticaCalculo.Decisao(BaixaAutomaticaCalculo.Acao.REVISAO,
+            d = new BaixaAutomaticaCalculo.Decisao(BaixaAutomaticaCalculo.Acao.REVISAO, MotivoRevisao.VALOR_DIVERGENTE,
                     "O valor informado no webhook (" + BaixaAutomaticaCalculo.moeda(p.amount()) + ") diverge do confirmado pela InfinitePay (" + BaixaAutomaticaCalculo.moeda(check.amount()) + ").",
                     java.math.BigDecimal.ZERO);
         } else {
@@ -328,18 +349,18 @@ public class BaixaAutomaticaService {
                                 check.paidAmount(), captura, check.installments() != null ? check.installments() : p.installments(), List.of()), d.taxaCliente()),
                         link, p.transactionNsu());
                 ev.setRecebimentoId(rec.getId());
-                concluir(ev, InfinitePayEvento.Status.PROCESSADO, "Baixa automática registrada (recebimento nº " + rec.getId() + ")."
+                concluir(ev, InfinitePayEvento.Status.PROCESSADO, null, "Baixa automática registrada (recebimento nº " + rec.getId() + ")."
                         + (d.taxaCliente().signum() > 0 ? " Taxa paga pelo cliente: " + BaixaAutomaticaCalculo.moeda(BaixaAutomaticaCalculo.centavos(d.taxaCliente())) + "." : ""));
                 r.baixados++;
                 r.valorBaixado = r.valorBaixado.add(link.getValor());
                 r.recebimentos.add(rec.getId());
             }
             case REVISAO -> {
-                concluir(ev, InfinitePayEvento.Status.REVISAO, d.motivo());
+                concluir(ev, InfinitePayEvento.Status.REVISAO, d.codigo(), d.motivo());
                 r.revisao++;
             }
             default -> {
-                concluir(ev, InfinitePayEvento.Status.IGNORADO, d.motivo());
+                concluir(ev, InfinitePayEvento.Status.IGNORADO, null, d.motivo());
                 r.ignorados++;
             }
         }
@@ -362,19 +383,21 @@ public class BaixaAutomaticaService {
 
     // ---------- utilidades ----------
 
-    private void concluir(InfinitePayEvento ev, InfinitePayEvento.Status status, String motivo) {
+    private void concluir(InfinitePayEvento ev, InfinitePayEvento.Status status, MotivoRevisao codigo, String motivo) {
         ev.setStatus(status);
+        ev.setMotivoCodigo(codigo == null ? null : codigo.name());
         ev.setMotivo(truncar(motivo, 500));
         ev.setProcessadoEm(LocalDateTime.now());
         eventoRepository.save(ev);
     }
 
     // atualização isolada (nova transação) do estado de um evento
-    private void marcar(Long id, InfinitePayEvento.Status status, String motivo, boolean contarTentativa) {
+    private void marcar(Long id, InfinitePayEvento.Status status, MotivoRevisao codigo, String motivo, boolean contarTentativa) {
         try {
             tx.executeWithoutResult(s -> eventoRepository.findById(id).ifPresent(ev -> {
                 if (contarTentativa) ev.setTentativas(ev.getTentativas() + 1);
                 ev.setStatus(status);
+                ev.setMotivoCodigo(codigo == null ? null : codigo.name());
                 ev.setMotivo(truncar(motivo, 500));
                 if (status != InfinitePayEvento.Status.ERRO_TEMPORARIO) ev.setProcessadoEm(LocalDateTime.now());
                 eventoRepository.save(ev);

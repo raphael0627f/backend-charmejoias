@@ -39,6 +39,9 @@ public class InfinitePayEvento {
     private Status status = Status.RECEBIDO;
 
     private String motivo;
+
+    @Column(name = "motivo_codigo")
+    private String motivoCodigo;
     private String payload;
 
     @Column(name = "amount_centavos")
