@@ -68,6 +68,18 @@ public class ContaReceberLinkPagamento {
     @Column(name = "recebimento_id")
     private Long recebimentoId;
 
+    @Enumerated(EnumType.STRING)
+    private ModoLinkPagamento modo = ModoLinkPagamento.MANUAL;
+
+    // banco de destino da baixa automática (obrigatório no modo AUTOMATICO)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "banco_id")
+    private com.manager.app.financeiro.Banco banco;
+
+    // transação da InfinitePay que pagou o link (preenchida na baixa automática)
+    @Column(name = "transaction_nsu")
+    private String transactionNsu;
+
     @Column(name = "resposta_bruta")
     private String respostaBruta;
 

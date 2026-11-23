@@ -39,8 +39,9 @@ public class ContaReceberRecebimento {
     private BigDecimal desconto = BigDecimal.ZERO;
     private BigDecimal valorTotal;
 
-    // BANCO: entra no caixa (banco e forma obrigatórios, gera movimentação). CREDITO_CLIENTE: aplicação de crédito, sem banco, sem forma e fora do caixa.
-    public enum Origem { BANCO, CREDITO_CLIENTE }
+    // BANCO: entra no caixa (banco e forma obrigatórios, gera movimentação). INFINITEPAY: baixa automática pelo link de pagamento, também entra no caixa
+    // (banco e forma obrigatórios), com usuário nulo. CREDITO_CLIENTE: aplicação de crédito, sem banco, sem forma e fora do caixa.
+    public enum Origem { BANCO, CREDITO_CLIENTE, INFINITEPAY }
 
     @Enumerated(EnumType.STRING)
     private Origem origem = Origem.BANCO;
@@ -56,6 +57,20 @@ public class ContaReceberRecebimento {
     public boolean isCredito() {
         return origem == Origem.CREDITO_CLIENTE;
     }
+
+    public boolean isAutomatico() {
+        return origem == Origem.INFINITEPAY;
+    }
+
+    // taxa paga pelo cliente (paid_amount - amount) na baixa pelo link: informativa, NUNCA entra no caixa nem nos relatórios financeiros
+    @Column(name = "valor_taxa_cliente")
+    private BigDecimal valorTaxaCliente = BigDecimal.ZERO;
+
+    @Column(name = "link_id")
+    private Long linkId;
+
+    @Column(name = "transaction_nsu")
+    private String transactionNsu;
 
     private String observacao;
     private boolean estornada;

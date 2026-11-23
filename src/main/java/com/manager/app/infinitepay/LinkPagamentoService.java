@@ -4,6 +4,8 @@ import com.manager.app.email.ConfiguracaoEmailService;
 import com.manager.app.email.EmailErros;
 import com.manager.app.email.EmailFalhaEnvioException;
 import com.manager.app.email.EmailTemplateService;
+import com.manager.app.financeiro.Banco;
+import com.manager.app.financeiro.BancoRepository;
 import com.manager.app.financeiro.ContaReceber;
 import com.manager.app.financeiro.ContaReceberRecebimento;
 import com.manager.app.financeiro.ContaReceberRecebimentoRepository;
@@ -53,6 +55,8 @@ public class LinkPagamentoService {
     private final UsuarioResumoMapper usuarioResumoMapper;
     private final ConfiguracaoEmailService configuracaoEmail;
     private final EmailTemplateService templateService;
+    private final InfinitePayAutomaticoService automatico;
+    private final BancoRepository bancoRepository;
 
     public record Resultado(InfinitePayDTOs.LinkResponse link, boolean reaproveitado) {
     }
@@ -85,14 +89,26 @@ public class LinkPagamentoService {
                 req.exigeEnderecoEntrega() != null ? req.exigeEnderecoEntrega() : padrao.isExigeEndereco(),
                 clienteEnviado(titulo, req.cliente()));
 
+        // modalidade: AUTOMATICO exige receptor configurado, baixa automática ligada e banco de destino ativo; sem o campo, vale o padrão da configuração
+        ModoLinkPagamento modo = resolverModo(req.modo());
+        Banco banco = null;
+        java.util.Map<String, Object> webhook = null;
+        if (modo == ModoLinkPagamento.AUTOMATICO) {
+            webhook = automatico.webhookParaLink();
+            banco = resolverBanco(req.bancoId());
+        }
+
         // duplo clique: mesmo título, mesmos dados, janela curta => devolve o link existente em vez de criar outro
         LocalDateTime limite = LocalDateTime.now().minusMinutes(JANELA_DUPLO_CLIQUE_MINUTOS);
         for (ContaReceberLinkPagamento existente : repository.findByContaReceberIdAndStatusAndCriadoEmAfter(titulo.getId(), StatusLinkPagamento.ATIVO, limite)) {
-            if (LinkPagamentoCalculo.mesmosDados(dados, existente)) return new Resultado(resposta(existente, padrao, true), true);
+            if (LinkPagamentoCalculo.mesmosDados(dados, existente) && existente.getModo() == modo
+                    && java.util.Objects.equals(banco == null ? null : banco.getId(), existente.getBanco() == null ? null : existente.getBanco().getId())) {
+                return new Resultado(resposta(existente, padrao, true), true);
+            }
         }
 
         String orderNsu = "CR-" + titulo.getNumero() + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-        InfinitePayClient.LinkCriado criado = client.criarLink(credenciais.chave(), LinkPagamentoCalculo.montarPedido(credenciais.handle(), orderNsu, dados));
+        InfinitePayClient.LinkCriado criado = client.criarLink(credenciais.chave(), LinkPagamentoCalculo.montarPedido(credenciais.handle(), orderNsu, dados, webhook));
 
         ContaReceberLinkPagamento l = new ContaReceberLinkPagamento();
         l.setContaReceber(titulo);
@@ -111,14 +127,34 @@ public class LinkPagamentoService {
         l.setClienteEmail(dados.cliente().email());
         l.setClienteTelefone(dados.cliente().telefone());
         l.setStatus(StatusLinkPagamento.ATIVO);
+        l.setModo(modo);
+        l.setBanco(banco);
         l.setRespostaBruta(criado.respostaBruta());
         l.setCriadoPor(auditor.getCurrentAuditor().orElse(null));
         l.setCriadoEm(LocalDateTime.now());
         l = repository.save(l);
         cicloVida.registrar(titulo, "LINK_PAGAMENTO_GERADO", "Link de pagamento nº " + l.getId() + " gerado no valor de " + LinkPagamentoCalculo.moeda(l.getValor())
                 + " (" + (l.getValidade() == null ? "sem validade" : "válido até " + LinkPagamentoCalculo.data(l.getValidade()))
-                + "; PIX " + (l.isPixHabilitado() ? "habilitado" : "desabilitado") + "; pagamento " + (l.isPagamentoUnico() ? "único" : "não único") + ").");
+                + "; PIX " + (l.isPixHabilitado() ? "habilitado" : "desabilitado") + "; pagamento " + (l.isPagamentoUnico() ? "único" : "não único")
+                + (modo == ModoLinkPagamento.AUTOMATICO ? "; baixa automática no banco " + banco.getNome() : "; baixa manual") + ").");
         return new Resultado(resposta(l, padrao, false), false);
+    }
+
+    private ModoLinkPagamento resolverModo(String modo) {
+        if (modo == null || modo.isBlank()) return automatico.modoAutomaticoPadrao() ? ModoLinkPagamento.AUTOMATICO : ModoLinkPagamento.MANUAL;
+        try {
+            return ModoLinkPagamento.valueOf(modo.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new ItemInvalidoException("A modalidade do link deve ser MANUAL ou AUTOMATICO.");
+        }
+    }
+
+    // banco de destino da baixa automática: o informado ou, na falta dele, o padrão da configuração
+    private Banco resolverBanco(Long bancoId) {
+        Banco banco = bancoId != null ? bancoRepository.findById(bancoId).orElseThrow(() -> new ItemInvalidoException("O banco informado não foi encontrado.")) : automatico.bancoPadrao();
+        if (banco == null) throw new ItemInvalidoException("Informe o banco de destino da baixa automática.");
+        if (!banco.isAtivo()) throw new ItemInvalidoException("O banco \"" + banco.getNome() + "\" está desativado.");
+        return banco;
     }
 
     // sem objeto cliente no pedido: usa o cadastro do cliente do título (ou o nome do pagador avulso); só o que for válido é enviado
@@ -205,6 +241,7 @@ public class LinkPagamentoService {
                 l.getDescontoCartao(), l.isExigeEndereco(), new InfinitePayDTOs.ClienteResponse(l.getClienteNome(), l.getClienteEmail(), l.getClienteTelefone()),
                 l.getStatus().name(), l.getRecebimentoId(), l.getCriadoEm(), usuarioResumoMapper.toResumoDTO(l.getCriadoPor()), reaproveitado,
                 LinkPagamentoCalculo.renderizar(padrao.getTextoWhatsapp(), LinkPagamentoCalculo.TEXTO_WHATSAPP_PADRAO, nome, l.getValor(), l.getDescricao(), l.getUrl(), l.getValidade()),
-                LinkPagamentoCalculo.renderizar(padrao.getTextoEmail(), LinkPagamentoCalculo.TEXTO_EMAIL_PADRAO, nome, l.getValor(), l.getDescricao(), l.getUrl(), l.getValidade()));
+                LinkPagamentoCalculo.renderizar(padrao.getTextoEmail(), LinkPagamentoCalculo.TEXTO_EMAIL_PADRAO, nome, l.getValor(), l.getDescricao(), l.getUrl(), l.getValidade()),
+                l.getModo().name(), l.getBanco() == null ? null : l.getBanco().getId(), l.getBanco() == null ? null : l.getBanco().getNome(), l.getTransactionNsu());
     }
 }

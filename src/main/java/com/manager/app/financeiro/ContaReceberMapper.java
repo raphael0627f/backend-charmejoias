@@ -1,5 +1,6 @@
 package com.manager.app.financeiro;
 
+import java.math.BigDecimal;
 import com.manager.app.cliente.Cliente;
 import com.manager.app.financeiro.dto.ContaReceberAnexoDTO;
 import com.manager.app.financeiro.dto.ContaReceberDetalheDTO;
@@ -59,7 +60,8 @@ public class ContaReceberMapper {
                 b.getValorTotal(), b.isCredito() ? null : new ContaReceberResumoDTO.Ref(b.getBanco().getId(), b.getBanco().getNome()),
                 b.isCredito() ? new ContaReceberResumoDTO.Ref(null, "Crédito do cliente") : new ContaReceberResumoDTO.Ref(b.getFormaPagamento().getId(), b.getFormaPagamento().getNome()), b.getObservacao(),
                 b.isEstornada() ? "ESTORNADO" : "ATIVO", b.isEstornada(), b.getEstornoMotivo(), b.getEstornadaEm(), mapper.usuario(b.getEstornadaPor()),
-                b.getCreatedAt(), mapper.usuario(b.getCreatedBy()), movimentacaoId, b.getOrigem().name());
+                b.getCreatedAt(), mapper.usuario(b.getCreatedBy()), movimentacaoId, b.getOrigem().name(),
+                b.getValorTaxaCliente() == null ? BigDecimal.ZERO : b.getValorTaxaCliente(), b.isAutomatico());
     }
 
     // documento do cliente: CPF do cadastro ou, na falta dele, o campo documento

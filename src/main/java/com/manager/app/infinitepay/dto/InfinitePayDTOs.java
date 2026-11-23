@@ -37,7 +37,12 @@ public final class InfinitePayDTOs {
     // validade ausente/nula = sem validade; os demais campos ausentes usam o padrão da configuração
     public record LinkRequest(String descricao, BigDecimal valor, LocalDate validade, Boolean pagamentoUnico, Integer taxaParcelamentoAssumida,
                               Boolean pixHabilitado, BigDecimal descontoPix, BigDecimal descontoCartao, Boolean exigeEnderecoEntrega,
-                              ClienteRequest cliente) {
+                              ClienteRequest cliente, String modo, Long bancoId) {
+        // compatibilidade: pedido sem modo (MANUAL ou o padrao da configuracao) e sem banco
+        public LinkRequest(String descricao, BigDecimal valor, LocalDate validade, Boolean pagamentoUnico, Integer taxaParcelamentoAssumida,
+                           Boolean pixHabilitado, BigDecimal descontoPix, BigDecimal descontoCartao, Boolean exigeEnderecoEntrega, ClienteRequest cliente) {
+            this(descricao, valor, validade, pagamentoUnico, taxaParcelamentoAssumida, pixHabilitado, descontoPix, descontoCartao, exigeEnderecoEntrega, cliente, null, null);
+        }
     }
 
     public record ClienteResponse(String nome, String email, String telefone) {
@@ -47,7 +52,8 @@ public final class InfinitePayDTOs {
                                LocalDate validade, boolean expirado, boolean pagamentoUnico, int taxaParcelamentoAssumida, boolean pixHabilitado,
                                BigDecimal descontoPix, BigDecimal descontoCartao, boolean exigeEnderecoEntrega, ClienteResponse cliente,
                                String status, Long recebimentoId, LocalDateTime criadoEm, UsuarioResumoDTO criadoPor, boolean reaproveitado,
-                               String textoWhatsapp, String textoEmail) {
+                               String textoWhatsapp, String textoEmail,
+                               String modo, Long bancoId, String bancoNome, String transactionNsu) {
     }
 
     public record MarcarPagoRequest(Long recebimentoId,
@@ -60,5 +66,23 @@ public final class InfinitePayDTOs {
     }
 
     public record EnviarEmailResponse(List<String> destinatarios) {
+    }
+
+    public record Ref(Long id, String nome) {
+    }
+
+    // configuracao da baixa automatica (receptor na nuvem). Os segredos NUNCA sao devolvidos: apenas se existem e os 4 ultimos caracteres.
+    public record AutomaticoResponse(boolean baixaAutomaticaAtiva, boolean modoAutomaticoPadrao, String receptorUrl, boolean tokenEntradaConfigurado,
+                                     String tokenEntradaFinal, boolean segredoErpConfigurado, String segredoErpFinal, int intervaloFilaMinutos,
+                                     Ref bancoPadrao, Ref formaPix, Ref formaCartao, boolean prontoParaAutomatico, List<String> pendencias,
+                                     LocalDateTime atualizadoEm, UsuarioResumoDTO atualizadoPor) {
+    }
+
+    // todos opcionais: ausente mantem o valor atual; segredo vazio/ausente mantem o salvo. Para limpar banco/forma use o id 0.
+    public record AutomaticoRequest(Boolean baixaAutomaticaAtiva, Boolean modoAutomaticoPadrao, String receptorUrl, String tokenEntrada, String segredoErp,
+                                    Integer intervaloFilaMinutos, Long bancoPadraoId, Long formaPixId, Long formaCartaoId) {
+    }
+
+    public record ReceptorSaude(boolean ok, Long pendentes, String maisAntigoEm, String versao) {
     }
 }

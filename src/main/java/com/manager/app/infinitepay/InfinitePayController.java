@@ -23,6 +23,8 @@ public class InfinitePayController {
 
     private final InfinitePayConfiguracaoService configuracaoService;
     private final LinkPagamentoService linkService;
+    private final InfinitePayAutomaticoService automaticoService;
+    private final ReceptorClient receptorClient;
 
     @GetMapping("/infinitepay/configuracao")
     @PreAuthorize(CONFIGURACAO)
@@ -34,6 +36,26 @@ public class InfinitePayController {
     @PreAuthorize(CONFIGURACAO)
     public ResponseEntity<InfinitePayDTOs.ConfiguracaoResponse> salvarConfiguracao(@RequestBody(required = false) InfinitePayDTOs.ConfiguracaoRequest request) {
         return ResponseEntity.ok(configuracaoService.salvar(request));
+    }
+
+    // baixa automática (fase 3B): receptor na nuvem, interruptor, intervalo e mapeamento banco/forma. Segredos nunca são devolvidos.
+    @GetMapping("/infinitepay/automatico")
+    @PreAuthorize(CONFIGURACAO)
+    public ResponseEntity<InfinitePayDTOs.AutomaticoResponse> obterAutomatico() {
+        return ResponseEntity.ok(automaticoService.obter());
+    }
+
+    @PutMapping("/infinitepay/automatico")
+    @PreAuthorize(CONFIGURACAO)
+    public ResponseEntity<InfinitePayDTOs.AutomaticoResponse> salvarAutomatico(@RequestBody(required = false) InfinitePayDTOs.AutomaticoRequest request) {
+        return ResponseEntity.ok(automaticoService.salvar(request));
+    }
+
+    // consulta a saúde do receptor (botão "Testar receptor")
+    @PostMapping("/infinitepay/receptor/testar")
+    @PreAuthorize(CONFIGURACAO)
+    public ResponseEntity<InfinitePayDTOs.ReceptorSaude> testarReceptor() {
+        return ResponseEntity.ok(receptorClient.saude());
     }
 
     @GetMapping("/infinitepay/padroes")

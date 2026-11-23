@@ -144,6 +144,11 @@ public final class LinkPagamentoCalculo {
     }
 
     public static Map<String, Object> montarPedido(String handle, String orderNsu, Dados d) {
+        return montarPedido(handle, orderNsu, d, null);
+    }
+
+    // webhook (modo automático): objeto {url, events}; nulo no modo manual (o pedido segue idêntico ao da fase 3A)
+    public static Map<String, Object> montarPedido(String handle, String orderNsu, Dados d, Map<String, Object> webhook) {
         Map<String, Object> pedido = new LinkedHashMap<>();
         pedido.put("handle", handle);
         Map<String, Object> item = new LinkedHashMap<>();
@@ -152,6 +157,7 @@ public final class LinkPagamentoCalculo {
         item.put("description", d.descricao());
         pedido.put("items", List.of(item));
         pedido.put("order_nsu", orderNsu);
+        if (webhook != null) pedido.put("webhook", webhook);
         if (d.cliente() != null && !d.cliente().vazio()) {
             Map<String, Object> cliente = new LinkedHashMap<>();
             if (d.cliente().nome() != null) cliente.put("name", d.cliente().nome());

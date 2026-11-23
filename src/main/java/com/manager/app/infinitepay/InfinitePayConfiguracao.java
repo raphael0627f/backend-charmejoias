@@ -58,6 +58,37 @@ public class InfinitePayConfiguracao {
     @Column(name = "texto_email")
     private String textoEmail;
 
+    // ---- baixa automatica (fase 3B): receptor na nuvem, interruptor e mapeamento banco/forma. Segredos criptografados e nunca devolvidos. ----
+    @Column(name = "baixa_automatica_ativa")
+    private boolean baixaAutomaticaAtiva = false;
+
+    @Column(name = "modo_automatico_padrao")
+    private boolean modoAutomaticoPadrao = false;
+
+    @Column(name = "receptor_url")
+    private String receptorUrl;
+
+    @Column(name = "receptor_token_entrada_criptografado")
+    private String receptorTokenEntradaCriptografado;
+
+    @Column(name = "receptor_segredo_erp_criptografado")
+    private String receptorSegredoErpCriptografado;
+
+    @Column(name = "intervalo_fila_minutos")
+    private int intervaloFilaMinutos = 2;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "banco_padrao_id")
+    private com.manager.app.financeiro.Banco bancoPadrao;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "forma_pix_id")
+    private com.manager.app.financeiro.FormaPagamento formaPix;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "forma_cartao_id")
+    private com.manager.app.financeiro.FormaPagamento formaCartao;
+
     @UpdateTimestamp
     @Column(name = "atualizado_em")
     private LocalDateTime atualizadoEm;
