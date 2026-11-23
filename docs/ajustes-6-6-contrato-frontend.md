@@ -208,7 +208,10 @@ Regras no ERP:
 Cenários validados: (1) settled+paid na mesma busca; (2) settled sozinho e paid depois; (3) settled sozinho e paid nunca (após a janela → revisão). Sem impacto de API para o front.
 
 ### 10.2 Ordenação inválida nas listas de ordem fixa (R2) ✅
-`GET /bancos`, `GET /contas-receber/clientes/{id}/situacao`, `GET /contas-receber/clientes/{id}/consignacoes`, `.../consignacoes/{cid}/titulos`, `.../sem-consignacao/titulos` e `GET /contas-pagar/clientes/{id}` não ordenam por parâmetro: qualquer `sort` informado → **400** `"Campo de ordenação inválido."`.
+`GET /contas-receber/clientes/{id}/situacao`, `GET /contas-receber/clientes/{id}/consignacoes`, `.../consignacoes/{cid}/titulos`, `.../sem-consignacao/titulos` e `GET /contas-pagar/clientes/{id}` não ordenam por parâmetro: qualquer `sort` informado → **400** `"Campo de ordenação inválido."`.
 
 ### 10.3 Simulador (QA)
 `POST http://127.0.0.1:9099/__pagamento` aceita `"formato":"real"`: emite o `settled` (sem `transaction_nsu`) e depois o `paid` (`event_type`), com `atraso_paid_segundos` (padrão 1), `settled` (padrão true) e `paid_webhook` (padrão true; `false` simula o paid perdido). Exemplo: `{"formato":"real","order_nsu":"<orderNsu>","transaction_nsu":"QA-REAL-1","amount":1500,"atraso_paid_segundos":30}`.
+
+### 10.4 Ordenação de `GET /bancos` ✅
+`GET /bancos` aceita `sort=campo[,asc|desc]` com os campos `id`, `nome` (padrão), `tipo`, `codigoBanco`, `agencia`, `conta`, `ativo` e `createdAt`; campo inexistente → 400 `"Campo de ordenação inválido."`; direção inválida → 400 `"Direção inválida. Use asc ou desc."`. (As demais listas de ordem fixa da seção 10.2 seguem recusando qualquer `sort`.)

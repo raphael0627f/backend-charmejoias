@@ -28,8 +28,7 @@ public class BancoController {
     public ResponseEntity<List<BancoResponseDTO>> listar(@RequestParam(required = false) Boolean ativo,
                                                          @RequestParam(required = false) String busca,
                                                          @RequestParam(required = false) String sort) {
-        com.manager.app.shared.OrdenacaoParametro.ordemFixa(sort);
-        return ResponseEntity.ok(service.listar(ativo, busca));
+        return ResponseEntity.ok(service.listar(ativo, busca, sort));
     }
 
     @GetMapping("/{id}")
