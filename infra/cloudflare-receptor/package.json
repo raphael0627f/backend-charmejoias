@@ -1,0 +1,15 @@
+{
+  "name": "charme-pagamentos-receptor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Receptor de webhooks da InfinitePay (Cloudflare Worker + D1) do ERP Charme Joias",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local --port 8787",
+    "db:local": "wrangler d1 execute charme-pagamentos-db --local --file=schema.sql",
+    "test": "node test/contrato.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
