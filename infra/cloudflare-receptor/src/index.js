@@ -45,8 +45,10 @@ async function tokenValido(token, env) {
 
 async function erpAutorizado(request, env) {
   const cab = request.headers.get("authorization") ?? "";
-  if (!env.SEGREDO_ERP || !cab.startsWith("Bearer ")) return false;
-  return iguais(cab.slice(7), env.SEGREDO_ERP);
+  // trim: o valor do secret pode chegar com quebra de linha final quando enviado por stdin
+  const segredo = String(env.SEGREDO_ERP ?? "").trim();
+  if (!segredo || !cab.startsWith("Bearer ")) return false;
+  return iguais(cab.slice(7).trim(), segredo);
 }
 
 const texto = (v) => (typeof v === "string" && v.trim() !== "" ? v.trim().slice(0, 200) : typeof v === "number" ? String(v) : null);
