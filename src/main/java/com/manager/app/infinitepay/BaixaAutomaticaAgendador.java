@@ -7,6 +7,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PreDestroy;
+import java.time.LocalDateTime;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -41,22 +42,32 @@ public class BaixaAutomaticaAgendador {
             return;
         }
         agenda.schedule(this::executar, 10, TimeUnit.SECONDS); // busca completa ao ligar
+        agenda.scheduleWithFixedDelay(this::verificar, 70, 60, TimeUnit.SECONDS); // confere a cada minuto se já passou o intervalo configurado
+    }
+
+    // a cada minuto: se passou o intervalo configurado desde a última busca do agendador, busca de novo (mudar o intervalo vale em até 1 minuto)
+    void verificar() {
+        try {
+            if (deveExecutar(LocalDateTime.now(), ultimaBusca, automatico.intervaloFilaMinutos())) executar();
+        } catch (RuntimeException e) {
+            log.warn("Verificação do agendador da fila de pagamentos falhou: {}", e.getClass().getSimpleName());
+        }
+    }
+
+    static boolean deveExecutar(LocalDateTime agora, LocalDateTime ultima, int intervaloMinutos) {
+        return ultima == null || !ultima.plusMinutes(Math.max(1, intervaloMinutos)).isAfter(agora);
     }
 
     void executar() {
-        long proximoMinutos = 2;
+        ultimaBusca = LocalDateTime.now();
         try {
             servico.sincronizar();
         } catch (RuntimeException e) {
             log.warn("Ciclo da fila de pagamentos falhou: {}", e.getClass().getSimpleName());
         }
-        try {
-            proximoMinutos = Math.max(1, automatico.intervaloFilaMinutos());
-        } catch (RuntimeException e) {
-            log.warn("Não foi possível ler o intervalo da fila; usando 2 minutos.");
-        }
-        agenda.schedule(this::executar, proximoMinutos, TimeUnit.MINUTES);
     }
+
+    private volatile LocalDateTime ultimaBusca;
 
     @PreDestroy
     void parar() {
