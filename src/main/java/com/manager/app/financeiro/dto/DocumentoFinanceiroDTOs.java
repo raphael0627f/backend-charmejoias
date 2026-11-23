@@ -13,14 +13,16 @@ public final class DocumentoFinanceiroDTOs {
     private DocumentoFinanceiroDTOs() {}
 
     public record Titulo(Long id, Long numero, Integer parcelaNumero, Integer parcelaTotal, BigDecimal valor, LocalDate vencimento,
-                         SituacaoContaReceber situacao, BigDecimal valorRecebido) {
+                         SituacaoContaReceber situacao, BigDecimal valorRecebido, boolean linkAutomaticoAtivo, BigDecimal valorTaxaCliente,
+                         boolean pagoPeloLink) {
     }
 
     // tipo: PRE_ACERTO ou ACERTO. valorTituladoPreAcerto só existe no acerto.
     public record Resumo(String tipo, Long documentoId, Long consignacaoId, String clienteCodigo, String clienteNome, BigDecimal valorDocumento, BigDecimal valorTitulado,
                          BigDecimal valorRecebido, BigDecimal saldoATitular, BigDecimal excedente, BigDecimal excedenteRecebido,
                          BigDecimal valorTituladoPreAcerto, boolean tituloAtivo, boolean bloqueadoParaEdicao, boolean podeGerar,
-                         String motivoBloqueio, String aviso, List<Titulo> titulos, ExcedenteDTOs.Resumo excedenteAcerto, ExcedenteDTOs.AjusteProposto ajusteProposto) {
+                         String motivoBloqueio, String aviso, List<Titulo> titulos, ExcedenteDTOs.Resumo excedenteAcerto, ExcedenteDTOs.AjusteProposto ajusteProposto,
+                         boolean existeLinkAutomaticoAtivo, BigDecimal valorTaxaClienteTotal, boolean pagoPeloLink) {
     }
 
     // todos os campos são opcionais; sem corpo valem os padrões (título simples com vencimento hoje)

@@ -48,6 +48,8 @@ public class DocumentoFinanceiroService {
     private final ContaReceberService contaReceberService;
     private final ContaReceberRecebimentoService recebimentoService;
     private final ContaReceberMapper mapper;
+    private final com.manager.app.infinitepay.ContaReceberLinkPagamentoRepository linkRepository;
+    private final ContaReceberRecebimentoRepository recebimentoRepository;
 
     // documento carregado com tudo o que o resumo precisa
     private record Documento(Tipo tipo, Long id, Consignacao consignacao, Cliente cliente, BigDecimal valor, boolean confirmado,
@@ -114,9 +116,18 @@ public class DocumentoFinanceiroService {
                 d.confirmado(), cliente != null && cliente.isAtivo(), cliente == null ? null : cliente.getNome(), d.valor(), tituloProprioAtivo,
                 tituloDoAcertoAtivo, saldo));
         boolean bloqueadoParaEdicao = preAcerto ? tituloProprioAtivo : (d.confirmado() || tituloProprioAtivo);
+        // baixa automática pelo link (InfinitePay): link automático ativo (habilita "Verificar pagamento") e taxa paga pelo cliente (informativa, fora do valor recebido)
+        List<Long> idsProprios = proprios.stream().map(ContaReceber::getId).toList();
+        java.util.Set<Long> comLinkAtivo = idsProprios.isEmpty() ? java.util.Set.of() : new java.util.HashSet<>(linkRepository.findTitulosComLinkAutomaticoAtivo(idsProprios));
+        java.util.Map<Long, BigDecimal> taxaPorTitulo = new java.util.HashMap<>();
+        if (!idsProprios.isEmpty()) {
+            for (Object[] linha : recebimentoRepository.resumoPagoPeloLink(idsProprios)) taxaPorTitulo.put((Long) linha[0], (BigDecimal) linha[1]);
+        }
         List<DocumentoFinanceiroDTOs.Titulo> titulos = proprios.stream().map(t -> new DocumentoFinanceiroDTOs.Titulo(t.getId(), t.getNumero(),
                 t.getParcelaNumero(), t.getParcelaTotal(), CalculoFinanceiro.arredondar(t.getValor()), t.getVencimento(), t.getSituacao(),
-                CalculoFinanceiro.arredondar(t.getValorRecebido()))).toList();
+                CalculoFinanceiro.arredondar(t.getValorRecebido()), comLinkAtivo.contains(t.getId()),
+                CalculoFinanceiro.arredondar(taxaPorTitulo.getOrDefault(t.getId(), BigDecimal.ZERO)), taxaPorTitulo.containsKey(t.getId()))).toList();
+        BigDecimal taxaTotal = CalculoFinanceiro.arredondar(taxaPorTitulo.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add));
         // acerto com excedente persistido: a destinar -> orienta a destinar; já destinado -> sem aviso; sem excedente persistido mantém o aviso de titulado acima do valor
         ExcedenteDTOs.Resumo excedenteAcerto = preAcerto ? null : excedenteService.resumoDoAcerto(d.id());
         String aviso = excedenteAcerto == null ? DocumentoFinanceiroCalculo.aviso(d.tipo(), saldo)
@@ -126,7 +137,8 @@ public class DocumentoFinanceiroService {
                 DocumentoFinanceiroCalculo.excedenteRecebido(d.valor(), recebido), tituladoPreAcerto, tituloProprioAtivo, bloqueadoParaEdicao,
                 motivo == null, motivo, aviso, titulos,
                 excedenteAcerto,
-                preAcerto || d.confirmado() ? null : ajustePreAcertoService.ajusteProposto(ativosDaConsignacao, d.valor()));
+                preAcerto || d.confirmado() ? null : ajustePreAcertoService.ajusteProposto(ativosDaConsignacao, d.valor()),
+                !comLinkAtivo.isEmpty(), taxaTotal, !taxaPorTitulo.isEmpty());
     }
 
     // títulos não cancelados do documento: os da consignação inteira ou, no pré-acerto sem consignação, apenas os do próprio pré-acerto
