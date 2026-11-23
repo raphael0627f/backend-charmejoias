@@ -27,6 +27,10 @@ public class InfinitePayClient {
     public record LinkCriado(String url, String respostaBruta) {
     }
 
+    // resposta do payment_check: valores em centavos; success/paid só verdadeiros quando tudo confere
+    public record PagamentoVerificado(boolean success, boolean paid, long amount, long paidAmount, Integer installments, String captureMethod) {
+    }
+
     public InfinitePayClient(@Value("${app.infinitepay.base-url:https://api.checkout.infinitepay.io}") String baseUrl,
                              @Value("${app.infinitepay.timeout-segundos:20}") long timeoutSegundos,
                              ObjectMapper objectMapper) {
@@ -67,6 +71,35 @@ public class InfinitePayClient {
             throw new InfinitePayApiException("A InfinitePay não devolveu o link de pagamento.");
         }
         return new LinkCriado(url, bruta);
+    }
+
+    // confirma um pagamento informado pelo webhook (que não tem assinatura). Resposta 200 com success/paid falsos = não confirmado (não é erro).
+    // Falha de rede, 5xx, 401/403 ou resposta ilegível viram InfinitePayApiException (o chamador trata como erro temporário).
+    public PagamentoVerificado verificarPagamento(String chave, String handle, String orderNsu, String transactionNsu, String slug) {
+        Map<String, Object> pedido = new java.util.LinkedHashMap<>();
+        pedido.put("handle", handle);
+        pedido.put("order_nsu", orderNsu);
+        pedido.put("transaction_nsu", transactionNsu);
+        pedido.put("slug", slug);
+        String corpo;
+        try {
+            corpo = client.post().uri("/payment_check").header("X-Api-Key", chave).contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON).body(pedido).retrieve().body(String.class);
+        } catch (RestClientResponseException e) {
+            throw traduzir(e, chave);
+        } catch (RestClientException e) {
+            log.warn("InfinitePay indisponível ao confirmar pagamento: {}", e.getClass().getSimpleName());
+            throw new InfinitePayApiException("A InfinitePay está indisponível no momento. Tente novamente em instantes.", e);
+        }
+        JsonNode j;
+        try {
+            j = objectMapper.readTree(corpo == null || corpo.isBlank() ? "{}" : corpo);
+        } catch (RuntimeException e) {
+            throw new InfinitePayApiException("A InfinitePay devolveu uma resposta ilegível ao confirmar o pagamento.", e);
+        }
+        return new PagamentoVerificado(j.path("success").asBoolean(false), j.path("paid").asBoolean(false),
+                j.path("amount").asLong(0), j.path("paid_amount").asLong(0),
+                j.hasNonNull("installments") ? j.get("installments").asInt() : null, j.hasNonNull("capture_method") ? j.get("capture_method").asString() : null);
     }
 
     // só o status e um trecho curto do corpo, com a chave ocultada caso a InfinitePay a ecoe, vão para o log; o usuário recebe mensagem formal

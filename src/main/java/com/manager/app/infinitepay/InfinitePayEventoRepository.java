@@ -8,5 +8,7 @@ public interface InfinitePayEventoRepository extends JpaRepository<InfinitePayEv
 
     Optional<InfinitePayEvento> findByTransactionNsuAndEvento(String transactionNsu, String evento);
 
+    java.util.List<InfinitePayEvento> findByStatusInOrderByIdAsc(java.util.Collection<InfinitePayEvento.Status> status);
+
     long countByStatus(InfinitePayEvento.Status status);
 }

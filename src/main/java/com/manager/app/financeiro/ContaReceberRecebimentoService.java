@@ -103,6 +103,33 @@ public class ContaReceberRecebimentoService {
         return new Aplicado(recebimento, mov);
     }
 
+    // baixa automática pelo link de pagamento (webhook confirmado pelo payment_check). O título já vem bloqueado de quem chama. SEM usuário (createdBy nulo):
+    // quem chama roda em contexto sem autenticação. Entra no caixa como recebimento de banco (origem INFINITEPAY); a taxa do cliente é só informativa.
+    @Transactional
+    public ContaReceberRecebimento receberAutomatico(ContaReceber titulo, Long bancoId, FormaPagamento forma, LocalDate data, BigDecimal principal,
+                                                     BigDecimal taxaCliente, String observacao, com.manager.app.infinitepay.ContaReceberLinkPagamento link,
+                                                     String transactionNsu) {
+        Banco banco = bancoRepository.findByIdForUpdate(bancoId).orElseThrow(() -> new ItemInvalidoException("O banco de destino do link não foi encontrado."));
+        RecebimentoCalculo.ResultadoRecebimento r = RecebimentoCalculo.receber(titulo, banco, forma, data, principal, null, null, null, observacao, null, LocalDate.now());
+        ContaReceberRecebimento rec = r.recebimento();
+        rec.setOrigem(ContaReceberRecebimento.Origem.INFINITEPAY);
+        rec.setValorTaxaCliente(taxaCliente == null ? BigDecimal.ZERO : CalculoFinanceiro.arredondar(taxaCliente));
+        rec.setLinkId(link.getId());
+        rec.setTransactionNsu(transactionNsu);
+        rec = recebimentoRepository.save(rec);
+        MovimentacaoBanco mov = r.movimentacao();
+        mov.setRecebimentoId(rec.getId());
+        movimentacaoRepository.save(mov);
+        contaReceberRepository.save(titulo);
+        registrar(titulo, "RECEBIMENTO_REGISTRADO", "Recebimento AUTOMÁTICO (InfinitePay) de " + MovimentacaoBancoService.moeda(rec.getValorTotal()) + " em " + TextoUtils.data(data)
+                + ", banco \"" + banco.getNome() + "\", forma \"" + forma.getNome() + "\"."
+                + (rec.getValorTaxaCliente().signum() > 0 ? " Taxa paga pelo cliente: " + MovimentacaoBancoService.moeda(rec.getValorTaxaCliente()) + " (fora do caixa)." : ""), null);
+        linkCicloVida.marcarPagoAutomatico(link, rec.getId(), transactionNsu);
+        linkCicloVida.aoQuitar(titulo);
+        excedenteService.sincronizarPorTitulo(titulo);
+        return rec;
+    }
+
     // ---------- estorno ----------
 
     @Transactional

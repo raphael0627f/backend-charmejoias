@@ -85,6 +85,21 @@ public class LinkPagamentoCicloVida {
         registrar(link.getContaReceber(), "LINK_PAGAMENTO_MARCADO_PAGO", detalhe);
     }
 
+    // baixa automática (webhook confirmado): link vira PAGO_AUTOMATICO com o recebimento e a transação; os demais ativos do título ficam NAO_UTILIZAR
+    public void marcarPagoAutomatico(ContaReceberLinkPagamento link, Long recebimentoId, String transactionNsu) {
+        Long tituloId = link.getContaReceber().getId();
+        link.setStatus(StatusLinkPagamento.PAGO_AUTOMATICO);
+        link.setRecebimentoId(recebimentoId);
+        link.setTransactionNsu(transactionNsu);
+        link.setAtualizadoEm(LocalDateTime.now());
+        repository.save(link);
+        List<ContaReceberLinkPagamento> demais = repository.findByContaReceberIdAndStatus(tituloId, StatusLinkPagamento.ATIVO).stream()
+                .filter(l -> !l.getId().equals(link.getId())).toList();
+        mudar(demais, StatusLinkPagamento.NAO_UTILIZAR);
+        registrar(link.getContaReceber(), "LINK_PAGAMENTO_PAGO_AUTOMATICAMENTE", "Link de pagamento nº " + link.getId() + " pago e baixado automaticamente pela InfinitePay (recebimento nº "
+                + recebimentoId + ", NSU " + transactionNsu + ")." + (demais.isEmpty() ? "" : " Os demais links ativos do título foram marcados como \"Não utilizar\"."));
+    }
+
     public void registrar(ContaReceber titulo, String evento, String detalhe) {
         ContaReceberEvento e = new ContaReceberEvento();
         e.setContaReceber(titulo);

@@ -25,6 +25,7 @@ public class InfinitePayController {
     private final LinkPagamentoService linkService;
     private final InfinitePayAutomaticoService automaticoService;
     private final ReceptorClient receptorClient;
+    private final BaixaAutomaticaService baixaService;
 
     @GetMapping("/infinitepay/configuracao")
     @PreAuthorize(CONFIGURACAO)
@@ -56,6 +57,19 @@ public class InfinitePayController {
     @PreAuthorize(CONFIGURACAO)
     public ResponseEntity<InfinitePayDTOs.ReceptorSaude> testarReceptor() {
         return ResponseEntity.ok(receptorClient.saude());
+    }
+
+    // busca a fila do receptor agora e processa o que chegou (mesma rotina do ciclo agendado; serializada com ele)
+    @PostMapping("/infinitepay/fila/sincronizar")
+    @PreAuthorize("hasAnyAuthority('INFINITEPAY_GERENCIAR', 'INFINITEPAY_REVISAO_RESOLVER')")
+    public ResponseEntity<BaixaAutomaticaService.Resumo> sincronizar() {
+        return ResponseEntity.ok(baixaService.sincronizar());
+    }
+
+    @GetMapping("/infinitepay/fila/estado")
+    @PreAuthorize("hasAnyAuthority('INFINITEPAY_GERENCIAR', 'INFINITEPAY_REVISAO_VISUALIZAR')")
+    public ResponseEntity<BaixaAutomaticaService.Estado> estadoDaFila() {
+        return ResponseEntity.ok(baixaService.estado());
     }
 
     @GetMapping("/infinitepay/padroes")

@@ -15,6 +15,9 @@ public interface ContaReceberLinkPagamentoRepository extends JpaRepository<Conta
 
     List<ContaReceberLinkPagamento> findByContaReceberIdAndStatusAndCriadoEmAfter(Long contaReceberId, StatusLinkPagamento status, LocalDateTime depoisDe);
 
+    @Query("select l.id from ContaReceberLinkPagamento l where l.orderNsu = :orderNsu")
+    java.util.Optional<Long> findIdByOrderNsu(@Param("orderNsu") String orderNsu);
+
     @Query("select l.contaReceber.id from ContaReceberLinkPagamento l where l.id = :id")
     java.util.Optional<Long> findContaReceberIdById(@Param("id") Long id);
 }

@@ -66,6 +66,13 @@ public class ReceptorClient {
         chamar(r, "POST", "/fila/ack", Map.of("ids", ids), "confirmar a fila");
     }
 
+    // retenção: pede ao receptor que apague itens JÁ CONFIRMADOS (ack) há mais de N dias (mínimo 90, imposto também pelo receptor); devolve quantos foram apagados
+    public int limpar(int dias) {
+        InfinitePayAutomaticoService.Receptor r = automatico.receptor();
+        JsonNode j = ler(chamar(r, "POST", "/fila/limpar", Map.of("dias", Math.max(90, dias)), "limpar itens antigos"), "limpar itens antigos");
+        return j.path("apagados").asInt(0);
+    }
+
     public InfinitePayDTOs.ReceptorSaude saude() {
         InfinitePayAutomaticoService.Receptor r = automatico.receptor();
         JsonNode j = ler(chamar(r, "GET", "/saude", null, "consultar o receptor"), "consultar o receptor");
