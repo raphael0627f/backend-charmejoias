@@ -50,7 +50,9 @@ public class InfinitePayConfiguracaoService {
     public InfinitePayDTOs.PadroesResponse padroes() {
         InfinitePayConfiguracao c = repository.findById(InfinitePayConfiguracao.ID_UNICO).orElseGet(InfinitePayConfiguracao::new);
         return new InfinitePayDTOs.PadroesResponse(configurada(c), c.getValidadeDias(), c.isPagamentoUnico(), c.getAssuredInstallments(),
-                c.isPixHabilitado(), c.getDescontoPix(), c.getDescontoCartao(), c.isExigeEndereco(), envioEmailHabilitado);
+                c.isPixHabilitado(), c.getDescontoPix(), c.getDescontoCartao(), c.isExigeEndereco(), envioEmailHabilitado,
+                c.isBaixaAutomaticaAtiva(), InfinitePayAutomaticoService.pendencias(c).isEmpty(), c.isModoAutomaticoPadrao(),
+                c.getBancoPadrao() == null ? null : new InfinitePayDTOs.Ref(c.getBancoPadrao().getId(), c.getBancoPadrao().getNome()));
     }
 
     @Transactional

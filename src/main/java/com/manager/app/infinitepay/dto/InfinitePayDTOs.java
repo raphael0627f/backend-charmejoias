@@ -22,7 +22,8 @@ public final class InfinitePayDTOs {
 
     // padrões do diálogo de geração (acessível a quem gera links); sem InfiniteTag, chave nem textos
     public record PadroesResponse(boolean configurada, int validadeDias, boolean pagamentoUnico, int taxaParcelamentoAssumida, boolean pixHabilitado,
-                                  BigDecimal descontoPix, BigDecimal descontoCartao, boolean exigeEnderecoEntrega, boolean envioEmailHabilitado) {
+                                  BigDecimal descontoPix, BigDecimal descontoCartao, boolean exigeEnderecoEntrega, boolean envioEmailHabilitado,
+                                  boolean baixaAutomaticaAtiva, boolean prontoParaAutomatico, boolean modoAutomaticoPadrao, Ref bancoPadrao) {
     }
 
     // todos os campos opcionais: ausente mantém o valor atual; chave vazia/ausente mantém a chave salva
