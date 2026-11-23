@@ -30,6 +30,7 @@ public class InfinitePayController {
     private final LinkPagamentoService linkService;
     private final InfinitePayAutomaticoService automaticoService;
     private final ReceptorClient receptorClient;
+    private final InfinitePaySistemaService sistemaService;
     private final BaixaAutomaticaService baixaService;
     private final RevisaoInfinitePayService revisaoService;
     private final VerificarPagamentoService verificarService;
@@ -57,6 +58,13 @@ public class InfinitePayController {
     @PreAuthorize(CONFIGURACAO)
     public ResponseEntity<InfinitePayDTOs.AutomaticoResponse> salvarAutomatico(@RequestBody(required = false) InfinitePayDTOs.AutomaticoRequest request) {
         return ResponseEntity.ok(automaticoService.salvar(request));
+    }
+
+    // um único Salvar para Sistema > InfinitePay (integração + baixa automática + interruptor), atômico
+    @PutMapping("/infinitepay/sistema")
+    @PreAuthorize(CONFIGURACAO)
+    public ResponseEntity<InfinitePayDTOs.SistemaResponse> salvarSistema(@RequestBody(required = false) InfinitePayDTOs.SistemaRequest request) {
+        return ResponseEntity.ok(sistemaService.salvar(request));
     }
 
     // consulta a saúde do receptor (botão "Testar receptor")

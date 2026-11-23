@@ -84,6 +84,13 @@ public final class InfinitePayDTOs {
                                     java.math.BigDecimal intervaloFilaMinutos, Long bancoPadraoId, Long formaPixId, Long formaCartaoId) {
     }
 
+    // um único Salvar: as duas partes são opcionais; ausente mantém o valor salvo. Tudo ou nada.
+    public record SistemaRequest(ConfiguracaoRequest configuracao, AutomaticoRequest automatico) {
+    }
+
+    public record SistemaResponse(ConfiguracaoResponse configuracao, AutomaticoResponse automatico) {
+    }
+
     public record ReceptorSaude(boolean ok, Long pendentes, String maisAntigoEm, String versao, Long total, Long confirmados, String maisAntigoRetidoEm,
                                 Integer retencaoDias) {
     }
