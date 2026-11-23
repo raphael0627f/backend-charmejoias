@@ -15,7 +15,7 @@ public final class ClienteFinanceiroDTOs {
     public record Consignacao(Long consignacaoId, Long numero, LocalDate data, String documentoTipo, Long documentoId, BigDecimal valorVendido,
                               BigDecimal valorComissao, BigDecimal valorAPagar, BigDecimal valorPago, BigDecimal valorCreditoAplicado, boolean creditoAplicado,
                               BigDecimal valorTaxaCliente, BigDecimal emAberto, LocalDate vencimentoMaisAntigo, String selo, int quantidadeTitulos,
-                              int quantidadeCancelados) {
+                              int quantidadeCancelados, BigDecimal valorTitulado) {
     }
 
     // soma do conjunto filtrado

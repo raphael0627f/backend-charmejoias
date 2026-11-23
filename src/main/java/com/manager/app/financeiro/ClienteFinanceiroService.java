@@ -54,6 +54,7 @@ public class ClienteFinanceiroService {
         BigDecimal pago = BigDecimal.ZERO;
         BigDecimal credito = BigDecimal.ZERO;
         BigDecimal taxa = BigDecimal.ZERO;
+        BigDecimal titulado = BigDecimal.ZERO;
         BigDecimal aberto = BigDecimal.ZERO;
         LocalDate vencidoMaisAntigo;
 
@@ -68,6 +69,7 @@ public class ClienteFinanceiroService {
                 return;
             }
             pago = pago.add(pg.total());
+            titulado = titulado.add(CalculoFinanceiro.arredondar(t.getValor()));
             credito = credito.add(pg.credito());
             taxa = taxa.add(pg.taxaCliente());
             BigDecimal aberto = ContaReceberCalculo.valorAberto(t.getSituacao(), t.getValor(), t.getValorRecebido());
@@ -137,7 +139,8 @@ public class ClienteFinanceiroService {
         LocalDate data = c.getDataEntrega() != null ? c.getDataEntrega() : (c.getCreatedAt() == null ? null : c.getCreatedAt().toLocalDate());
         return new ClienteFinanceiroDTOs.Consignacao(c.getId(), c.getId(), data, doc == null ? null : doc.tipo(), doc == null ? null : doc.id(), v.valorVendido(),
                 v.valorComissao(), v.valorAPagar(), CalculoFinanceiro.arredondar(a.pago), CalculoFinanceiro.arredondar(a.credito), a.credito.signum() > 0,
-                CalculoFinanceiro.arredondar(a.taxa), CalculoFinanceiro.arredondar(a.aberto), a.vencidoMaisAntigo, selo.name(), a.titulos, a.cancelados);
+                CalculoFinanceiro.arredondar(a.taxa), CalculoFinanceiro.arredondar(a.aberto), a.vencidoMaisAntigo, selo.name(), a.titulos, a.cancelados,
+                CalculoFinanceiro.arredondar(a.titulado));
     }
 
     // consignação cancelada não entra nas somas de vendido/comissão/a pagar

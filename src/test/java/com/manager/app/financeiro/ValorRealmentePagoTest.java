@@ -77,6 +77,10 @@ class ValorRealmentePagoTest {
         assertThat(ClienteFinanceiroCalculo.selo(false, 2, 0, true, v("10"), zero, zero, false)).isEqualTo(Selo.CANCELADA);
         assertThat(ClienteFinanceiroCalculo.selo(false, 0, 0, true, zero, zero, zero, false)).isEqualTo(Selo.SEM_VALOR_A_PAGAR);
         assertThat(ClienteFinanceiroCalculo.selo(false, 0, 0, true, v("10"), zero, zero, false)).isEqualTo(Selo.SEM_TITULO);
+        // documento sem valor a pagar mas com saldo em aberto (título de outro documento): vale a situação real dos títulos
+        assertThat(ClienteFinanceiroCalculo.selo(false, 2, 2, true, zero, v("34.96"), v("15"), true)).isEqualTo(Selo.PARCIAL_VENCIDA);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, zero, zero, v("15"), false)).isEqualTo(Selo.QUITADA);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, zero, zero, zero, false)).isEqualTo(Selo.SEM_VALOR_A_PAGAR);
         assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, v("10"), zero, v("10"), false)).isEqualTo(Selo.QUITADA);
         assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, v("10"), v("10"), zero, true)).isEqualTo(Selo.VENCIDA);
         assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, v("10"), v("4"), v("6"), true)).isEqualTo(Selo.PARCIAL_VENCIDA);
