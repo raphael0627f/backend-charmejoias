@@ -95,10 +95,11 @@ public class InfinitePayController {
             @RequestParam(required = false) String status, @RequestParam(required = false) String motivo,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate de,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate ate,
-            @RequestParam(required = false) Long tituloId, @RequestParam(required = false) java.util.UUID clienteId,
+            @RequestParam(required = false) Long tituloId, @RequestParam(required = false) Long tituloNumero,
+            @RequestParam(required = false) java.util.UUID clienteId,
             @org.springframework.data.web.PageableDefault(size = 20, sort = "criadoEm", direction = org.springframework.data.domain.Sort.Direction.DESC)
             org.springframework.data.domain.Pageable pageable) {
-        return ResponseEntity.ok(revisaoService.listar(status, motivo, de, ate, tituloId, clienteId, pageable));
+        return ResponseEntity.ok(revisaoService.listar(status, motivo, de, ate, tituloId, tituloNumero, clienteId, pageable));
     }
 
     @GetMapping("/infinitepay/revisoes/{id}")

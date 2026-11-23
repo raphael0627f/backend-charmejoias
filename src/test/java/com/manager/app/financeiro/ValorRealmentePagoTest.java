@@ -73,19 +73,27 @@ class ValorRealmentePagoTest {
     @Test
     void seloSegueAPrecedenciaDefinida() {
         BigDecimal zero = BigDecimal.ZERO;
-        assertThat(ClienteFinanceiroCalculo.selo(true, 2, 2, true, v("10"), v("10"), zero, false)).isEqualTo(Selo.CANCELADA);
-        assertThat(ClienteFinanceiroCalculo.selo(false, 2, 0, true, v("10"), zero, zero, false)).isEqualTo(Selo.CANCELADA);
-        assertThat(ClienteFinanceiroCalculo.selo(false, 0, 0, true, zero, zero, zero, false)).isEqualTo(Selo.SEM_VALOR_A_PAGAR);
-        assertThat(ClienteFinanceiroCalculo.selo(false, 0, 0, true, v("10"), zero, zero, false)).isEqualTo(Selo.SEM_TITULO);
+        assertThat(ClienteFinanceiroCalculo.selo(true, 2, 2, true, v("10"), v("10"), zero, false, false)).isEqualTo(Selo.CANCELADA);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 2, 0, true, v("10"), zero, zero, false, false)).isEqualTo(Selo.CANCELADA);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 0, 0, true, zero, zero, zero, false, false)).isEqualTo(Selo.SEM_VALOR_A_PAGAR);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 0, 0, true, v("10"), zero, zero, false, false)).isEqualTo(Selo.SEM_TITULO);
         // documento sem valor a pagar mas com saldo em aberto (título de outro documento): vale a situação real dos títulos
-        assertThat(ClienteFinanceiroCalculo.selo(false, 2, 2, true, zero, v("34.96"), v("15"), true)).isEqualTo(Selo.PARCIAL_VENCIDA);
-        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, zero, zero, v("15"), false)).isEqualTo(Selo.QUITADA);
-        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, zero, zero, zero, false)).isEqualTo(Selo.SEM_VALOR_A_PAGAR);
-        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, v("10"), zero, v("10"), false)).isEqualTo(Selo.QUITADA);
-        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, v("10"), v("10"), zero, true)).isEqualTo(Selo.VENCIDA);
-        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, v("10"), v("4"), v("6"), true)).isEqualTo(Selo.PARCIAL_VENCIDA);
-        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, v("10"), v("4"), v("6"), false)).isEqualTo(Selo.PARCIAL);
-        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, v("10"), v("10"), zero, false)).isEqualTo(Selo.EM_ABERTO);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 2, 2, true, zero, v("34.96"), v("15"), true, true)).isEqualTo(Selo.PARCIAL_VENCIDA);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, zero, zero, v("15"), false, true)).isEqualTo(Selo.QUITADA);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, zero, zero, zero, false, false)).isEqualTo(Selo.SEM_VALOR_A_PAGAR);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, v("10"), zero, v("10"), false, true)).isEqualTo(Selo.QUITADA);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, v("10"), v("10"), zero, true, false)).isEqualTo(Selo.VENCIDA);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, v("10"), v("4"), v("6"), true, true)).isEqualTo(Selo.PARCIAL_VENCIDA);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, v("10"), v("4"), v("6"), false, true)).isEqualTo(Selo.PARCIAL);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 1, 1, true, v("10"), v("10"), zero, false, false)).isEqualTo(Selo.EM_ABERTO);
+    }
+
+    @Test
+    void tituloQuitadoAoLadoDeOutroVencidoNaoEhPagamentoParcial() {
+        // pago 20 em um título quitado, outro título vencido em aberto sem recebimento parcial => VENCIDA
+        assertThat(ClienteFinanceiroCalculo.selo(false, 2, 2, false, null, v("50"), v("20"), true, false)).isEqualTo(Selo.VENCIDA);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 2, 2, false, null, v("50"), v("20"), false, false)).isEqualTo(Selo.EM_ABERTO);
+        assertThat(ClienteFinanceiroCalculo.selo(false, 2, 2, false, null, v("50"), v("20"), true, true)).isEqualTo(Selo.PARCIAL_VENCIDA);
     }
 
     @Test

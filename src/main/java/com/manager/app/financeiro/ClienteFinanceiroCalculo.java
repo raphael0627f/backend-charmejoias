@@ -51,14 +51,15 @@ public final class ClienteFinanceiroCalculo {
     // precedência: cancelada > sem valor a pagar (sem movimento) > sem título > quitada > vencida (parcial ou não) > parcial > em aberto.
     // temDocumento/valorAPagar valem só para consignação; no grupo "sem consignação" passe temDocumento = false.
     public static Selo selo(boolean consignacaoCancelada, int quantidadeTitulos, int quantidadeAtivos, boolean temDocumento, BigDecimal valorAPagar,
-                            BigDecimal emAberto, BigDecimal valorPago, boolean temVencido) {
+                            BigDecimal emAberto, BigDecimal valorPago, boolean temVencido, boolean pagamentoParcial) {
         if (consignacaoCancelada || (quantidadeTitulos > 0 && quantidadeAtivos == 0)) return Selo.CANCELADA;
         // documento sem valor a pagar e sem movimento nos títulos; se houver saldo em aberto ou pagamento, vale a situação real dos títulos
         boolean semMovimento = (emAberto == null || emAberto.signum() == 0) && (valorPago == null || valorPago.signum() == 0);
         if (temDocumento && valorAPagar != null && valorAPagar.signum() == 0 && semMovimento) return Selo.SEM_VALOR_A_PAGAR;
         if (quantidadeAtivos == 0) return Selo.SEM_TITULO;
         if (emAberto == null || emAberto.signum() == 0) return Selo.QUITADA;
-        boolean parcial = valorPago != null && valorPago.signum() > 0;
+        // "parcial" = algum título recebido parcialmente; um título quitado ao lado de outro em aberto não é pagamento parcial
+        boolean parcial = pagamentoParcial;
         if (temVencido) return parcial ? Selo.PARCIAL_VENCIDA : Selo.VENCIDA;
         return parcial ? Selo.PARCIAL : Selo.EM_ABERTO;
     }

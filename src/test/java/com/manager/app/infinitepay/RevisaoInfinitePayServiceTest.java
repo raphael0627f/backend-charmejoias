@@ -300,4 +300,22 @@ class RevisaoInfinitePayServiceTest {
         assertNull(antigo.totalRetidos());
         assertFalse(ReceptorEstado.de(new com.manager.app.infinitepay.dto.InfinitePayDTOs.ReceptorSaude(false, null, null, null, null, null, null, null)).disponivel());
     }
+
+    @Test
+    void reprocessarComPagamentoConfirmadoMasSemFormaNaoDizQueBaixou() {
+        prepararReprocessar();
+        RevisaoDTOs.Detalhe d = service.reprocessar(3L, new RevisaoDTOs.ReprocessarRequest(true));
+        assertEquals("REVISAO", d.status());
+        assertEquals("FORMA_NAO_MAPEADA", d.motivoCodigo());
+        assertFalse(d.baixado());
+        assertNull(d.recebimentoId());
+        assertEquals("O pagamento foi confirmado, mas o meio de pagamento não possui forma configurada. Utilize Aplicar informando banco e forma.", d.aviso());
+        verify(recebimentoService, never()).receberAutomatico(any(), anyLong(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void avisoDePagamentoConfirmadoSemBaixaPorMotivo() {
+        assertTrue(RevisaoInfinitePayService.avisoConfirmadoSemBaixa("BANCO_DESATIVADO", "x").contains("banco de destino do link está desativado"));
+        assertTrue(RevisaoInfinitePayService.avisoConfirmadoSemBaixa("VALOR_MENOR", "Valor pago menor que o cobrado").startsWith("O pagamento foi confirmado, mas não foi baixado"));
+    }
 }

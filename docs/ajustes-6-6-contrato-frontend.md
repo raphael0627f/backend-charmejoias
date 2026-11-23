@@ -157,3 +157,24 @@ Receptor indisponível ou não configurado → `disponivel = false` e demais cam
 | `POST /infinitepay/revisoes/{id}/reprocessar` (corpo `{confirmar:true}`, campo `aviso`) | ✅ |
 | `GET /infinitepay/revisoes`, `/{id}`, `/fila/estado`, `/alertas` (RESOLVER implica ver; 400 padronizado; `receptor`) | ✅ |
 | `PUT /infinitepay/sistema` (salvar único e atômico) | ✅ |
+
+---
+
+## 9. Correções do QA (atualização)
+
+### 9.1 Reprocessar: resultado explícito (M1) ✅
+A resposta de `POST /infinitepay/revisoes/{id}/reprocessar` (o detalhe da revisão) ganhou **`baixado`** (boolean: `true` somente quando existe recebimento, isto é, `recebimentoId != null`) e o `aviso` passa a cobrir também o caso "a InfinitePay confirmou, mas não houve baixa":
+- `FORMA_NAO_MAPEADA`: *"O pagamento foi confirmado, mas o meio de pagamento não possui forma configurada. Utilize Aplicar informando banco e forma."*
+- `BANCO_DESATIVADO`: *"O pagamento foi confirmado, mas o banco de destino do link está desativado. Utilize Aplicar informando outro banco e a forma de pagamento."*
+- demais motivos que permanecem em revisão: *"O pagamento foi confirmado, mas não foi baixado automaticamente (<motivo>). O item permanece em revisão: confira o detalhe e utilize Aplicar ou Ignorar."*
+- InfinitePay não confirma / consulta falha: os avisos da seção 5.2 (inalterados).
+**Regra para a tela:** exibir "o pagamento foi baixado" **somente** se `baixado = true`; se `aviso` vier preenchido, exibi-lo; o status resultante está em `status` (`REVISAO` ou `PROCESSADO`).
+
+### 9.2 Filtro por número do título (M2) ✅
+`GET /infinitepay/revisoes` aceita **`tituloNumero`** (o número visível ao usuário, ex.: 1222) além de `tituloId` (id interno, mantido). **A tela deve enviar o número digitado como `tituloNumero`.** As demais listas com filtro de título não existem no backend (nenhuma outra recebe `tituloId`).
+
+### 9.3 Ordenação inválida em todas as listas (A2) ✅
+`GET /contas-receber`, `GET /contas-pagar` e `GET /contas-receber/clientes/situacao` aceitam também `sort=campo[,asc|desc]` (alias de `ordenar`/`direcao`); campo inexistente → **400** `"Campo de ordenação inválido."`. Os demais endpoints paginados (Spring) já respondiam 400 com o mesmo texto.
+
+### 9.4 Selo "parcial" (A4) ✅
+`PARCIAL` e `PARCIAL_VENCIDA` (nas consignações e no grupo "Sem consignação") só ocorrem quando algum título está **recebido parcialmente**. Um título quitado ao lado de outro vencido sem recebimento parcial resulta em `VENCIDA` (ou `EM_ABERTO`).

@@ -51,6 +51,7 @@ public class ClienteFinanceiroService {
     private static final class Acum {
         int titulos;
         int cancelados;
+        boolean parcial;
         BigDecimal pago = BigDecimal.ZERO;
         BigDecimal credito = BigDecimal.ZERO;
         BigDecimal taxa = BigDecimal.ZERO;
@@ -72,6 +73,7 @@ public class ClienteFinanceiroService {
             titulado = titulado.add(CalculoFinanceiro.arredondar(t.getValor()));
             credito = credito.add(pg.credito());
             taxa = taxa.add(pg.taxaCliente());
+            if (t.getSituacao() == SituacaoContaReceber.RECEBIDO_PARCIAL) parcial = true;
             BigDecimal aberto = ContaReceberCalculo.valorAberto(t.getSituacao(), t.getValor(), t.getValorRecebido());
             this.aberto = this.aberto.add(aberto);
             boolean emAberto = t.getSituacao() == SituacaoContaReceber.ABERTO || t.getSituacao() == SituacaoContaReceber.RECEBIDO_PARCIAL;
@@ -125,7 +127,7 @@ public class ClienteFinanceiroService {
         ClienteFinanceiroDTOs.SemConsignacao sem = null;
         if (pagina == 0 && semConsignacao.titulos > 0) {
             Selo selo = ClienteFinanceiroCalculo.selo(false, semConsignacao.titulos, semConsignacao.ativos(), false, null, semConsignacao.aberto,
-                    semConsignacao.pago, semConsignacao.vencidoMaisAntigo != null);
+                    semConsignacao.pago, semConsignacao.vencidoMaisAntigo != null, semConsignacao.parcial);
             sem = new ClienteFinanceiroDTOs.SemConsignacao(semConsignacao.titulos, semConsignacao.cancelados, CalculoFinanceiro.arredondar(semConsignacao.pago),
                     CalculoFinanceiro.arredondar(semConsignacao.credito), CalculoFinanceiro.arredondar(semConsignacao.aberto), semConsignacao.vencidoMaisAntigo, selo.name());
         }
@@ -135,7 +137,7 @@ public class ClienteFinanceiroService {
     private ClienteFinanceiroDTOs.Consignacao linha(Consignacao c, Doc doc, Acum a) {
         DocumentoValoresService.Valores v = doc == null ? DocumentoValoresService.Valores.de(BigDecimal.ZERO, BigDecimal.ZERO) : doc.valores();
         boolean cancelada = Boolean.TRUE.equals(c.getCancelada());
-        Selo selo = ClienteFinanceiroCalculo.selo(cancelada, a.titulos, a.ativos(), doc != null, v.valorAPagar(), a.aberto, a.pago, a.vencidoMaisAntigo != null);
+        Selo selo = ClienteFinanceiroCalculo.selo(cancelada, a.titulos, a.ativos(), doc != null, v.valorAPagar(), a.aberto, a.pago, a.vencidoMaisAntigo != null, a.parcial);
         LocalDate data = c.getDataEntrega() != null ? c.getDataEntrega() : (c.getCreatedAt() == null ? null : c.getCreatedAt().toLocalDate());
         return new ClienteFinanceiroDTOs.Consignacao(c.getId(), c.getId(), data, doc == null ? null : doc.tipo(), doc == null ? null : doc.id(), v.valorVendido(),
                 v.valorComissao(), v.valorAPagar(), CalculoFinanceiro.arredondar(a.pago), CalculoFinanceiro.arredondar(a.credito), a.credito.signum() > 0,

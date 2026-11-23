@@ -76,8 +76,12 @@ public class ContaReceberController {
             @RequestParam(required = false) String origem,
             @RequestParam(required = false) String ordenar,
             @RequestParam(required = false) String direcao,
+            @RequestParam(required = false) String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+        var ord = com.manager.app.shared.OrdenacaoParametro.resolver(ordenar, direcao, sort, java.util.Set.of("vencimento", "valor", "numero", "cliente", "situacao"));
+        ordenar = ord.ordenar();
+        direcao = ord.direcao();
         ContaReceberFiltro filtro = new ContaReceberFiltro(vencimentoDe, vencimentoAte, emissaoDe, emissaoAte, recebimentoDe, recebimentoAte,
                 situacao, busca, clienteId, categoriaId, centroCustoId, formaPrevistaId, bancoId, valorMin, valorMax, tipoPagador, consignacaoId, origem);
         return ResponseEntity.ok(service.listar(filtro, ordenar, direcao, page, size));
@@ -125,7 +129,11 @@ public class ContaReceberController {
     @PreAuthorize(CONSULTA)
     public ResponseEntity<SituacaoClienteDTOs.Geral> situacaoGeral(@RequestParam(required = false) String busca,
             @RequestParam(defaultValue = "false") boolean somenteVencidos, @RequestParam(required = false) String ordenar,
-            @RequestParam(required = false) String direcao, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(required = false) String direcao, @RequestParam(required = false) String sort,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        var ord = com.manager.app.shared.OrdenacaoParametro.resolver(ordenar, direcao, sort, java.util.Set.of("emaberto", "vencido", "diasmaioratraso", "nome"));
+        ordenar = ord.ordenar();
+        direcao = ord.direcao();
         return ResponseEntity.ok(situacaoClienteService.geral(busca, somenteVencidos, ordenar, direcao, page, size));
     }
 

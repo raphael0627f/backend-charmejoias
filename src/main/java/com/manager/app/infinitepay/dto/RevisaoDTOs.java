@@ -28,18 +28,18 @@ public final class RevisaoDTOs {
                           String transactionNsu, Long tituloId, Long tituloNumero, String clienteNome, BigDecimal valorLink, Long amountCentavos,
                           Long paidAmountCentavos, Long diferencaCentavos, String captureMethod, String meio, int tentativas, Long recebimentoId,
                           LocalDateTime resolvidoEm, String resolvidoPorNome, String resolucao,
-                          String payloadBruto, List<String> acoesPermitidas, boolean exigeBancoForma, TituloResumo titulo, LinkResumo link, String aviso) {
+                          String payloadBruto, List<String> acoesPermitidas, boolean exigeBancoForma, TituloResumo titulo, LinkResumo link, String aviso, boolean baixado) {
         public static Detalhe de(Resumo r, String payloadBruto, List<String> acoes, boolean exigeBancoForma, TituloResumo titulo, LinkResumo link) {
             return new Detalhe(r.id(), r.criadoEm(), r.status(), r.motivoCodigo(), r.motivoRotulo(), r.motivo(), r.evento(), r.orderNsu(), r.transactionNsu(), r.tituloId(),
                     r.tituloNumero(), r.clienteNome(), r.valorLink(), r.amountCentavos(), r.paidAmountCentavos(), r.diferencaCentavos(), r.captureMethod(), r.meio(),
-                    r.tentativas(), r.recebimentoId(), r.resolvidoEm(), r.resolvidoPorNome(), r.resolucao(), payloadBruto, acoes, exigeBancoForma, titulo, link, null);
+                    r.tentativas(), r.recebimentoId(), r.resolvidoEm(), r.resolvidoPorNome(), r.resolucao(), payloadBruto, acoes, exigeBancoForma, titulo, link, null, r.recebimentoId() != null);
         }
 
         // aviso formal opcional (hoje só no reprocessamento que não pôde confirmar o pagamento)
         public Detalhe comAviso(String novoAviso) {
             return new Detalhe(id, criadoEm, status, motivoCodigo, motivoRotulo, motivo, evento, orderNsu, transactionNsu, tituloId, tituloNumero, clienteNome, valorLink,
                     amountCentavos, paidAmountCentavos, diferencaCentavos, captureMethod, meio, tentativas, recebimentoId, resolvidoEm, resolvidoPorNome, resolucao,
-                    payloadBruto, acoesPermitidas, exigeBancoForma, titulo, link, novoAviso);
+                    payloadBruto, acoesPermitidas, exigeBancoForma, titulo, link, novoAviso, baixado);
         }
     }
 

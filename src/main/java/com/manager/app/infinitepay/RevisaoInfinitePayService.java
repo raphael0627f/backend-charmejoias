@@ -96,7 +96,7 @@ public class RevisaoInfinitePayService {
         }
     }
 
-    public Page<RevisaoDTOs.Resumo> listar(String status, String motivo, LocalDate de, LocalDate ate, Long tituloId, java.util.UUID clienteId, Pageable pageable) {
+    public Page<RevisaoDTOs.Resumo> listar(String status, String motivo, LocalDate de, LocalDate ate, Long tituloId, Long tituloNumero, java.util.UUID clienteId, Pageable pageable) {
         validarListagem(motivo, de, ate, pageable);
         String st = status == null || status.isBlank() ? "REVISAO" : status.trim().toUpperCase(Locale.ROOT);
         Specification<InfinitePayEvento> spec = (root, q, cb) -> {
@@ -125,6 +125,8 @@ public class RevisaoInfinitePayService {
             if (de != null) p.add(cb.greaterThanOrEqualTo(root.get("criadoEm"), de.atStartOfDay()));
             if (ate != null) p.add(cb.lessThan(root.get("criadoEm"), ate.plusDays(1).atStartOfDay()));
             if (tituloId != null) p.add(cb.equal(root.get("link").get("contaReceber").get("id"), tituloId));
+            // número do título = o número que o usuário vê na tela (diferente do id interno)
+            if (tituloNumero != null) p.add(cb.equal(root.get("link").get("contaReceber").get("numero"), tituloNumero));
             if (clienteId != null) p.add(cb.equal(root.get("link").get("contaReceber").get("cliente").get("id"), clienteId));
             return cb.and(p.toArray(new Predicate[0]));
         };
@@ -257,7 +259,21 @@ public class RevisaoInfinitePayService {
             return null;
         });
         RevisaoDTOs.Detalhe d = detalhe(id);
+        // a InfinitePay confirmou o pagamento mas o item segue em revisão (ex.: forma não configurada): explica o que fazer, sem dizer que baixou
+        if (aviso[0] == null && "REVISAO".equals(d.status())) aviso[0] = avisoConfirmadoSemBaixa(d.motivoCodigo(), d.motivoRotulo());
         return aviso[0] == null ? d : d.comAviso(aviso[0]);
+    }
+
+    static String avisoConfirmadoSemBaixa(String motivoCodigo, String rotulo) {
+        MotivoRevisao codigo = MotivoRevisao.de(motivoCodigo);
+        if (codigo == MotivoRevisao.FORMA_NAO_MAPEADA) {
+            return "O pagamento foi confirmado, mas o meio de pagamento não possui forma configurada. Utilize Aplicar informando banco e forma.";
+        }
+        if (codigo == MotivoRevisao.BANCO_DESATIVADO) {
+            return "O pagamento foi confirmado, mas o banco de destino do link está desativado. Utilize Aplicar informando outro banco e a forma de pagamento.";
+        }
+        return "O pagamento foi confirmado, mas não foi baixado automaticamente" + (rotulo == null ? "" : " (" + rotulo.toLowerCase(Locale.ROOT) + ")")
+                + ". O item permanece em revisão: confira o detalhe e utilize Aplicar ou Ignorar.";
     }
 
     public RevisaoDTOs.Detalhe aplicar(Long id, RevisaoDTOs.AplicarRequest req) {
