@@ -26,10 +26,10 @@ Observação (fornecedor): `ContaPagar` não possui chave de fornecedor, só `fa
 
 ---
 
-## PARTE 2 — Fluxo de Caixa 🔜
+## PARTE 2 — Fluxo de Caixa ✅ (implementado e validado contra o banco local)
 
 Permissão: `FLUXO_CAIXA_VISUALIZAR` em todas as rotas. Sem permissão → **403**.
-Parâmetros comuns (todos opcionais, exceto onde indicado): `inicio` e `fim` (padrão: 1º e último dia do mês atual; `fim ≥ inicio`; máximo 366 dias), `bancoIds`, `categoriaReceitaIds`, `categoriaDespesaIds`, `centroCustoIds` (listas, repetir o parâmetro ou separar por vírgula), `clienteId` (UUID), `favorecido` (texto).
+Parâmetros comuns (todos opcionais, exceto onde indicado; listas aceitam `bancoIds=1&bancoIds=2` ou `bancoIds=1,2`): `inicio` e `fim` (padrão: 1º e último dia do mês atual; `fim ≥ inicio`; máximo 366 dias), `bancoIds`, `categoriaReceitaIds`, `categoriaDespesaIds`, `centroCustoIds` (listas, repetir o parâmetro ou separar por vírgula), `clienteId` (UUID), `favorecido` (texto, igualdade sem diferenciar maiúsculas; informado, **retira as contas a receber**). Cada filtro de categoria vale só para o seu lado (receitas × despesas); centro de custo e cliente valem para os dois lados (o título a pagar do cliente é a devolução).
 Atalhos de projeção são do front: 30/60/90 dias = `inicio = hoje`, `fim = hoje + N`.
 **Erros 400:** `inicio` posterior a `fim` ("A data inicial não pode ser posterior à data final."), período maior que 366 dias, `visao` inválida ("Visão inválida. Use DIARIO, SEMANAL ou MENSAL."), ids inválidos, `sort` inválido ("Campo de ordenação inválido.").
 
@@ -47,6 +47,7 @@ Atalhos de projeção são do front: 30/60/90 dias = `inicio = hoje`, `fim = hoj
 {
   "periodo": { "inicio": "2026-11-01", "fim": "2026-11-30", "visao": "DIARIO", "hoje": "2026-11-24" },
   "saldosVisiveis": true,
+  "saldosIndisponiveisMotivo": null,
   "previstoSemBanco": false,
   "resumo": {
     "saldoInicial": 12000.00,
@@ -69,16 +70,16 @@ Atalhos de projeção são do front: 30/60/90 dias = `inicio = hoje`, `fim = hoj
   ],
   "porBanco": [ { "bancoId": 1, "nome": "Banco A", "saldoInicial": 5000.00, "entradasRealizadas": 3000.00, "saidasRealizadas": 1000.00, "outrasMovimentacoes": 0.00, "saldoFinalRealizado": 7000.00 } ],
   "porCategoria": {
-    "receitas": [ { "categoriaId": 3, "nome": "Vendas", "realizado": 8000.00, "previsto": 4000.00, "atrasado": 500.00, "percentualDoTotal": 94.1 } ],
-    "despesas": [ { "categoriaId": 9, "nome": "Aluguel", "realizado": 3000.00, "previsto": 0.00, "atrasado": 0.00, "percentualDoTotal": 49.2 } ]
+    "receitas": [ { "categoriaId": 3, "nome": "Vendas", "pai": "Receitas de venda", "realizado": 8000.00, "previsto": 4000.00, "atrasado": 500.00, "percentualDoTotal": 94.1 } ],
+    "despesas": [ { "categoriaId": 9, "nome": "Aluguel", "pai": null, "realizado": 3000.00, "previsto": 0.00, "atrasado": 0.00, "percentualDoTotal": 49.2 } ]
   },
   "horizonteMaximoConhecido": "2027-11-24"
 }
 ```
-Notas: sem permissão de saldo → `saldosVisiveis=false`, `saldoInicial/saldoFinal*/outrasMovimentacoes` e `saldoAcumulado*` = `null`, `porBanco = null`. `saidasPrevistasEstimadas` = parte das saídas previstas que vem de títulos de valor estimado (recorrência variável). `saldoAcumuladoProjetado` = saldo realizado até hoje + previsto dos dias futuros (atrasados **não** entram no acumulado; ficam em campo próprio). `percentualDoTotal` sobre (realizado + previsto + atrasado) da lista. Categorias seguem o filtro de categoria; "sem categoria" não existe (categoria é obrigatória no título).
+Notas: **com filtro de categoria, centro de custo, cliente ou favorecido os saldos também não são calculados** (a movimentação bancária não tem esses campos): `saldosVisiveis=false` e `saldosIndisponiveisMotivo` traz o texto formal para exibir ("Os saldos não são exibidos quando há filtro de categoria, centro de custo, cliente ou favorecido."); sem permissão de saldo o motivo vem `null` (o front apenas oculta). Sem permissão de saldo → `saldosVisiveis=false`, `saldoInicial/saldoFinal*/outrasMovimentacoes` e `saldoAcumulado*` = `null`, `porBanco = null`. `saidasPrevistasEstimadas` = parte das saídas previstas que vem de títulos de valor estimado (recorrência variável). `saldoAcumuladoProjetado` = saldo realizado até hoje + previsto dos dias futuros (atrasados **não** entram no acumulado; ficam em campo próprio). `percentualDoTotal` sobre (realizado + previsto + atrasado) da lista. Categorias seguem o filtro de categoria; "sem categoria" não existe (categoria é obrigatória no título).
 
 ### `GET /fluxo-caixa/detalhe` — o que compõe um valor
-Parâmetros: filtros comuns **mais** `periodo` (obrigatório: `yyyy-MM-dd` do dia, da segunda-feira da semana ou `yyyy-MM`, conforme `visao`), `visao`, `tipo` (`ENTRADA`|`SAIDA`, obrigatório), `situacao` (`REALIZADO`|`PREVISTO`|`ATRASADO`, obrigatório), `page` (padrão 0), `size` (padrão 20, máximo 100), `sort` (`data` padrão, `valor`, `numero`, `pessoa`, `categoria`; `sort=campo,asc|desc`).
+Parâmetros: filtros comuns **mais** `periodo` (obrigatório para REALIZADO e PREVISTO; **ignorado em ATRASADO**, que lista toda a posição de hoje: `yyyy-MM-dd` do dia, da segunda-feira da semana ou `yyyy-MM`, conforme `visao`), `visao`, `tipo` (`ENTRADA`|`SAIDA`, obrigatório), `situacao` (`REALIZADO`|`PREVISTO`|`ATRASADO`, obrigatório), `page` (padrão 0), `size` (padrão 20, máximo 100), `sort` (`data` padrão, `valor`, `numero`, `pessoa`, `categoria`; `sort=campo,asc|desc`).
 ```json
 {
   "page": 0, "size": 20, "totalElementos": 37, "totalPaginas": 2, "totalValor": 4200.00,
