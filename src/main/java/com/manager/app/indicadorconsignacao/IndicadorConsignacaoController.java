@@ -21,13 +21,14 @@ import java.util.UUID;
 public class IndicadorConsignacaoController {
 
     private final IndicadorConsignacaoService service;
+    private final com.manager.app.shared.ConsultaPesada consultaPesada;
 
     @GetMapping("/resumo")
     public ResponseEntity<IndicadorDTOs.Resumo> resumo(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim,
             @RequestParam(required = false) UUID clienteId, @RequestParam(required = false) Long cidadeId, @RequestParam(required = false) Long rotaId) {
-        return ResponseEntity.ok(service.resumo(service.filtro(inicio, fim, clienteId, cidadeId, rotaId)));
+        return ResponseEntity.ok(consultaPesada.executar(() -> service.resumo(service.filtro(inicio, fim, clienteId, cidadeId, rotaId))));
     }
 
     @GetMapping("/ranking-clientes")
@@ -36,7 +37,7 @@ public class IndicadorConsignacaoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim,
             @RequestParam(required = false) UUID clienteId, @RequestParam(required = false) Long cidadeId, @RequestParam(required = false) Long rotaId,
             @RequestParam(required = false) String ordenar, @RequestParam(required = false) String direcao, @RequestParam(defaultValue = "10") int top) {
-        return ResponseEntity.ok(service.ranking(service.filtro(inicio, fim, clienteId, cidadeId, rotaId), ordenar, direcao, top));
+        return ResponseEntity.ok(consultaPesada.executar(() -> service.ranking(service.filtro(inicio, fim, clienteId, cidadeId, rotaId), ordenar, direcao, top)));
     }
 
     @GetMapping("/evolucao-mensal")
@@ -44,7 +45,7 @@ public class IndicadorConsignacaoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim,
             @RequestParam(required = false) UUID clienteId, @RequestParam(required = false) Long cidadeId, @RequestParam(required = false) Long rotaId) {
-        return ResponseEntity.ok(service.evolucaoMensal(service.filtro(inicio, fim, clienteId, cidadeId, rotaId)));
+        return ResponseEntity.ok(consultaPesada.executar(() -> service.evolucaoMensal(service.filtro(inicio, fim, clienteId, cidadeId, rotaId))));
     }
 
     @GetMapping("/concentracao")
@@ -52,7 +53,7 @@ public class IndicadorConsignacaoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim,
             @RequestParam(required = false) UUID clienteId, @RequestParam(required = false) Long cidadeId, @RequestParam(required = false) Long rotaId) {
-        return ResponseEntity.ok(service.concentracao(service.filtro(inicio, fim, clienteId, cidadeId, rotaId)));
+        return ResponseEntity.ok(consultaPesada.executar(() -> service.concentracao(service.filtro(inicio, fim, clienteId, cidadeId, rotaId))));
     }
 
     @GetMapping("/produtos-categorias")
@@ -61,7 +62,7 @@ public class IndicadorConsignacaoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim,
             @RequestParam(required = false) UUID clienteId, @RequestParam(required = false) Long cidadeId, @RequestParam(required = false) Long rotaId,
             @RequestParam(defaultValue = "5") int top) {
-        return ResponseEntity.ok(service.produtosCategorias(service.filtro(inicio, fim, clienteId, cidadeId, rotaId), top));
+        return ResponseEntity.ok(consultaPesada.executar(() -> service.produtosCategorias(service.filtro(inicio, fim, clienteId, cidadeId, rotaId), top)));
     }
 
     @GetMapping("/meios-pagamento")
@@ -69,6 +70,6 @@ public class IndicadorConsignacaoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim,
             @RequestParam(required = false) UUID clienteId, @RequestParam(required = false) Long cidadeId, @RequestParam(required = false) Long rotaId) {
-        return ResponseEntity.ok(service.meiosPagamento(service.filtro(inicio, fim, clienteId, cidadeId, rotaId)));
+        return ResponseEntity.ok(consultaPesada.executar(() -> service.meiosPagamento(service.filtro(inicio, fim, clienteId, cidadeId, rotaId))));
     }
 }

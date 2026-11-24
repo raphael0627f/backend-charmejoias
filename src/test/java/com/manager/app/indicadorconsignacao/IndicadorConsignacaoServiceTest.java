@@ -120,6 +120,14 @@ class IndicadorConsignacaoServiceTest {
     }
 
     @Test
+    void consultaDeAcertosNaoUsaSubconsultaPorItem() {
+        // regressão de produção: a subconsulta LATERAL por item de consignação varria acertos_consignacao_produtos inteira (31 s com dados reais)
+        String sql = IndicadorConsignacaoRepository.cteAcertos(filtro(), new org.springframework.jdbc.core.namedparam.MapSqlParameterSource());
+        assertFalse(sql.contains("LATERAL"));
+        assertTrue(sql.contains("GROUP BY acerto_consignacao_id"));
+    }
+
+    @Test
     void periodoMaiorQueDezAnosTemMensagemFormalClara() {
         assertEquals("O período selecionado excede o limite de 10 anos. Reduza o intervalo entre as datas e tente novamente.",
                 assertThrows(ItemInvalidoException.class, () -> service.filtro(LocalDate.parse("2010-01-01"), LocalDate.parse("2026-11-01"), null, null, null, HOJE)).getMessage());

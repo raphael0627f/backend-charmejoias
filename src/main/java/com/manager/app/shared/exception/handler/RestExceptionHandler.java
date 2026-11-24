@@ -59,11 +59,66 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return databaseError(exception, request);
     }
 
+    // consulta pesada que estourou o tempo limite: 504 formal para o front mostrar como erro
+    @ExceptionHandler(com.manager.app.shared.exception.ConsultaDemoradaException.class)
+    public ResponseEntity<RestErrorMenssage> consultaDemorada(com.manager.app.shared.exception.ConsultaDemoradaException exception, WebRequest request) {
+        HttpStatus status = HttpStatus.GATEWAY_TIMEOUT;
+        return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, exception.getMessage(), request.getDescription(false)));
+    }
+
+    // consultas pesadas simultâneas em excesso: 503 formal
+    @ExceptionHandler(com.manager.app.shared.exception.SistemaOcupadoException.class)
+    public ResponseEntity<RestErrorMenssage> sistemaOcupado(com.manager.app.shared.exception.SistemaOcupadoException exception, WebRequest request) {
+        HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
+        return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, exception.getMessage(), request.getDescription(false)));
+    }
+
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<?> databaseError(DataAccessException exception, WebRequest request) {
+        // antes o erro de banco virava 503 sem nenhum registro: loga a classe e o SQLSTATE (sem a SQL nem valores) para diagnóstico
+        log.error("Erro de acesso a dados em {}: {} (SQLSTATE {})", request.getDescription(false), exception.getClass().getSimpleName(), sqlState(exception));
         HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
         RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Banco de dados indisponível. Tente novamente em instantes.",request.getDescription(false));
         return ResponseEntity.status(status).body(response);
+    }
+
+    // pool de conexões esgotado (Hikari: "Connection is not available, request timed out"): o Spring lança CannotCreateTransactionException, que não é DataAccessException
+    // e virava 500 genérico depois de 30 s. Agora é 503 formal e fica no log.
+    @ExceptionHandler(org.springframework.transaction.CannotCreateTransactionException.class)
+    public ResponseEntity<RestErrorMenssage> semConexao(org.springframework.transaction.CannotCreateTransactionException exception, WebRequest request) {
+        log.error("Sem conexão disponível com o banco em {}: {}", request.getDescription(false), resumoDaCausa(exception));
+        HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
+        return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, "O sistema está sobrecarregado no momento. Tente novamente em instantes.", request.getDescription(false)));
+    }
+
+    // qualquer falha inesperada: 500 formal (mesmo formato dos demais erros) e registro seguro: só as classes da cadeia de causas e os primeiros pontos do código do ERP, sem mensagens (podem conter dados)
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<RestErrorMenssage> erroInesperado(Exception exception, WebRequest request) {
+        log.error("Erro inesperado em {}: {}", request.getDescription(false), resumoDaCausa(exception));
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, "Erro interno do sistema. Tente novamente em instantes.", request.getDescription(false)));
+    }
+
+    static String resumoDaCausa(Throwable erro) {
+        StringBuilder sb = new StringBuilder();
+        int n = 0;
+        for (Throwable t = erro; t != null && n < 6; t = t.getCause() == t ? null : t.getCause(), n++) {
+            if (n > 0) sb.append(" <- ");
+            sb.append(t.getClass().getSimpleName());
+        }
+        StackTraceElement[] pilha = erro.getStackTrace();
+        int linhas = 0;
+        for (StackTraceElement e : pilha) {
+            if (e.getClassName().startsWith("com.manager.app") && linhas++ < 4) sb.append(" @ ").append(e.getClassName().substring(e.getClassName().lastIndexOf('.') + 1)).append('.').append(e.getMethodName()).append(':').append(e.getLineNumber());
+        }
+        return sb.toString();
+    }
+
+    private static String sqlState(Throwable erro) {
+        for (Throwable t = erro; t != null; t = t.getCause() == t ? null : t.getCause()) {
+            if (t instanceof java.sql.SQLException sql) return sql.getSQLState();
+        }
+        return "?";
     }
 
     // violação de integridade: o Spring escolhe o handler mais específico, então este vale antes do de DataAccessException.
