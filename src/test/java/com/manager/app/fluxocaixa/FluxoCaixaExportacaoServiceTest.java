@@ -67,7 +67,7 @@ class FluxoCaixaExportacaoServiceTest {
     @Test
     void relatorioNaoExpoeSaldosQuandoOcultos() {
         FluxoCaixaDTOs.Resumo s = new FluxoCaixaDTOs.Resumo(null, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.ZERO,
-                null, null, new FluxoCaixaDTOs.Atrasado(BigDecimal.ZERO, 0), new FluxoCaixaDTOs.Atrasado(BigDecimal.ZERO, 0));
+                null, null, new FluxoCaixaDTOs.Atrasado(BigDecimal.ZERO, 0), new FluxoCaixaDTOs.Atrasado(BigDecimal.ZERO, 0), null);
         FluxoCaixaDTOs.Ponto p = new FluxoCaixaDTOs.Ponto("2026-11-01", "01/11", BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ZERO, null, null);
         FluxoCaixaDTOs.Resposta r = new FluxoCaixaDTOs.Resposta(new FluxoCaixaDTOs.Periodo(LocalDate.parse("2026-11-01"), LocalDate.parse("2026-11-01"), "DIARIO", LocalDate.parse("2026-11-01")),
                 false, null, false, s, List.of(p), null, new FluxoCaixaDTOs.Categorias(List.of(), List.of()), null);
@@ -82,5 +82,44 @@ class FluxoCaixaExportacaoServiceTest {
                 .reduce("", (a, b) -> a + "|" + b).toLowerCase();
         assertFalse(tudo.contains("saldo"));
         assertFalse(rel.secoes().stream().anyMatch(sec -> sec.titulo().equals("Saldo por banco")));
+    }
+
+    @Test
+    void cabecalhoTemNomesDosFiltrosVisaoComAcentoEFormatoMonetario() throws Exception {
+        FluxoCaixaRepository repo = mock(FluxoCaixaRepository.class);
+        org.mockito.Mockito.when(repo.nomesPorId("categoria_receita", List.of(3L))).thenReturn(List.of("Vendas"));
+        org.mockito.Mockito.when(repo.nomesPorId("centro_custo", List.of(7L))).thenReturn(List.of("Loja Centro"));
+        java.util.UUID cliente = java.util.UUID.randomUUID();
+        org.mockito.Mockito.when(repo.nomeCliente(cliente)).thenReturn("CAMILA");
+        FluxoCaixaDTOs.Resumo s = new FluxoCaixaDTOs.Resumo(null, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.ZERO,
+                null, null, new FluxoCaixaDTOs.Atrasado(BigDecimal.ZERO, 0), new FluxoCaixaDTOs.Atrasado(BigDecimal.ZERO, 0), null);
+        FluxoCaixaDTOs.Resposta r = new FluxoCaixaDTOs.Resposta(new FluxoCaixaDTOs.Periodo(LocalDate.parse("2026-11-01"), LocalDate.parse("2026-11-01"), "DIARIO", LocalDate.parse("2026-11-01")),
+                false, null, false, s, List.of(), null, new FluxoCaixaDTOs.Categorias(List.of(), List.of()), null);
+        org.mockito.Mockito.when(repo.detalhe(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyBoolean(),
+                org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyInt())).thenReturn(new FluxoCaixaDTOs.Detalhe(0, 1, 0, 0, BigDecimal.ZERO, List.of()));
+        FluxoCaixaExportacaoService svc = new FluxoCaixaExportacaoService(mock(FluxoCaixaService.class), repo);
+        FluxoCaixaExportacaoService.Relatorio rel = svc.montar(new FluxoCaixaFiltro(LocalDate.parse("2026-11-01"), LocalDate.parse("2026-11-01"), null, List.of(3L), null, List.of(7L), cliente, null),
+                Visao.DIARIO, r, LocalDate.parse("2026-11-01"));
+        assertTrue(rel.periodo().contains("Visão: diário"));
+        assertTrue(rel.filtros().contains("Categorias de receita: Vendas"));
+        assertTrue(rel.filtros().contains("Centros de custo: Loja Centro"));
+        assertTrue(rel.filtros().contains("Cliente: CAMILA"));
+        assertFalse(rel.filtros().contains("selecionad"));
+        // Excel: valores monetários com formato R$
+        byte[] xlsx = svc.xlsx(rel);
+        try (org.apache.poi.xssf.usermodel.XSSFWorkbook wb = new org.apache.poi.xssf.usermodel.XSSFWorkbook(new java.io.ByteArrayInputStream(xlsx))) {
+            org.apache.poi.ss.usermodel.Sheet sh = wb.getSheetAt(0);
+            String formato = null;
+            for (org.apache.poi.ss.usermodel.Row row : sh) {
+                org.apache.poi.ss.usermodel.Cell c = row.getCell(1);
+                if (c != null && c.getCellType() == org.apache.poi.ss.usermodel.CellType.NUMERIC) {
+                    formato = c.getCellStyle().getDataFormatString();
+                    break;
+                }
+            }
+            assertNotNull(formato);
+            assertTrue(formato.contains("R$"));
+        }
     }
 }

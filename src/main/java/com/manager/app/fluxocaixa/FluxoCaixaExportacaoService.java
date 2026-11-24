@@ -123,8 +123,8 @@ public class FluxoCaixaExportacaoService {
         secoes.add(categorias("Despesas por categoria", r.porCategoria().despesas()));
         secoes.add(detalhe(filtro, hoje));
 
-        String periodo = "Período: " + filtro.inicio().format(DATA) + " a " + filtro.fim().format(DATA) + " | Visão: " + visao.name().toLowerCase(Locale.ROOT);
-        return new Relatorio("Fluxo de Caixa", periodo, descricaoDosFiltros(filtro), "Gerado em " + LocalDateTime.now().format(DATA_HORA), secoes);
+        String periodo = "Período: " + filtro.inicio().format(DATA) + " a " + filtro.fim().format(DATA) + " | Visão: " + rotuloVisao(visao);
+        return new Relatorio("Fluxo de Caixa", periodo, descricaoDosFiltros(filtro), "Gerado em " + LocalDateTime.now().format(DATA_HORA) + geradoPor(), secoes);
     }
 
     private static Secao categorias(String titulo, List<FluxoCaixaDTOs.PorCategoria> lista) {
@@ -178,15 +178,36 @@ public class FluxoCaixaExportacaoService {
         return new ArrayList<>(List.of(v));
     }
 
+    private static String nomes(List<String> nomes, int selecionados) {
+        return nomes.isEmpty() ? selecionados + " selecionado(s)" : String.join(", ", nomes);
+    }
+
+    private static String rotuloVisao(Visao v) {
+        return switch (v) {
+            case DIARIO -> "diário";
+            case SEMANAL -> "semanal";
+            case MENSAL -> "mensal";
+        };
+    }
+
+    private String geradoPor() {
+        org.springframework.security.core.Authentication a = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (a == null || a.getName() == null || "anonymousUser".equals(a.getName())) return "";
+        return " por " + repository.nomeUsuario(a.getName());
+    }
+
     private String descricaoDosFiltros(FluxoCaixaFiltro f) {
         List<String> partes = new ArrayList<>();
         if (!f.bancoIds().isEmpty()) {
             partes.add("Bancos: " + repository.bancos(f.bancoIds()).stream().map(FluxoCaixaRepository.BancoLinha::nome).collect(Collectors.joining(", ")));
         }
-        if (!f.categoriaReceitaIds().isEmpty()) partes.add("Categorias de receita: " + f.categoriaReceitaIds().size() + " selecionada(s)");
-        if (!f.categoriaDespesaIds().isEmpty()) partes.add("Categorias de despesa: " + f.categoriaDespesaIds().size() + " selecionada(s)");
-        if (!f.centroCustoIds().isEmpty()) partes.add("Centros de custo: " + f.centroCustoIds().size() + " selecionado(s)");
-        if (f.clienteId() != null) partes.add("Cliente selecionado");
+        if (!f.categoriaReceitaIds().isEmpty()) partes.add("Categorias de receita: " + nomes(repository.nomesPorId("categoria_receita", f.categoriaReceitaIds()), f.categoriaReceitaIds().size()));
+        if (!f.categoriaDespesaIds().isEmpty()) partes.add("Categorias de despesa: " + nomes(repository.nomesPorId("categoria_despesa", f.categoriaDespesaIds()), f.categoriaDespesaIds().size()));
+        if (!f.centroCustoIds().isEmpty()) partes.add("Centros de custo: " + nomes(repository.nomesPorId("centro_custo", f.centroCustoIds()), f.centroCustoIds().size()));
+        if (f.clienteId() != null) {
+            String cliente = repository.nomeCliente(f.clienteId());
+            partes.add("Cliente: " + (cliente == null ? "não encontrado" : cliente));
+        }
         if (f.favorecido() != null) partes.add("Favorecido: " + f.favorecido());
         return partes.isEmpty() ? "Filtros: nenhum" : "Filtros: " + String.join(" | ", partes);
     }
@@ -212,7 +233,7 @@ public class FluxoCaixaExportacaoService {
             cab.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
             DataFormat fmt = wb.createDataFormat();
             CellStyle moeda = wb.createCellStyle();
-            moeda.setDataFormat(fmt.getFormat("#,##0.00"));
+            moeda.setDataFormat(fmt.getFormat("\"R$\" #,##0.00"));
             CellStyle data = wb.createCellStyle();
             data.setDataFormat(fmt.getFormat("dd/mm/yyyy"));
             CellStyle titulo = wb.createCellStyle();

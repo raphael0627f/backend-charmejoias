@@ -18,7 +18,7 @@ public final class FluxoCaixaDTOs {
     public record Resumo(BigDecimal saldoInicial, BigDecimal entradasRealizadas, BigDecimal entradasPrevistas, BigDecimal saidasRealizadas,
                          BigDecimal saidasPrevistas, BigDecimal saidasPrevistasEstimadas, BigDecimal outrasMovimentacoes, BigDecimal resultadoRealizado,
                          BigDecimal resultadoPrevisto, BigDecimal saldoFinalRealizado, BigDecimal saldoFinalProjetado, Atrasado atrasadosReceber,
-                         Atrasado atrasadosPagar) {
+                         Atrasado atrasadosPagar, BigDecimal previstoAntesDoPeriodo) {
     }
 
     public record Ponto(String periodo, String rotulo, BigDecimal entradasRealizadas, BigDecimal entradasPrevistas, BigDecimal saidasRealizadas,

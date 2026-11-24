@@ -167,6 +167,23 @@ public class FluxoCaixaRepository {
         return porDia(sql.toString(), p);
     }
 
+    // nomes para o cabeçalho da exportação (tabela vem de lista fixa, nunca do usuário)
+    public List<String> nomesPorId(String tabela, List<Long> ids) {
+        if (ids.isEmpty() || !List.of("categoria_receita", "categoria_despesa", "centro_custo").contains(tabela)) return List.of();
+        return jdbc.query("SELECT nome FROM " + tabela + " WHERE id IN (:ids) ORDER BY LOWER(nome)", new MapSqlParameterSource("ids", ids), (rs, n) -> rs.getString("nome"));
+    }
+
+    public String nomeCliente(java.util.UUID id) {
+        List<String> r = jdbc.query("SELECT nome FROM clientes WHERE id = :id", new MapSqlParameterSource("id", id), (rs, n) -> rs.getString("nome"));
+        return r.isEmpty() ? null : r.get(0);
+    }
+
+    public String nomeUsuario(String login) {
+        List<String> r = jdbc.query("SELECT TRIM(COALESCE(primeiro_nome, '') || ' ' || COALESCE(sobrenome, '')) AS nome FROM usuarios WHERE usuario = :u", new MapSqlParameterSource("u", login),
+                (rs, n) -> rs.getString("nome"));
+        return r.isEmpty() || r.get(0) == null || r.get(0).isBlank() ? login : r.get(0);
+    }
+
     public List<BancoLinha> bancos(List<Long> bancoIds) {
         MapSqlParameterSource p = new MapSqlParameterSource();
         String sql = "SELECT b.id, b.nome FROM banco b" + (bancoIds.isEmpty() ? "" : " WHERE b.id IN (:ids)") + " ORDER BY LOWER(b.nome)";

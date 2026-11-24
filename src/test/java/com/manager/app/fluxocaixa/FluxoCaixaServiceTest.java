@@ -154,6 +154,30 @@ class FluxoCaixaServiceTest {
     }
 
     @Test
+    void periodoFuturoTemSaldoInicialProjetadoComOPrevistoAteAVesperaDoInicio() {
+        // saldo realizado hoje 1000; previsto entre hoje e 30/11: +60 e -25 => saldo inicial projetado de dezembro = 1035
+        FluxoCaixaFiltro dezembro = new FluxoCaixaFiltro(LocalDate.parse("2026-12-01"), LocalDate.parse("2026-12-31"), null, null, null, null, null, null);
+        FluxoCaixaDTOs.Resposta r = service.resumo(dezembro, Visao.MENSAL, HOJE);
+        assertEquals(new BigDecimal("1035.00"), r.resumo().saldoInicial());
+        assertEquals(new BigDecimal("35.00"), r.resumo().previstoAntesDoPeriodo());
+        verify(repo).previstoReceber(any(), eq(HOJE), eq(LocalDate.parse("2026-11-30")));
+    }
+
+    @Test
+    void periodoQueContemHojeNaoTemPrevistoAntesDoPeriodo() {
+        FluxoCaixaDTOs.Resposta r = service.resumo(filtro(), Visao.DIARIO, HOJE);
+        assertNull(r.resumo().previstoAntesDoPeriodo());
+        assertEquals(new BigDecimal("1000.00"), r.resumo().saldoInicial());
+    }
+
+    @Test
+    void periodoMaiorQueOLimiteTemMensagemFormalClara() {
+        FluxoCaixaFiltro longo = new FluxoCaixaFiltro(LocalDate.parse("2025-01-01"), LocalDate.parse("2026-11-30"), null, null, null, null, null, null);
+        assertEquals("O período selecionado excede o limite de 366 dias. Reduza o intervalo entre as datas e tente novamente.",
+                assertThrows(ItemInvalidoException.class, () -> service.resumo(longo, Visao.MENSAL, HOJE)).getMessage());
+    }
+
+    @Test
     void detalheDeEntradaComFavorecidoEhVazio() {
         FluxoCaixaFiltro f = new FluxoCaixaFiltro(LocalDate.parse("2026-11-01"), LocalDate.parse("2026-11-30"), null, null, null, null, UUID.randomUUID(), "Energia SA");
         assertEquals(0, service.detalhe(f, Visao.DIARIO, "2026-11-10", "ENTRADA", "REALIZADO", null, 0, 20, HOJE).totalElementos());

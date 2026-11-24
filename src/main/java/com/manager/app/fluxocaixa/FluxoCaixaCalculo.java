@@ -55,7 +55,7 @@ public final class FluxoCaixaCalculo {
     public static void validarIntervalo(LocalDate inicio, LocalDate fim) {
         if (inicio == null || fim == null) throw new ItemInvalidoException("Informe o período.");
         if (inicio.isAfter(fim)) throw new ItemInvalidoException("A data inicial não pode ser posterior à data final.");
-        if (inicio.plusDays(MAXIMO_DIAS).isBefore(fim)) throw new ItemInvalidoException("O período não pode ser maior que " + MAXIMO_DIAS + " dias.");
+        if (inicio.plusDays(MAXIMO_DIAS).isBefore(fim)) throw new ItemInvalidoException("O período selecionado excede o limite de " + MAXIMO_DIAS + " dias. Reduza o intervalo entre as datas e tente novamente.");
     }
 
     // chave do período a que o dia pertence (dia; segunda-feira da semana; primeiro dia do mês)
@@ -130,6 +130,11 @@ public final class FluxoCaixaCalculo {
     // saldoInicial nulo = saldos não exibidos (sem permissão ou com filtro de título): campos de saldo ficam nulos.
     // Atrasados são a posição de HOJE: aparecem no período que contém hoje (se houver) e nunca entram no previsto nem no acumulado.
     public static Resultado calcular(Dados d, LocalDate inicio, LocalDate fim, Visao visao, LocalDate hoje, BigDecimal saldoInicial) {
+        return calcular(d, inicio, fim, visao, hoje, saldoInicial, null);
+    }
+
+    // previstoAntes: período que começa depois de hoje: previsto (receber − pagar) de hoje até a véspera do início. Já está somado ao saldoInicial informado (saldo inicial PROJETADO); só é devolvido para o front explicar.
+    public static Resultado calcular(Dados d, LocalDate inicio, LocalDate fim, Visao visao, LocalDate hoje, BigDecimal saldoInicial, BigDecimal previstoAntes) {
         boolean saldos = saldoInicial != null;
         List<FluxoCaixaDTOs.Ponto> serie = new ArrayList<>();
         BigDecimal acumuladoReal = saldos ? r(saldoInicial) : null;
@@ -162,7 +167,7 @@ public final class FluxoCaixaCalculo {
         FluxoCaixaDTOs.Resumo resumo = new FluxoCaixaDTOs.Resumo(saldos ? r(saldoInicial) : null, entReal, entPrev, saiReal, saiPrev, saiPrevEst,
                 saldos ? outras : null, entReal.subtract(saiReal), entPrev.subtract(saiPrev), finalReal, finalProj,
                 new FluxoCaixaDTOs.Atrasado(r(d.atrasadosReceberValor()), d.atrasadosReceberQuantidade()),
-                new FluxoCaixaDTOs.Atrasado(r(d.atrasadosPagarValor()), d.atrasadosPagarQuantidade()));
+                new FluxoCaixaDTOs.Atrasado(r(d.atrasadosPagarValor()), d.atrasadosPagarQuantidade()), previstoAntes == null ? null : r(previstoAntes));
         return new Resultado(serie, resumo);
     }
 

@@ -63,16 +63,28 @@ public class FluxoCaixaService {
         FluxoCaixaRepository.AtrasadoLinha atrasP = repository.atrasados(Lado.PAGAR, f, hoje);
 
         boolean saldos = saldoVisibilidade.podeVerSaldo() && !f.temFiltroDeTitulo();
-        BigDecimal saldoInicial = saldos ? repository.saldoAte(f.bancoIds(), inicio) : null;
+        // período futuro: o saldo inicial é PROJETADO = saldo realizado até hoje + previsto (receber − pagar) de hoje até a véspera do início (atrasados ficam de fora, como no resto do cálculo)
+        BigDecimal previstoAntes = null;
+        if (inicio.isAfter(hoje)) {
+            LocalDate vespera = inicio.minusDays(1);
+            BigDecimal rec = receber ? soma(repository.previstoReceber(f, hoje, vespera)) : ZERO;
+            BigDecimal pag = soma(repository.previstoPagar(f, hoje, vespera).total());
+            previstoAntes = rec.subtract(pag);
+        }
+        BigDecimal saldoInicial = saldos ? repository.saldoAte(f.bancoIds(), inicio).add(previstoAntes == null ? ZERO : previstoAntes) : null;
         Map<LocalDate, BigDecimal> mov = saldos ? repository.movimentacaoLiquida(f.bancoIds(), inicio, fim) : vazio();
 
         FluxoCaixaCalculo.Dados dados = new FluxoCaixaCalculo.Dados(entReal, saiReal, entPrev, pagarPrev.total(), pagarPrev.estimado(), mov,
                 atrasR.valor(), atrasR.quantidade(), atrasP.valor(), atrasP.quantidade());
-        FluxoCaixaCalculo.Resultado r = FluxoCaixaCalculo.calcular(dados, inicio, fim, visao, hoje, saldoInicial);
+        FluxoCaixaCalculo.Resultado r = FluxoCaixaCalculo.calcular(dados, inicio, fim, visao, hoje, saldoInicial, saldos ? previstoAntes : null);
 
         String motivo = !saldoVisibilidade.podeVerSaldo() ? null : (f.temFiltroDeTitulo() ? MOTIVO_FILTRO : null);
         return new FluxoCaixaDTOs.Resposta(new FluxoCaixaDTOs.Periodo(inicio, fim, visao.name(), hoje), saldos, motivo, !f.bancoIds().isEmpty(), r.resumo(), r.serie(),
                 saldos ? porBanco(f) : null, categorias(f, hoje, previstoDe, temPrevisto), repository.maiorVencimentoPagar());
+    }
+
+    private static BigDecimal soma(Map<LocalDate, BigDecimal> m) {
+        return m.values().stream().reduce(ZERO, BigDecimal::add);
     }
 
     private List<FluxoCaixaDTOs.PorBanco> porBanco(FluxoCaixaFiltro f) {
