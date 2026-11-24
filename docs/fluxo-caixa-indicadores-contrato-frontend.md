@@ -90,7 +90,7 @@ Parâmetros: filtros comuns **mais** `periodo` (obrigatório para REALIZADO e PR
   ]
 }
 ```
-`titulo.tipoTitulo` (`RECEBER`|`PAGAR`) + `id` permitem abrir `/financeiro/contas-receber/{id}` ou `/contas-pagar/{id}`. Em `REALIZADO`, `data` = data do recebimento/pagamento, `banco` e `formaPagamento` preenchidos e `valor` = valor real; em `PREVISTO`/`ATRASADO`, `data` = vencimento, `valor` = saldo em aberto e `diasEmAtraso` (só atrasados).
+`titulo.tipoTitulo` (`RECEBER`|`PAGAR`) + `id` permitem abrir `/contas-receber/{id}` ou `/contas-pagar/{id}` (rotas do front, sem `/financeiro`). Em `REALIZADO`, `data` = data do recebimento/pagamento, `banco` e `formaPagamento` preenchidos e `valor` = valor real; em `PREVISTO`/`ATRASADO`, `data` = vencimento, `valor` = saldo em aberto e `diasEmAtraso` (só atrasados).
 **Erros:** 400 (`tipo`/`situacao`/`periodo` ausentes ou inválidos, sort inválido).
 
 ### `GET /fluxo-caixa/exportar?formato=xlsx|pdf`
@@ -98,10 +98,10 @@ Mesmos filtros do resumo + `visao`. Resposta: arquivo (`Content-Disposition: att
 
 ---
 
-## PARTE 3 — Indicadores de Consignação 🔜
+## PARTE 3 — Indicadores de Consignação ✅ (implementado e validado contra o banco local)
 
 Permissão: `INDICADOR_CONSIGNACAO_VISUALIZAR` em todas as rotas.
-Filtros comuns: `inicio`, `fim` (padrão: últimos 12 meses completos até hoje; período aplicado à **data do acerto** nas vendas/comissão/desconto/giro e à **data de pagamento** no prazo/meios; inadimplência é **posição de hoje**, com vencimento até hoje), `clienteId` (UUID), `cidadeId` (Long), `rotaId` (Long).
+Filtros comuns: `inicio`, `fim` (padrão: do dia 1º do mês de 11 meses atrás até hoje, ou seja, 12 meses incluindo o corrente; máximo 10 anos; período aplicado à **data do acerto** nas vendas/comissão/desconto/giro e à **data de pagamento** no prazo/meios; inadimplência é **posição de hoje**, com vencimento até hoje), `clienteId` (UUID), `cidadeId` (Long, o `id` de `GET /cidades`; casa pelo IBGE do endereço principal do cliente; cidade sem IBGE não casa nenhum cliente), `rotaId` (Long, id de `/agenda/rotas`; cidadeId e rotaId juntos = interseção).
 **Base de cálculo:** todo indicador traz `base` (`{ "acertos": n, "titulos": n }` conforme o caso). Sem dados: valor `null` e base 0 (nunca divisão por zero; o front exibe "dados insuficientes").
 **Erros 400:** período inválido, `clienteId`/`cidadeId`/`rotaId` inexistentes ("Cliente não encontrado." etc. → 404), `sort` inválido.
 
@@ -116,7 +116,7 @@ Filtros comuns: `inicio`, `fim` (padrão: últimos 12 meses completos até hoje;
     "base": { "acertos": 20 }
   },
   "inadimplencia": {
-    "valorTotal": 3200.00, "quantidadeTitulos": 6, "percentualDoReceberVencimento": null,
+    "valorTotal": 3200.00, "quantidadeTitulos": 6,
     "faixas": [ { "faixa": "1-30", "valor": 1200.00, "quantidade": 3 }, { "faixa": "31-60", "valor": 1500.00, "quantidade": 2 }, { "faixa": ">60", "valor": 500.00, "quantidade": 1 } ],
     "base": { "titulos": 6 }
   },
@@ -143,10 +143,12 @@ Meses sem dados vêm com zeros (série contínua); `inadimplenciaValor` do mês 
 ### `GET /indicadores-consignacao/produtos-categorias`
 Parâmetros extras: `top` (padrão 5, máximo 50).
 ```json
-{ "produtos": { "melhores": [ { "produtoId": 10, "nome": "Brinco X", "quantidade": 40, "valorVendido": 2400.00 } ], "piores": [ … ] },
+{ "produtos": { "melhores": [ { "tipo": "PRODUTO", "id": "uuid-do-produto", "nome": "Brinco X", "quantidade": 40, "valorVendido": 2400.00 } ], "piores": [ … ] },
   "categorias": { "melhores": [ { "categoriaId": 2, "nome": "Brincos", "quantidade": 120, "valorVendido": 7200.00 } ], "piores": [ … ] }, "base": { "acertos": 20 } }
 ```
-(`piores` = menores valores vendidos entre os que tiveram venda.)
+(`tipo` = `PRODUTO` ou `JOIA`; `id` é UUID em texto. `piores` = menores valores vendidos entre os que tiveram venda e não estão em `melhores`; com poucos itens vem vazio. Venda/devolução considera só acertos confirmados e pagos. Categoria ausente = "Sem categoria" com `categoriaId` null.)
+
+**Atenção:** o `giro` considera **todos os acertos confirmados** do período (pagos ou não), enquanto vendas/comissão/produtos consideram só os **confirmados e pagos**; por isso `giro.base.acertos` pode ser maior que `vendas.base.acertos`.
 ### `GET /indicadores-consignacao/meios-pagamento`
 ```json
 { "meios": [ { "formaPagamentoId": 2, "nome": "PIX", "quantidade": 30, "valor": 20000.00, "percentualDoValor": 55.0, "taxaClienteAbsorvida": 0.00 },
@@ -159,5 +161,5 @@ Recebimentos dos títulos de acerto no período (não estornados, banco; crédit
 
 ## PARTE 4 — Cronograma e pendências
 - Etapa 0 (este documento) + migration V84 de permissões.
-- Etapa 1: Fluxo (resumo/série/categorias/detalhe/exportação). Etapa 2: Indicadores. O contrato será atualizado com ✅ conforme cada etapa.
+- Etapa 1 ✅ Fluxo (resumo/série/categorias/detalhe/exportação). Etapa 2 ✅ Indicadores. Os usuários precisam fazer login de novo para receber as permissões novas; o ADMIN já as tem pela V84.
 - Dúvida registrada: o filtro "fornecedor" é `favorecido` (texto) — ver PARTE 1.
