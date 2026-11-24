@@ -81,20 +81,23 @@ public class IndicadorConsignacaoRepository {
 
     private static final String DATA_ACERTO = "COALESCE(c.data_acerto_consignacao, CAST(a.created_at AS DATE))";
 
-    // quantidade devolvida de cada item da consignação no acerto (mesma regra de AcertoConsignacao.devolvidoDe)
-    private static final String DEVOLVIDO = "LEFT JOIN LATERAL (SELECT SUM(ap.quantidade) AS qtd FROM acertos_consignacao_produtos ap WHERE ap.acerto_consignacao_id = a.id "
-            + "AND ((ap.produto_id IS NOT NULL AND ap.produto_id = cp.produto_id AND ap.produto_variacao_id IS NOT DISTINCT FROM cp.produto_variacao_id) "
-            + "OR (ap.joia_id IS NOT NULL AND ap.joia_id = cp.joia_id))) d ON true";
+    // quantidade devolvida de cada item da consignação no acerto (mesma regra de AcertoConsignacao.devolvidoDe: mesmo produto+variação ou mesma joia).
+    // Devolvidos agregados UMA vez (hash join) em vez de uma subconsulta por item: em produção são ~30 mil itens devolvidos e ~700 mil itens de consignação.
+    private static final String DEVOLVIDO = "LEFT JOIN (SELECT acerto_consignacao_id, produto_id, COALESCE(produto_variacao_id, 0) AS variacao, SUM(quantidade) AS qtd FROM acertos_consignacao_produtos "
+            + "WHERE produto_id IS NOT NULL GROUP BY acerto_consignacao_id, produto_id, COALESCE(produto_variacao_id, 0)) dp ON dp.acerto_consignacao_id = a.id AND dp.produto_id = cp.produto_id "
+            + "AND dp.variacao = COALESCE(cp.produto_variacao_id, 0) "
+            + "LEFT JOIN (SELECT acerto_consignacao_id, joia_id, SUM(quantidade) AS qtd FROM acertos_consignacao_produtos WHERE joia_id IS NOT NULL GROUP BY acerto_consignacao_id, joia_id) dj "
+            + "ON dj.acerto_consignacao_id = a.id AND dj.joia_id = cp.joia_id";
 
     private static final String ACERTO_PAGO = "(EXISTS (SELECT 1 FROM conta_receber t WHERE t.acerto_id = a.id AND t.situacao <> 'CANCELADO') "
             + "AND NOT EXISTS (SELECT 1 FROM conta_receber t2 WHERE t2.acerto_id = a.id AND t2.situacao NOT IN ('CANCELADO', 'RECEBIDO')))";
 
     // acertos confirmados do período com valores calculados; "pago" = acerto com título e todos os títulos não cancelados quitados
-    private static String cteAcertos(Filtro f, MapSqlParameterSource p) {
+    static String cteAcertos(Filtro f, MapSqlParameterSource p) {
         p.addValue("ini", f.inicio()).addValue("fim", f.fim());
         StringBuilder sql = new StringBuilder("WITH ac AS (SELECT a.id AS acerto_id, c.cliente_id AS cliente_id, " + DATA_ACERTO + " AS data_acerto, COALESCE(a.desconto, 0) AS comissao, "
-                + "COALESCE(SUM(cp.preco * (cp.quantidade - COALESCE(d.qtd, 0))), 0) AS vendido, COALESCE(SUM(cp.preco * COALESCE(d.qtd, 0)), 0) AS devolvido, "
-                + "COALESCE(SUM(cp.quantidade - COALESCE(d.qtd, 0)), 0) AS qtd_vendida, COALESCE(SUM(COALESCE(d.qtd, 0)), 0) AS qtd_devolvida, " + ACERTO_PAGO + " AS pago "
+                + "COALESCE(SUM(cp.preco * (cp.quantidade - (COALESCE(dp.qtd, 0) + COALESCE(dj.qtd, 0)))), 0) AS vendido, COALESCE(SUM(cp.preco * (COALESCE(dp.qtd, 0) + COALESCE(dj.qtd, 0))), 0) AS devolvido, "
+                + "COALESCE(SUM(cp.quantidade - (COALESCE(dp.qtd, 0) + COALESCE(dj.qtd, 0))), 0) AS qtd_vendida, COALESCE(SUM((COALESCE(dp.qtd, 0) + COALESCE(dj.qtd, 0))), 0) AS qtd_devolvida, " + ACERTO_PAGO + " AS pago "
                 + "FROM acertos_consignacao a JOIN consignacoes c ON c.id = a.consignacao_id JOIN consignacoes_produtos cp ON cp.consignacao_id = c.id " + DEVOLVIDO
                 + " WHERE a.confirmado = true AND c.cancelada = false AND " + DATA_ACERTO + " BETWEEN :ini AND :fim");
         filtroCliente("c.cliente_id", f, sql, p);
@@ -219,8 +222,8 @@ public class IndicadorConsignacaoRepository {
         return sql.toString();
     }
 
-    private static final String QTD_VENDIDA = "SUM(cp.quantidade - COALESCE(d.qtd, 0))";
-    private static final String VALOR_VENDIDO = "SUM(cp.preco * (cp.quantidade - COALESCE(d.qtd, 0)))";
+    private static final String QTD_VENDIDA = "SUM(cp.quantidade - (COALESCE(dp.qtd, 0) + COALESCE(dj.qtd, 0)))";
+    private static final String VALOR_VENDIDO = "SUM(cp.preco * (cp.quantidade - (COALESCE(dp.qtd, 0) + COALESCE(dj.qtd, 0))))";
 
     public List<ItemLinha> itensVendidos(Filtro f) {
         MapSqlParameterSource p = new MapSqlParameterSource();

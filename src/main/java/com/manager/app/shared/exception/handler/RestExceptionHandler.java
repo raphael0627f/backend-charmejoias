@@ -59,11 +59,34 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return databaseError(exception, request);
     }
 
+    // consulta pesada que estourou o tempo limite: 504 formal para o front mostrar como erro
+    @ExceptionHandler(com.manager.app.shared.exception.ConsultaDemoradaException.class)
+    public ResponseEntity<RestErrorMenssage> consultaDemorada(com.manager.app.shared.exception.ConsultaDemoradaException exception, WebRequest request) {
+        HttpStatus status = HttpStatus.GATEWAY_TIMEOUT;
+        return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, exception.getMessage(), request.getDescription(false)));
+    }
+
+    // consultas pesadas simultâneas em excesso: 503 formal
+    @ExceptionHandler(com.manager.app.shared.exception.SistemaOcupadoException.class)
+    public ResponseEntity<RestErrorMenssage> sistemaOcupado(com.manager.app.shared.exception.SistemaOcupadoException exception, WebRequest request) {
+        HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
+        return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, exception.getMessage(), request.getDescription(false)));
+    }
+
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<?> databaseError(DataAccessException exception, WebRequest request) {
+        // antes o erro de banco virava 503 sem nenhum registro: loga a classe e o SQLSTATE (sem a SQL nem valores) para diagnóstico
+        log.error("Erro de acesso a dados em {}: {} (SQLSTATE {})", request.getDescription(false), exception.getClass().getSimpleName(), sqlState(exception));
         HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
         RestErrorMenssage response = new RestErrorMenssage(new Date(), status, "Banco de dados indisponível. Tente novamente em instantes.",request.getDescription(false));
         return ResponseEntity.status(status).body(response);
+    }
+
+    private static String sqlState(Throwable erro) {
+        for (Throwable t = erro; t != null; t = t.getCause() == t ? null : t.getCause()) {
+            if (t instanceof java.sql.SQLException sql) return sql.getSQLState();
+        }
+        return "?";
     }
 
     // violação de integridade: o Spring escolhe o handler mais específico, então este vale antes do de DataAccessException.

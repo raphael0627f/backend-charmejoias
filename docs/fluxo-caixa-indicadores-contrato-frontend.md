@@ -163,6 +163,12 @@ Recebimentos dos títulos de acerto no período (não estornados, banco; crédit
 
 ---
 
+## PARTE 3B — Salvaguarda de desempenho (correção de produção 6.7)
+Causa: consulta de acertos sem índice (31 s por chamada em dados reais). Corrigida com a migration **V85** (índices em `acertos_consignacao_produtos(acerto_consignacao_id)` e `consignacoes_produtos(consignacao_id)`) e reescrita da consulta (0,3 s → 0,05 s). Além disso, **todas as rotas de `/indicadores-consignacao` e `/fluxo-caixa` (resumo, detalhe, exportar)** têm:
+- **limite de tempo por consulta no banco: 15 s** → erro **504** `{ "menssage": "A consulta excedeu o tempo limite. Reduza o período." }`;
+- **no máximo 2 consultas pesadas simultâneas**; as demais esperam até 8 s e, se não houver vaga, recebem **503** `{ "menssage": "O sistema está processando outras consultas pesadas. Tente novamente em instantes." }`.
+O front deve tratar 503/504 como **erro** (mostrar a `menssage`, sem esqueleto eterno) e não disparar as 6 chamadas dos indicadores sem necessidade (ideal: no máximo 2 em paralelo). Erros de banco passam a ser registrados no log (classe e SQLSTATE, sem a SQL).
+
 ## PARTE 4 — Cronograma e pendências
 - Etapa 0 (este documento) + migration V84 de permissões.
 - Etapa 1 ✅ Fluxo (resumo/série/categorias/detalhe/exportação). Etapa 2 ✅ Indicadores. Os usuários precisam fazer login de novo para receber as permissões novas; o ADMIN já as tem pela V84.

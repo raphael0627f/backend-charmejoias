@@ -27,6 +27,7 @@ public class FluxoCaixaController {
 
     private final FluxoCaixaService service;
     private final FluxoCaixaExportacaoService exportacaoService;
+    private final com.manager.app.shared.ConsultaPesada consultaPesada;
 
     private static FluxoCaixaFiltro filtro(LocalDate inicio, LocalDate fim, List<Long> bancoIds, List<Long> categoriaReceitaIds, List<Long> categoriaDespesaIds,
                                            List<Long> centroCustoIds, UUID clienteId, String favorecido) {
@@ -44,7 +45,7 @@ public class FluxoCaixaController {
             @RequestParam(required = false) List<Long> centroCustoIds,
             @RequestParam(required = false) UUID clienteId,
             @RequestParam(required = false) String favorecido) {
-        return ResponseEntity.ok(service.resumo(filtro(inicio, fim, bancoIds, categoriaReceitaIds, categoriaDespesaIds, centroCustoIds, clienteId, favorecido), Visao.de(visao)));
+        return ResponseEntity.ok(consultaPesada.executar(() -> service.resumo(filtro(inicio, fim, bancoIds, categoriaReceitaIds, categoriaDespesaIds, centroCustoIds, clienteId, favorecido), Visao.de(visao))));
     }
 
     @GetMapping("/detalhe")
@@ -64,8 +65,8 @@ public class FluxoCaixaController {
             @RequestParam(required = false) String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(service.detalhe(filtro(inicio, fim, bancoIds, categoriaReceitaIds, categoriaDespesaIds, centroCustoIds, clienteId, favorecido),
-                Visao.de(visao), periodo, tipo, situacao, sort, page, size));
+        return ResponseEntity.ok(consultaPesada.executar(() -> service.detalhe(filtro(inicio, fim, bancoIds, categoriaReceitaIds, categoriaDespesaIds, centroCustoIds, clienteId, favorecido),
+                Visao.de(visao), periodo, tipo, situacao, sort, page, size)));
     }
 
     @GetMapping("/exportar")
@@ -80,8 +81,8 @@ public class FluxoCaixaController {
             @RequestParam(required = false) List<Long> centroCustoIds,
             @RequestParam(required = false) UUID clienteId,
             @RequestParam(required = false) String favorecido) {
-        FluxoCaixaExportacaoService.Arquivo arquivo = exportacaoService.exportar(
-                filtro(inicio, fim, bancoIds, categoriaReceitaIds, categoriaDespesaIds, centroCustoIds, clienteId, favorecido), Visao.de(visao), formato);
+        FluxoCaixaExportacaoService.Arquivo arquivo = consultaPesada.executar(() -> exportacaoService.exportar(
+                filtro(inicio, fim, bancoIds, categoriaReceitaIds, categoriaDespesaIds, centroCustoIds, clienteId, favorecido), Visao.de(visao), formato));
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(arquivo.nome()).build().toString())
                 .contentType(MediaType.parseMediaType(arquivo.tipo()))
