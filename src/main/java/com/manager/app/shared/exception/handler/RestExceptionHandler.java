@@ -82,6 +82,38 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(status).body(response);
     }
 
+    // pool de conexões esgotado (Hikari: "Connection is not available, request timed out"): o Spring lança CannotCreateTransactionException, que não é DataAccessException
+    // e virava 500 genérico depois de 30 s. Agora é 503 formal e fica no log.
+    @ExceptionHandler(org.springframework.transaction.CannotCreateTransactionException.class)
+    public ResponseEntity<RestErrorMenssage> semConexao(org.springframework.transaction.CannotCreateTransactionException exception, WebRequest request) {
+        log.error("Sem conexão disponível com o banco em {}: {}", request.getDescription(false), resumoDaCausa(exception));
+        HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
+        return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, "O sistema está sobrecarregado no momento. Tente novamente em instantes.", request.getDescription(false)));
+    }
+
+    // qualquer falha inesperada: 500 formal (mesmo formato dos demais erros) e registro seguro: só as classes da cadeia de causas e os primeiros pontos do código do ERP, sem mensagens (podem conter dados)
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<RestErrorMenssage> erroInesperado(Exception exception, WebRequest request) {
+        log.error("Erro inesperado em {}: {}", request.getDescription(false), resumoDaCausa(exception));
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        return ResponseEntity.status(status).body(new RestErrorMenssage(new Date(), status, "Erro interno do sistema. Tente novamente em instantes.", request.getDescription(false)));
+    }
+
+    static String resumoDaCausa(Throwable erro) {
+        StringBuilder sb = new StringBuilder();
+        int n = 0;
+        for (Throwable t = erro; t != null && n < 6; t = t.getCause() == t ? null : t.getCause(), n++) {
+            if (n > 0) sb.append(" <- ");
+            sb.append(t.getClass().getSimpleName());
+        }
+        StackTraceElement[] pilha = erro.getStackTrace();
+        int linhas = 0;
+        for (StackTraceElement e : pilha) {
+            if (e.getClassName().startsWith("com.manager.app") && linhas++ < 4) sb.append(" @ ").append(e.getClassName().substring(e.getClassName().lastIndexOf('.') + 1)).append('.').append(e.getMethodName()).append(':').append(e.getLineNumber());
+        }
+        return sb.toString();
+    }
+
     private static String sqlState(Throwable erro) {
         for (Throwable t = erro; t != null; t = t.getCause() == t ? null : t.getCause()) {
             if (t instanceof java.sql.SQLException sql) return sql.getSQLState();
