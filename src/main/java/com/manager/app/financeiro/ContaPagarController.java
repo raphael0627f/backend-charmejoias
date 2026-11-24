@@ -45,6 +45,7 @@ public class ContaPagarController {
     private final ContaPagarRecorrenciaService recorrenciaService;
     private final ContaPagarAnexoService anexoService;
     private final ContaPagarLoteService loteService;
+    private final ClienteFinanceiroService clienteFinanceiroService;
 
     @PostMapping
     @PreAuthorize(GERENCIA)
@@ -74,11 +75,25 @@ public class ContaPagarController {
             @RequestParam(required = false) String origem,
             @RequestParam(required = false) String ordenar,
             @RequestParam(required = false) String direcao,
+            @RequestParam(required = false) String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+        var ord = com.manager.app.shared.OrdenacaoParametro.resolver(ordenar, direcao, sort, java.util.Set.of("vencimento", "valor", "numero", "favorecido", "situacao"));
+        ordenar = ord.ordenar();
+        direcao = ord.direcao();
         ContaPagarFiltro filtro = new ContaPagarFiltro(vencimentoDe, vencimentoAte, emissaoDe, emissaoAte, pagamentoDe, pagamentoAte, situacao,
                 busca, categoriaId, centroCustoId, formaPrevistaId, bancoId, valorMin, valorMax, estimado, clienteId, origem);
         return ResponseEntity.ok(service.listar(filtro, ordenar, direcao, page, size));
+    }
+
+    // contas a pagar do cliente (aba Financeiro): lista completa, mais recente primeiro
+    @GetMapping("/clientes/{clienteId}")
+    @PreAuthorize(CONSULTA)
+    public ResponseEntity<com.manager.app.financeiro.dto.ClienteFinanceiroDTOs.PagarPagina> doCliente(@PathVariable java.util.UUID clienteId,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sort) {
+        com.manager.app.shared.OrdenacaoParametro.ordemFixa(sort);
+        return ResponseEntity.ok(clienteFinanceiroService.contasAPagar(clienteId, page, size));
     }
 
     @GetMapping("/favorecidos")

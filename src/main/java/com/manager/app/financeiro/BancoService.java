@@ -33,14 +33,41 @@ public class BancoService {
 
     @Transactional(readOnly = true)
     public List<BancoResponseDTO> listar(Boolean ativo, String busca) {
+        return listar(ativo, busca, null);
+    }
+
+    // sort = campo[,asc|desc]; padrão: nome. Campo fora da lista → 400
+    static final java.util.Map<String, java.util.Comparator<BancoResponseDTO>> ORDENACOES = java.util.Map.of(
+            "id", java.util.Comparator.comparing(BancoResponseDTO::id),
+            "nome", java.util.Comparator.comparing(BancoResponseDTO::nome, String.CASE_INSENSITIVE_ORDER),
+            "tipo", java.util.Comparator.comparing(b -> b.tipo() == null ? "" : b.tipo().name()),
+            "codigobanco", java.util.Comparator.comparing(b -> b.codigoBanco() == null ? "" : b.codigoBanco()),
+            "agencia", java.util.Comparator.comparing(b -> b.agencia() == null ? "" : b.agencia()),
+            "conta", java.util.Comparator.comparing(b -> b.conta() == null ? "" : b.conta()),
+            "ativo", java.util.Comparator.comparing(BancoResponseDTO::ativo),
+            "createdat", java.util.Comparator.comparing(b -> b.createdAt() == null ? java.time.LocalDateTime.MIN : b.createdAt()));
+
+    @Transactional(readOnly = true)
+    public List<BancoResponseDTO> listar(Boolean ativo, String busca, String sort) {
+        java.util.Comparator<BancoResponseDTO> ordem = java.util.Comparator.comparing(BancoResponseDTO::nome, String.CASE_INSENSITIVE_ORDER);
+        if (sort != null && !sort.isBlank()) {
+            String[] partes = sort.split(",", 2);
+            ordem = ORDENACOES.get(partes[0].trim().toLowerCase(java.util.Locale.ROOT));
+            if (ordem == null) throw new ItemInvalidoException("Campo de ordenação inválido.");
+            if (partes.length > 1 && !partes[1].isBlank()) {
+                String dir = partes[1].trim();
+                if (dir.equalsIgnoreCase("desc")) ordem = ordem.reversed();
+                else if (!dir.equalsIgnoreCase("asc")) throw new ItemInvalidoException("Direção inválida. Use asc ou desc.");
+            }
+        }
         boolean verSaldo = saldoVisibilidade.podeVerSaldo();
         Map<Long, BigDecimal> saldos = verSaldo ? saldos() : Map.of();
         String termo = busca == null ? "" : semAcento(busca.trim());
         return repository.findAll().stream()
                 .filter(b -> ativo == null || b.isAtivo() == ativo)
                 .filter(b -> termo.isEmpty() || semAcento(b.getNome()).contains(termo))
-                .sorted((a, b) -> a.getNome().compareToIgnoreCase(b.getNome()))
                 .map(b -> mapper.banco(b, verSaldo ? saldos.getOrDefault(b.getId(), BigDecimal.ZERO) : null))
+                .sorted(ordem)
                 .toList();
     }
 

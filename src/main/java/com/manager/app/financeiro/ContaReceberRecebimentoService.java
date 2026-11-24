@@ -109,8 +109,16 @@ public class ContaReceberRecebimentoService {
     public ContaReceberRecebimento receberAutomatico(ContaReceber titulo, Long bancoId, FormaPagamento forma, LocalDate data, BigDecimal principal,
                                                      BigDecimal taxaCliente, String observacao, com.manager.app.infinitepay.ContaReceberLinkPagamento link,
                                                      String transactionNsu) {
+        return receberAutomaticoComDesconto(titulo, bancoId, forma, data, principal, taxaCliente, null, observacao, link, transactionNsu);
+    }
+
+    // baixa automática de pagamento com o desconto de PIX/cartão do link: principal integral, desconto = diferença; o caixa recebe o valor realmente pago
+    public ContaReceberRecebimento receberAutomaticoComDesconto(ContaReceber titulo, Long bancoId, FormaPagamento forma, LocalDate data, BigDecimal principal,
+                                                                BigDecimal taxaCliente, BigDecimal desconto, String observacao,
+                                                                com.manager.app.infinitepay.ContaReceberLinkPagamento link, String transactionNsu) {
         Banco banco = bancoRepository.findByIdForUpdate(bancoId).orElseThrow(() -> new ItemInvalidoException("O banco de destino do link não foi encontrado."));
-        RecebimentoCalculo.ResultadoRecebimento r = RecebimentoCalculo.receber(titulo, banco, forma, data, principal, null, null, null, observacao, null, LocalDate.now());
+        RecebimentoCalculo.ResultadoRecebimento r = RecebimentoCalculo.receber(titulo, banco, forma, data, principal, null, null,
+                desconto != null && desconto.signum() > 0 ? desconto : null, observacao, null, LocalDate.now());
         ContaReceberRecebimento rec = r.recebimento();
         rec.setOrigem(ContaReceberRecebimento.Origem.INFINITEPAY);
         rec.setValorTaxaCliente(taxaCliente == null ? BigDecimal.ZERO : CalculoFinanceiro.arredondar(taxaCliente));

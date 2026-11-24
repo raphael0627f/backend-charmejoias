@@ -7,10 +7,11 @@
 //   GET  /fila?limite=N    ERP (Bearer SEGREDO_ERP) -> itens ainda sem ack, mais antigos primeiro.
 //   POST /fila/ack         ERP (Bearer) -> {"ids":[...]} marca como confirmados (idempotente).
 //   POST /fila/limpar      ERP (Bearer) -> {"dias":90} apaga SOMENTE itens com ack ha mais de N dias (minimo 90); nunca itens sem ack.
-//   GET  /saude            ERP (Bearer) -> {ok, pendentes, maisAntigoEm, versao}.
+//   GET  /saude            ERP (Bearer) -> {ok, pendentes, maisAntigoEm, total, confirmados, maisAntigoRetidoEm, retencaoDias, versao}.
+//                          pendentes = sem ack; confirmados = com ack ainda retidos; total = pendentes + confirmados (sem segredos nem dados de pagamento).
 // Segredos (Cloudflare secrets): TOKEN_ENTRADA (aceita vários separados por vírgula, para rotação) e SEGREDO_ERP.
 
-const VERSAO = "1.1.0";
+const VERSAO = "1.2.0";
 const MAX_CORPO = 16 * 1024;
 const LIMITE_PADRAO = 50;
 const LIMITE_MAXIMO = 200;
@@ -64,7 +65,7 @@ function extrair(corpo) {
   }
   const o = dados && typeof dados === "object" && !Array.isArray(dados) ? dados : {};
   return {
-    evento: texto(o.event) ?? texto(o.type) ?? texto(o.evento) ?? (dados ? "desconhecido" : "invalido"),
+    evento: texto(o.event) ?? texto(o.event_type) ?? texto(o.type) ?? texto(o.evento) ?? (dados ? "desconhecido" : "invalido"),
     orderNsu: texto(o.order_nsu),
     transactionNsu: texto(o.transaction_nsu),
     invoiceSlug: texto(o.invoice_slug) ?? texto(o.slug),
@@ -133,8 +134,22 @@ async function confirmar(request, env) {
 }
 
 async function saude(env) {
-  const p = await env.DB.prepare("SELECT COUNT(*) AS n, MIN(recebido_em) AS mais_antigo FROM fila WHERE ack_em IS NULL").first();
-  return json({ ok: true, pendentes: p?.n ?? 0, maisAntigoEm: p?.mais_antigo ?? null, versao: VERSAO });
+  const p = await env.DB.prepare(
+    "SELECT COUNT(*) AS total, COALESCE(SUM(CASE WHEN ack_em IS NULL THEN 1 ELSE 0 END), 0) AS pendentes, " +
+      "MIN(CASE WHEN ack_em IS NULL THEN recebido_em END) AS mais_antigo_pendente, MIN(recebido_em) AS mais_antigo_retido FROM fila",
+  ).first();
+  const total = p?.total ?? 0;
+  const pendentes = p?.pendentes ?? 0;
+  return json({
+    ok: true,
+    pendentes,
+    maisAntigoEm: p?.mais_antigo_pendente ?? null,
+    total,
+    confirmados: total - pendentes,
+    maisAntigoRetidoEm: p?.mais_antigo_retido ?? null,
+    retencaoDias: RETENCAO_DIAS,
+    versao: VERSAO,
+  });
 }
 
 // retenção acionada pelo ERP (sem cron): apaga só o que tem ack há mais de N dias (N >= 90); itens sem ack nunca são apagados

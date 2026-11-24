@@ -36,6 +36,10 @@ public class BaixaAutomaticaService {
     static final int LOTE = 50;
     static final int MAX_RODADAS = 10;
     static final int MAX_TENTATIVAS = 10;
+
+    // tempo que um aviso sem transaction_nsu espera pelo aviso completo do mesmo pagamento antes de ir para revisão
+    @org.springframework.beans.factory.annotation.Value("${app.infinitepay.aviso-sem-transacao-janela-segundos:900}")
+    long janelaAvisoSemTransacaoSegundos = 900;
     static final int RETENCAO_DIAS = 90;
     static final int PAYLOAD_MAXIMO = 16000;
     static final Duration ESPERA_MANUAL = Duration.ofSeconds(30);
@@ -79,7 +83,31 @@ public class BaixaAutomaticaService {
     }
 
     public record Estado(LocalDateTime ultimaExecucao, LocalDateTime ultimoSucesso, String ultimoErro, long aguardandoProcessamento, long emRevisao,
-                         int itensNaoConfirmados) {
+                         int itensNaoConfirmados, ReceptorEstado receptor) {
+    }
+
+    // contagem na nuvem (Cloudflare) com cache curto: a tela e os alertas consultam com frequência e o receptor tem timeout de 10 s
+    private static final long CACHE_RECEPTOR_MS = 30_000;
+    private volatile ReceptorEstado cacheReceptor;
+    private volatile long cacheReceptorEm;
+
+    public ReceptorEstado estadoDoReceptor() {
+        ReceptorEstado c = cacheReceptor;
+        if (c != null && System.currentTimeMillis() - cacheReceptorEm < CACHE_RECEPTOR_MS) return c;
+        ReceptorEstado novo;
+        try {
+            novo = ReceptorEstado.de(receptor.saude());
+        } catch (RuntimeException e) {
+            novo = ReceptorEstado.INDISPONIVEL;
+        }
+        cacheReceptor = novo;
+        cacheReceptorEm = System.currentTimeMillis();
+        return novo;
+    }
+
+    // integração com a InfinitePay (infinitetag e chave) configurada
+    public boolean integracaoConfigurada() {
+        return InfinitePayConfiguracaoService.configurada(configuracaoService.atual());
     }
 
     public BaixaAutomaticaService(ReceptorClient receptor, InfinitePayAutomaticoService automatico, InfinitePayConfiguracaoService configuracaoService,
@@ -101,8 +129,10 @@ public class BaixaAutomaticaService {
 
     public Estado estado() {
         return new Estado(ultimaExecucao, ultimoSucesso, ultimoErro,
-                eventoRepository.countByStatus(InfinitePayEvento.Status.RECEBIDO) + eventoRepository.countByStatus(InfinitePayEvento.Status.ERRO_TEMPORARIO),
-                eventoRepository.countByStatus(InfinitePayEvento.Status.REVISAO), naoConfirmados);
+                // avisos aguardando o aviso completo (chave "sha256:") não entram na contagem
+                eventoRepository.countByStatusAndTransactionNsuNotLike(InfinitePayEvento.Status.RECEBIDO, BaixaAutomaticaCalculo.PREFIXO_RESUMO + "%")
+                        + eventoRepository.countByStatus(InfinitePayEvento.Status.ERRO_TEMPORARIO),
+                eventoRepository.countByStatus(InfinitePayEvento.Status.REVISAO), naoConfirmados, estadoDoReceptor());
     }
 
     // executa uma tarefa na MESMA thread dedicada do ciclo (nunca em paralelo com ele) e devolve o resultado; erros de negócio são repassados como estão
@@ -225,8 +255,10 @@ public class BaixaAutomaticaService {
     // ---------- processamento ----------
 
     private void processarPendentes(Resumo r) {
+        // avisos sem identificador de transação (chave "sha256:") vão por último: o aviso completo do mesmo pagamento é processado antes
         List<Long> ids = eventoRepository.findByStatusInOrderByIdAsc(List.of(InfinitePayEvento.Status.RECEBIDO, InfinitePayEvento.Status.ERRO_TEMPORARIO))
-                .stream().map(InfinitePayEvento::getId).toList();
+                .stream().sorted(java.util.Comparator.comparing((InfinitePayEvento e) -> e.getTransactionNsu() != null && e.getTransactionNsu().startsWith(BaixaAutomaticaCalculo.PREFIXO_RESUMO)))
+                .map(InfinitePayEvento::getId).toList();
         for (Long id : ids) {
             try {
                 processarEvento(id, r);
@@ -251,6 +283,23 @@ public class BaixaAutomaticaService {
             ev.setPaidAmountCentavos(p.paidAmount());
             ev.setCaptureMethod(truncar(p.captureMethod(), 40));
             BaixaAutomaticaCalculo.Tipo tipo = BaixaAutomaticaCalculo.classificar(p);
+            // aviso "settled"/sem transaction_nsu (formato real do webhook, chega ~1 s antes do "paid"): não vira revisão por corrida
+            if (BaixaAutomaticaCalculo.semIdentificadorDeTransacao(p)
+                    && (tipo == BaixaAutomaticaCalculo.Tipo.INESPERADO || tipo == BaixaAutomaticaCalculo.Tipo.PAGAMENTO)) {
+                boolean jaPago = linkRepository.findIdByOrderNsu(p.orderNsu()).flatMap(linkRepository::findById)
+                        .map(l -> l.getStatus() == StatusLinkPagamento.PAGO_AUTOMATICO || l.getStatus() == StatusLinkPagamento.PAGO_MANUAL).orElse(false);
+                if (jaPago) {
+                    concluir(ev, InfinitePayEvento.Status.IGNORADO, null, "Aviso sem identificador de transação referente a um pagamento já baixado.");
+                    r.ignorados++;
+                    return null;
+                }
+                if (ev.getCriadoEm() != null && ev.getCriadoEm().plusSeconds(janelaAvisoSemTransacaoSegundos).isAfter(LocalDateTime.now())) {
+                    return null; // continua aguardando o aviso completo (com transaction_nsu) do mesmo pagamento
+                }
+                concluir(ev, InfinitePayEvento.Status.REVISAO, MotivoRevisao.PAYLOAD_INESPERADO, BaixaAutomaticaCalculo.MOTIVO_SEM_TRANSACAO);
+                r.revisao++;
+                return null;
+            }
             switch (tipo) {
                 case INESPERADO -> {
                     concluir(ev, InfinitePayEvento.Status.REVISAO, MotivoRevisao.PAYLOAD_INESPERADO, "Payload inesperado ou incompleto" + (p.faltando().isEmpty() ? "" : " (campos ausentes ou inválidos: " + String.join(", ", p.faltando()) + ")")
@@ -338,16 +387,19 @@ public class BaixaAutomaticaService {
                     java.math.BigDecimal.ZERO);
         } else {
             d = BaixaAutomaticaCalculo.decidir(new BaixaAutomaticaCalculo.LinkInfo(link.getStatus(), link.getModo(), link.getValor(), link.getTransactionNsu(),
-                            link.getBanco() != null && link.getBanco().isAtivo()),
+                            link.getBanco() != null && link.getBanco().isAtivo(), link.getDescontoPix(), link.getDescontoCartao(), captura),
                     new BaixaAutomaticaCalculo.TituloInfo(titulo.getSituacao(), ContaReceberCalculo.valorAberto(titulo.getSituacao(), titulo.getValor(), titulo.getValorRecebido())),
                     v, p.transactionNsu(), forma != null);
         }
         switch (d.acao()) {
             case BAIXAR -> {
-                var rec = recebimentoService.receberAutomatico(titulo, link.getBanco().getId(), forma, LocalDate.now(LinkPagamentoCalculo.FUSO), link.getValor(), d.taxaCliente(),
-                        BaixaAutomaticaCalculo.observacao(new BaixaAutomaticaCalculo.Payload(true, p.evento(), p.orderNsu(), p.transactionNsu(), p.slug(), check.amount(),
-                                check.paidAmount(), captura, check.installments() != null ? check.installments() : p.installments(), List.of()), d.taxaCliente()),
-                        link, p.transactionNsu());
+                var payloadObs = new BaixaAutomaticaCalculo.Payload(true, p.evento(), p.orderNsu(), p.transactionNsu(), p.slug(), check.amount(),
+                        check.paidAmount(), captura, check.installments() != null ? check.installments() : p.installments(), List.of());
+                var rec = d.desconto().signum() > 0
+                        ? recebimentoService.receberAutomaticoComDesconto(titulo, link.getBanco().getId(), forma, LocalDate.now(LinkPagamentoCalculo.FUSO), link.getValor(),
+                                d.taxaCliente(), d.desconto(), BaixaAutomaticaCalculo.observacao(payloadObs, d.taxaCliente(), d.desconto()), link, p.transactionNsu())
+                        : recebimentoService.receberAutomatico(titulo, link.getBanco().getId(), forma, LocalDate.now(LinkPagamentoCalculo.FUSO), link.getValor(), d.taxaCliente(),
+                                BaixaAutomaticaCalculo.observacao(payloadObs, d.taxaCliente()), link, p.transactionNsu());
                 ev.setRecebimentoId(rec.getId());
                 concluir(ev, InfinitePayEvento.Status.PROCESSADO, null, "Baixa automática registrada (recebimento nº " + rec.getId() + ")."
                         + (d.taxaCliente().signum() > 0 ? " Taxa paga pelo cliente: " + BaixaAutomaticaCalculo.moeda(BaixaAutomaticaCalculo.centavos(d.taxaCliente())) + "." : ""));

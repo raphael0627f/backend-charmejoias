@@ -13,7 +13,8 @@ public record ContaReceberResumoDTO(Long id, Long numero, String descricao, Clie
                                     Ref formaPrevista, BigDecimal valor, BigDecimal valorRecebido, BigDecimal valorAberto, LocalDate emissao,
                                     String competencia, LocalDate vencimento, String documento, SituacaoContaReceber situacao,
                                     SituacaoExibicaoContaReceber situacaoExibicao, UUID grupoParcelamentoId, Integer parcelaNumero,
-                                    Integer parcelaTotal, String motivoCancelamento, LocalDateTime dataCancelamento, int quantidadeAnexos) {
+                                    Integer parcelaTotal, String motivoCancelamento, LocalDateTime dataCancelamento, int quantidadeAnexos,
+                                    BigDecimal valorPago, BigDecimal valorCreditoAplicado) {
 
     public record Ref(Long id, String nome) {
     }

@@ -20,9 +20,9 @@ public class InfinitePayController {
     private static final String CONFIGURACAO = "hasAuthority('INFINITEPAY_GERENCIAR')";
     private static final String PADROES = "hasAnyAuthority('INFINITEPAY_GERENCIAR', 'CONTA_RECEBER_VISUALIZAR', 'CONTA_RECEBER_GERENCIAR', 'CONTA_RECEBER_RECEBER')";
     private static final String CONSULTA = "hasAnyAuthority('CONTA_RECEBER_VISUALIZAR', 'CONTA_RECEBER_GERENCIAR', 'CONTA_RECEBER_RECEBER')";
-    private static final String REVISAO_VER = "hasAuthority('INFINITEPAY_REVISAO_VISUALIZAR')";
+    private static final String REVISAO_VER = "hasAnyAuthority('INFINITEPAY_REVISAO_VISUALIZAR', 'INFINITEPAY_REVISAO_RESOLVER')";
     private static final String REVISAO_RESOLVER = "hasAuthority('INFINITEPAY_REVISAO_RESOLVER')";
-    private static final String ALERTAS = "hasAnyAuthority('INFINITEPAY_REVISAO_VISUALIZAR', 'INFINITEPAY_GERENCIAR')";
+    private static final String ALERTAS = "hasAnyAuthority('INFINITEPAY_REVISAO_VISUALIZAR', 'INFINITEPAY_REVISAO_RESOLVER', 'INFINITEPAY_GERENCIAR')";
     private static final String RECEBER = "hasAuthority('CONTA_RECEBER_RECEBER')";
     private static final String GERENCIA = "hasAuthority('CONTA_RECEBER_GERENCIAR')";
 
@@ -30,6 +30,7 @@ public class InfinitePayController {
     private final LinkPagamentoService linkService;
     private final InfinitePayAutomaticoService automaticoService;
     private final ReceptorClient receptorClient;
+    private final InfinitePaySistemaService sistemaService;
     private final BaixaAutomaticaService baixaService;
     private final RevisaoInfinitePayService revisaoService;
     private final VerificarPagamentoService verificarService;
@@ -59,6 +60,13 @@ public class InfinitePayController {
         return ResponseEntity.ok(automaticoService.salvar(request));
     }
 
+    // um único Salvar para Sistema > InfinitePay (integração + baixa automática + interruptor), atômico
+    @PutMapping("/infinitepay/sistema")
+    @PreAuthorize(CONFIGURACAO)
+    public ResponseEntity<InfinitePayDTOs.SistemaResponse> salvarSistema(@RequestBody(required = false) InfinitePayDTOs.SistemaRequest request) {
+        return ResponseEntity.ok(sistemaService.salvar(request));
+    }
+
     // consulta a saúde do receptor (botão "Testar receptor")
     @PostMapping("/infinitepay/receptor/testar")
     @PreAuthorize(CONFIGURACAO)
@@ -74,7 +82,7 @@ public class InfinitePayController {
     }
 
     @GetMapping("/infinitepay/fila/estado")
-    @PreAuthorize("hasAnyAuthority('INFINITEPAY_GERENCIAR', 'INFINITEPAY_REVISAO_VISUALIZAR')")
+    @PreAuthorize("hasAnyAuthority('INFINITEPAY_GERENCIAR', 'INFINITEPAY_REVISAO_VISUALIZAR', 'INFINITEPAY_REVISAO_RESOLVER')")
     public ResponseEntity<BaixaAutomaticaService.Estado> estadoDaFila() {
         return ResponseEntity.ok(baixaService.estado());
     }
@@ -87,10 +95,11 @@ public class InfinitePayController {
             @RequestParam(required = false) String status, @RequestParam(required = false) String motivo,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate de,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate ate,
-            @RequestParam(required = false) Long tituloId, @RequestParam(required = false) java.util.UUID clienteId,
+            @RequestParam(required = false) Long tituloId, @RequestParam(required = false) Long tituloNumero,
+            @RequestParam(required = false) java.util.UUID clienteId,
             @org.springframework.data.web.PageableDefault(size = 20, sort = "criadoEm", direction = org.springframework.data.domain.Sort.Direction.DESC)
             org.springframework.data.domain.Pageable pageable) {
-        return ResponseEntity.ok(revisaoService.listar(status, motivo, de, ate, tituloId, clienteId, pageable));
+        return ResponseEntity.ok(revisaoService.listar(status, motivo, de, ate, tituloId, tituloNumero, clienteId, pageable));
     }
 
     @GetMapping("/infinitepay/revisoes/{id}")
@@ -113,8 +122,8 @@ public class InfinitePayController {
 
     @PostMapping("/infinitepay/revisoes/{id}/reprocessar")
     @PreAuthorize(REVISAO_RESOLVER)
-    public ResponseEntity<RevisaoDTOs.Detalhe> reprocessar(@PathVariable Long id) {
-        return ResponseEntity.ok(revisaoService.reprocessar(id));
+    public ResponseEntity<RevisaoDTOs.Detalhe> reprocessar(@PathVariable Long id, @RequestBody(required = false) RevisaoDTOs.ReprocessarRequest request) {
+        return ResponseEntity.ok(revisaoService.reprocessar(id, request));
     }
 
     @GetMapping("/infinitepay/alertas")

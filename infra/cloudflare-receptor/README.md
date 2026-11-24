@@ -11,7 +11,7 @@ Recebe o webhook da InfinitePay a qualquer hora e guarda numa fila; o ERP (quand
 | `POST /w/{token}` | InfinitePay | Guarda o evento (JSON até 16 KB; idempotente por `transaction_nsu` + evento). Token errado: 404 sem corpo. Corpo estranho/inválido é guardado do mesmo modo (o ERP decide; nada é descartado). |
 | `GET /fila?limite=N` | ERP (`Authorization: Bearer <SEGREDO_ERP>`) | Itens sem ack, mais antigos primeiro (padrão 50, máximo 200). |
 | `POST /fila/ack` | ERP (Bearer) | `{"ids":[...]}` (1 a 200). Idempotente. |
-| `GET /saude` | ERP (Bearer) | `{ok, pendentes, maisAntigoEm, versao}`. |
+| `GET /saude` | ERP (Bearer) | `{ok, pendentes, maisAntigoEm, total, confirmados, maisAntigoRetidoEm, retencaoDias, versao}` (v1.2.0: contagem dos registros retidos; os confirmados são apagados após 90 dias). |
 
 Qualquer outra rota/método: 404. Sem CORS.
 

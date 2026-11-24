@@ -71,6 +71,10 @@ r = await req("GET", "/saude", { cabecalhos: auth });
 j = await r.json();
 const antes = j.pendentes;
 conferir("saúde informa pendentes e mais antigo", r.status === 200 && j.ok && antes >= 5 && j.maisAntigoEm && j.versao);
+conferir("saúde informa total, confirmados, mais antigo retido e retenção de 90 dias",
+  Number.isInteger(j.total) && Number.isInteger(j.confirmados) && j.total === j.pendentes + j.confirmados && j.maisAntigoRetidoEm && j.retencaoDias === 90 && j.versao === "1.2.0", JSON.stringify(j));
+const confirmadosAntes = j.confirmados;
+const totalAntes = j.total;
 
 r = await req("POST", "/fila/ack", { corpo: { ids: [primeiro.id] } });
 conferir("ack sem Bearer = 401", r.status === 401);
@@ -89,6 +93,8 @@ conferir("ack repetido é idempotente (0 confirmados, 200)", r.status === 200 &&
 r = await req("GET", "/saude", { cabecalhos: auth });
 j = await r.json();
 conferir("pendentes diminuíram em 1", j.pendentes === antes - 1, antes + " -> " + j.pendentes);
+conferir("confirmados aumentaram em 1 e o total não mudou", j.confirmados === confirmadosAntes + 1 && j.total === totalAntes, JSON.stringify(j));
+conferir("saúde não expõe segredos nem dados de pagamento", !/segredo|token|corpo|nsu/i.test(JSON.stringify(j)));
 r = await req("GET", "/fila?limite=200", { cabecalhos: auth });
 j = await r.json();
 conferir("item confirmado some da fila", !j.itens.some((i) => i.id === primeiro.id));

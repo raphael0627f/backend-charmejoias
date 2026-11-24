@@ -77,7 +77,9 @@ public class ReceptorClient {
         InfinitePayAutomaticoService.Receptor r = automatico.receptor();
         JsonNode j = ler(chamar(r, "GET", "/saude", null, "consultar o receptor"), "consultar o receptor");
         return new InfinitePayDTOs.ReceptorSaude(j.path("ok").asBoolean(false), j.hasNonNull("pendentes") ? j.get("pendentes").asLong() : null,
-                texto(j, "maisAntigoEm"), texto(j, "versao"));
+                texto(j, "maisAntigoEm"), texto(j, "versao"), j.hasNonNull("total") ? j.get("total").asLong() : null,
+                j.hasNonNull("confirmados") ? j.get("confirmados").asLong() : null, texto(j, "maisAntigoRetidoEm"),
+                j.hasNonNull("retencaoDias") ? j.get("retencaoDias").asInt() : null);
     }
 
     private static String texto(JsonNode no, String campo) {

@@ -65,6 +65,11 @@ public class InfinitePayAutomaticoService {
             c.setReceptorSegredoErpCriptografado(criptografar(segredo));
         }
         if (r.intervaloFilaMinutos() != null) c.setIntervaloFilaMinutos(ReceptorCalculo.validarIntervalo(r.intervaloFilaMinutos()));
+        // com a baixa automática ligada, o banco padrão não pode ser removido (a menos que a mesma requisição a desligue)
+        boolean ficaLigada = r.baixaAutomaticaAtiva() != null ? r.baixaAutomaticaAtiva() : c.isBaixaAutomaticaAtiva();
+        if (r.bancoPadraoId() != null && r.bancoPadraoId() == 0 && ficaLigada && c.getBancoPadrao() != null) {
+            throw new ItemInvalidoException("Não é possível remover o banco padrão com a baixa automática ligada. Desligue a baixa automática antes.");
+        }
         if (r.modoAutomaticoPadrao() != null) c.setModoAutomaticoPadrao(r.modoAutomaticoPadrao());
         if (r.bancoPadraoId() != null) c.setBancoPadrao(r.bancoPadraoId() == 0 ? null : banco(r.bancoPadraoId()));
         if (r.formaPixId() != null) c.setFormaPix(r.formaPixId() == 0 ? null : forma(r.formaPixId(), "do PIX"));

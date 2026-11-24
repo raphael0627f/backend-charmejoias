@@ -22,6 +22,10 @@ public class ContaReceberMapper {
     }
 
     public ContaReceberResumoDTO resumo(ContaReceber c, LocalDate hoje, int quantidadeAnexos) {
+        return resumo(c, hoje, quantidadeAnexos, TotaisRecebimento.ZERO);
+    }
+
+    public ContaReceberResumoDTO resumo(ContaReceber c, LocalDate hoje, int quantidadeAnexos, TotaisRecebimento pago) {
         return new ContaReceberResumoDTO(c.getId(), c.getNumero(), c.getDescricao(), cliente(c.getCliente()), c.getPagadorNome(),
                 c.getPagadorDocumento(), pagadorExibicao(c), c.getCliente() == null ? "AVULSO" : "CLIENTE", origem(c), categoria(c.getCategoria()),
                 c.getCentroCusto() == null ? null : new ContaReceberResumoDTO.Ref(c.getCentroCusto().getId(), c.getCentroCusto().getNome()),
@@ -30,13 +34,22 @@ public class ContaReceberMapper {
                 ContaReceberCalculo.valorAberto(c.getSituacao(), c.getValor(), c.getValorRecebido()), c.getEmissao(), c.getCompetencia(),
                 c.getVencimento(), c.getDocumento(), c.getSituacao(),
                 ContaReceberCalculo.situacaoExibicao(c.getSituacao(), c.getVencimento(), hoje), c.getGrupoParcelamentoId(),
-                c.getParcelaNumero(), c.getParcelaTotal(), c.getCancelamentoMotivo(), c.getCancelamentoEm(), quantidadeAnexos);
+                c.getParcelaNumero(), c.getParcelaTotal(), c.getCancelamentoMotivo(), c.getCancelamentoEm(), quantidadeAnexos,
+                CalculoFinanceiro.arredondar(pago.total()), CalculoFinanceiro.arredondar(pago.credito()));
     }
 
     public ContaReceberDetalheDTO detalhe(ContaReceber c, LocalDate hoje, List<ContaReceber> parcelas, List<ContaReceberEvento> eventos,
                                           List<ContaReceberRecebimento> recebimentos, java.util.Map<Long, Long> movimentacoes,
                                           java.util.Map<Long, Integer> anexosPorTitulo, List<ContaReceberAnexo> anexos) {
-        ContaReceberResumoDTO r = resumo(c, hoje, anexosPorTitulo.getOrDefault(c.getId(), 0));
+        return detalhe(c, hoje, parcelas, eventos, recebimentos, movimentacoes, anexosPorTitulo, anexos, java.util.Map.of(), null);
+    }
+
+    public ContaReceberDetalheDTO detalhe(ContaReceber c, LocalDate hoje, List<ContaReceber> parcelas, List<ContaReceberEvento> eventos,
+                                          List<ContaReceberRecebimento> recebimentos, java.util.Map<Long, Long> movimentacoes,
+                                          java.util.Map<Long, Integer> anexosPorTitulo, List<ContaReceberAnexo> anexos,
+                                          java.util.Map<Long, TotaisRecebimento> totaisDasParcelas, ContaReceberDetalheDTO.ConsignacaoOrigem consignacao) {
+        TotaisRecebimento pago = TotaisRecebimento.de(c.getId(), recebimentos);
+        ContaReceberResumoDTO r = resumo(c, hoje, anexosPorTitulo.getOrDefault(c.getId(), 0), pago);
         ContaReceberDetalheDTO.Cancelamento cancelamento = c.getCancelamentoEm() == null ? null
                 : new ContaReceberDetalheDTO.Cancelamento(c.getCancelamentoMotivo(), c.getCancelamentoEm(), mapper.usuario(c.getCanceladoPor()));
         return new ContaReceberDetalheDTO(r.id(), r.numero(), r.descricao(), r.cliente(), r.pagadorNome(), r.pagadorDocumento(), r.pagadorExibicao(), r.tipoPagador(), r.origem(), r.categoria(), r.centroCusto(), r.formaPrevista(),
@@ -44,10 +57,13 @@ public class ContaReceberMapper {
                 r.situacao(), r.situacaoExibicao(), r.grupoParcelamentoId(), r.parcelaNumero(), r.parcelaTotal(), cancelamento,
                 c.getCancelamentoMotivo(), c.getCancelamentoEm(), cancelamento == null ? null : cancelamento.por(),
                 recebimentos.stream().map(b -> recebimento(b, movimentacoes.get(b.getId()))).toList(),
-                parcelas.stream().map(p -> resumo(p, hoje, anexosPorTitulo.getOrDefault(p.getId(), 0))).toList(),
+                parcelas.stream().map(p -> resumo(p, hoje, anexosPorTitulo.getOrDefault(p.getId(), 0), TotaisRecebimento.de(totaisDasParcelas, p.getId()))).toList(),
                 eventos.stream().map(e -> new ContaReceberDetalheDTO.Evento(e.getId(), e.getEvento(), e.getDetalhe(),
                         mapper.usuario(e.getUsuario()), e.getDataHora())).toList(),
-                c.getCreatedAt(), c.getUpdatedAt(), mapper.usuario(c.getCreatedBy()), mapper.usuario(c.getUpdatedBy()), anexos.stream().map(this::anexo).toList(), null);
+                c.getCreatedAt(), c.getUpdatedAt(), mapper.usuario(c.getCreatedBy()), mapper.usuario(c.getUpdatedBy()), anexos.stream().map(this::anexo).toList(), null,
+                CalculoFinanceiro.arredondar(pago.total()), CalculoFinanceiro.arredondar(pago.principal()), CalculoFinanceiro.arredondar(pago.juros()),
+                CalculoFinanceiro.arredondar(pago.multa()), CalculoFinanceiro.arredondar(pago.desconto()), CalculoFinanceiro.arredondar(pago.taxaCliente()),
+                CalculoFinanceiro.arredondar(pago.credito()), pago.creditoAplicado(), consignacao);
     }
 
     public ContaReceberAnexoDTO anexo(ContaReceberAnexo a) {

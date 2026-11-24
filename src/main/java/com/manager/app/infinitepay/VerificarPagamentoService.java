@@ -72,6 +72,8 @@ public class VerificarPagamentoService {
         boolean emRevisao = !ids.isEmpty() && eventos.findByLinkIdInOrderByIdDesc(ids).stream()
                 .anyMatch(e -> e.getStatus() == InfinitePayEvento.Status.REVISAO && e.getResolvidoEm() == null);
         if (emRevisao) return new RevisaoDTOs.VerificarResposta("EM_REVISAO", "Há um pagamento deste título aguardando revisão do administrador.", detalhe, null);
+        boolean tentandoDeNovo = !ids.isEmpty() && eventos.findByLinkIdInOrderByIdDesc(ids).stream().anyMatch(e -> e.getStatus() == InfinitePayEvento.Status.ERRO_TEMPORARIO);
+        if (tentandoDeNovo) return new RevisaoDTOs.VerificarResposta("EM_ANDAMENTO", "A confirmação do pagamento na InfinitePay está em nova tentativa. Consulte novamente em instantes.", detalhe, null);
         if (r.isEmAndamento()) return new RevisaoDTOs.VerificarResposta("EM_ANDAMENTO", "Verificação em andamento. Tente novamente em instantes.", detalhe, null);
         if (r.getErros() > 0) return new RevisaoDTOs.VerificarResposta("INDISPONIVEL", r.getMensagem(), detalhe, null);
         return new RevisaoDTOs.VerificarResposta("AINDA_NAO_PAGO", "Pagamento ainda não identificado.", detalhe, null);
@@ -108,11 +110,24 @@ public class VerificarPagamentoService {
         if (e.itensNaoConfirmados() > 0) {
             a.add(new RevisaoDTOs.Alerta("ITENS_SEM_CONFIRMACAO", "ERRO", "Há " + e.itensNaoConfirmados() + " aviso(s) de pagamento que não puderam ser guardados e seguem no receptor.", e.itensNaoConfirmados(), ROTA_CONFIG));
         }
-        long aguardando = eventos.countByStatus(InfinitePayEvento.Status.RECEBIDO);
-        if (aguardando > 0 && !automatico.baixaAutomaticaAtiva()) {
-            a.add(new RevisaoDTOs.Alerta("AGUARDANDO_COM_INTERRUPTOR_DESLIGADO", "ALERTA", "Há " + aguardando + " pagamento(s) recebido(s) e a baixa automática está desligada.", aguardando, ROTA_CONFIG));
+        // baixa desligada com integração configurada: links automáticos ativos ou pagamentos aguardando (no ERP ou retidos no receptor) ficam parados até a ativação
+        if (!automatico.baixaAutomaticaAtiva() && baixa.integracaoConfigurada()) {
+            long linksAtivos = links.contarAutomaticosAtivos();
+            long aguardando = eventos.countByStatus(InfinitePayEvento.Status.RECEBIDO);
+            ReceptorEstado r = e.receptor();
+            long retidos = r != null && r.disponivel() && r.pendentes() != null ? r.pendentes() : 0;
+            if (deveAlertarBaixaDesligada(false, true, linksAtivos, aguardando + retidos)) {
+                a.add(new RevisaoDTOs.Alerta("BAIXA_DESLIGADA", "ALERTA", MSG_BAIXA_DESLIGADA, linksAtivos + aguardando + retidos, ROTA_CONFIG));
+            }
         }
         return new RevisaoDTOs.Alertas(a.size(), a);
+    }
+
+    static final String MSG_BAIXA_DESLIGADA = "A baixa automática está desligada. Os pagamentos recebidos pelos links automáticos permanecem aguardando e serão baixados somente após a ativação.";
+
+    // baixa desligada E integração configurada E (links automáticos ativos OU registros aguardando/retidos)
+    static boolean deveAlertarBaixaDesligada(boolean baixaAtiva, boolean integracaoConfigurada, long linksAutomaticosAtivos, long registrosAguardando) {
+        return !baixaAtiva && integracaoConfigurada && (linksAutomaticosAtivos > 0 || registrosAguardando > 0);
     }
 
     static final String ROTA_REVISAO = "/contas-receber/revisao-infinitepay";

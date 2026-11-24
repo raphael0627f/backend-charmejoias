@@ -26,8 +26,9 @@ public class BancoController {
     @GetMapping
     @PreAuthorize(CONSULTA)
     public ResponseEntity<List<BancoResponseDTO>> listar(@RequestParam(required = false) Boolean ativo,
-                                                         @RequestParam(required = false) String busca) {
-        return ResponseEntity.ok(service.listar(ativo, busca));
+                                                         @RequestParam(required = false) String busca,
+                                                         @RequestParam(required = false) String sort) {
+        return ResponseEntity.ok(service.listar(ativo, busca, sort));
     }
 
     @GetMapping("/{id}")

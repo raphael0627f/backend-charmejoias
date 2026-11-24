@@ -68,6 +68,7 @@ public class ContaReceberService {
     private final PlatformTransactionManager transactionManager;
     private final com.manager.app.infinitepay.LinkPagamentoCicloVida linkCicloVida;
     private final ExcedenteAcertoService excedenteAcertoService;
+    private final DocumentoValoresService documentoValores;
 
     @PersistenceContext
     private EntityManager em;
@@ -295,7 +296,9 @@ public class ContaReceberService {
             resultado = repository.findAll(spec, PageRequest.of(pagina, tamanho, sort));
         }
         Map<Long, Integer> anexos = contagemAnexos(resultado.getContent().stream().map(ContaReceber::getId).toList());
-        List<ContaReceberResumoDTO> itens = resultado.getContent().stream().map(c -> mapper.resumo(c, hoje, anexos.getOrDefault(c.getId(), 0))).toList();
+        Map<Long, TotaisRecebimento> pagos = totaisPagos(resultado.getContent().stream().map(ContaReceber::getId).toList());
+        List<ContaReceberResumoDTO> itens = resultado.getContent().stream()
+                .map(c -> mapper.resumo(c, hoje, anexos.getOrDefault(c.getId(), 0), TotaisRecebimento.de(pagos, c.getId()))).toList();
         return new ContaReceberListaResponseDTO(itens, pagina, tamanho, resultado.getTotalElements(), resultado.getTotalPages(),
                 new ContaReceberListaResponseDTO.Periodo(de, ate), totais(spec, hoje));
     }
@@ -316,7 +319,29 @@ public class ContaReceberService {
         Expression<BigDecimal> vencido = cb.<BigDecimal>selectCase().when(atrasado, cb.diff(valor, recebido)).otherwise(zero);
         q.multiselect(cb.count(root), cb.sum(total), cb.sum(recebido), cb.sum(aberto), cb.sum(vencido)).where(where);
         Object[] l = em.createQuery(q).getSingleResult();
-        return new ContaReceberListaResponseDTO.Totais(((Number) l[0]).longValue(), soma(l[1]), soma(l[2]), soma(l[3]), soma(l[4]));
+        BigDecimal[] pago = totalPagoDoFiltro(spec);
+        return new ContaReceberListaResponseDTO.Totais(((Number) l[0]).longValue(), soma(l[1]), soma(l[2]), soma(l[3]), soma(l[4]), pago[0], pago[1]);
+    }
+
+    // "valor realmente pago" dos títulos do filtro: recebimentos não estornados (principal + juros + multa - desconto), com a parte paga por crédito do cliente
+    private BigDecimal[] totalPagoDoFiltro(Specification<ContaReceber> spec) {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaQuery<Object[]> q = cb.createQuery(Object[].class);
+        Root<ContaReceber> titulo = q.from(ContaReceber.class);
+        Root<ContaReceberRecebimento> r = q.from(ContaReceberRecebimento.class);
+        Expression<BigDecimal> zero = cb.literal(BigDecimal.ZERO);
+        Expression<BigDecimal> credito = cb.<BigDecimal>selectCase().when(cb.equal(r.get("origem"), ContaReceberRecebimento.Origem.CREDITO_CLIENTE), r.<BigDecimal>get("valorTotal"))
+                .otherwise(zero);
+        q.multiselect(cb.sum(r.<BigDecimal>get("valorTotal")), cb.sum(credito))
+                .where(cb.and(spec.toPredicate(titulo, q, cb), cb.equal(r.get("contaReceber"), titulo), cb.isFalse(r.get("estornada"))));
+        Object[] l = em.createQuery(q).getSingleResult();
+        return new BigDecimal[]{soma(l[0]), soma(l[1])};
+    }
+
+    private Map<Long, TotaisRecebimento> totaisPagos(List<Long> ids) {
+        Map<Long, TotaisRecebimento> mapa = new java.util.HashMap<>();
+        if (!ids.isEmpty()) recebimentoRepository.totaisPorTitulo(ids).forEach(t -> mapa.put(t.tituloId(), t));
+        return mapa;
     }
 
     private static BigDecimal soma(Object o) {
@@ -340,7 +365,7 @@ public class ContaReceberService {
                     .filter(m -> m.getOrigem() == OrigemMovimentacao.RECEBIMENTO_CONTA_RECEBER).forEach(m -> movimentacoes.put(m.getRecebimentoId(), m.getId()));
         }
         return mapper.detalhe(c, LocalDate.now(), parcelas, eventoRepository.findByContaReceberIdOrderByIdAsc(c.getId()), recebimentos, movimentacoes,
-                contagemAnexos(ids), anexoRepository.findByContaReceberIdOrderByIdAsc(c.getId()));
+                contagemAnexos(ids), anexoRepository.findByContaReceberIdOrderByIdAsc(c.getId()), totaisPagos(ids), documentoValores.origemDoTitulo(c));
     }
 
     private Map<Long, Integer> contagemAnexos(List<Long> ids) {

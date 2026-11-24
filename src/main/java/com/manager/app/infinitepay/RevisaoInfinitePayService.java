@@ -83,7 +83,21 @@ public class RevisaoInfinitePayService {
 
     // ---------- consulta ----------
 
-    public Page<RevisaoDTOs.Resumo> listar(String status, String motivo, LocalDate de, LocalDate ate, Long tituloId, java.util.UUID clienteId, Pageable pageable) {
+    static final java.util.Set<String> CAMPOS_ORDENAVEIS = java.util.Set.of("id", "criadoEm", "status", "motivoCodigo", "transactionNsu", "orderNsu", "tentativas", "resolvidoEm");
+
+    // filtros e ordenação inválidos viram 400 formal (nunca erro técnico)
+    static void validarListagem(String motivo, LocalDate de, LocalDate ate, Pageable pageable) {
+        if (de != null && ate != null && de.isAfter(ate)) throw new ItemInvalidoException("A data inicial não pode ser posterior à data final.");
+        if (motivo != null && !motivo.isBlank() && MotivoRevisao.de(motivo.trim().toUpperCase(Locale.ROOT)) == null) throw new ItemInvalidoException("Motivo de revisão inválido.");
+        if (pageable != null) {
+            for (org.springframework.data.domain.Sort.Order o : pageable.getSort()) {
+                if (!CAMPOS_ORDENAVEIS.contains(o.getProperty())) throw new ItemInvalidoException("Campo de ordenação inválido.");
+            }
+        }
+    }
+
+    public Page<RevisaoDTOs.Resumo> listar(String status, String motivo, LocalDate de, LocalDate ate, Long tituloId, Long tituloNumero, java.util.UUID clienteId, Pageable pageable) {
+        validarListagem(motivo, de, ate, pageable);
         String st = status == null || status.isBlank() ? "REVISAO" : status.trim().toUpperCase(Locale.ROOT);
         Specification<InfinitePayEvento> spec = (root, q, cb) -> {
             List<Predicate> p = new ArrayList<>();
@@ -111,6 +125,8 @@ public class RevisaoInfinitePayService {
             if (de != null) p.add(cb.greaterThanOrEqualTo(root.get("criadoEm"), de.atStartOfDay()));
             if (ate != null) p.add(cb.lessThan(root.get("criadoEm"), ate.plusDays(1).atStartOfDay()));
             if (tituloId != null) p.add(cb.equal(root.get("link").get("contaReceber").get("id"), tituloId));
+            // número do título = o número que o usuário vê na tela (diferente do id interno)
+            if (tituloNumero != null) p.add(cb.equal(root.get("link").get("contaReceber").get("numero"), tituloNumero));
             if (clienteId != null) p.add(cb.equal(root.get("link").get("contaReceber").get("cliente").get("id"), clienteId));
             return cb.and(p.toArray(new Predicate[0]));
         };
@@ -203,21 +219,61 @@ public class RevisaoInfinitePayService {
         }));
     }
 
-    public RevisaoDTOs.Detalhe reprocessar(Long id) {
+    static final String AVISO_NAO_CONFIRMADO = "A InfinitePay não confirmou o pagamento neste momento. O item permanece em revisão.";
+    static final String AVISO_CONSULTA_FALHOU = "Não foi possível consultar a InfinitePay agora. O item permanece em revisão; tente novamente mais tarde.";
+
+    // o reprocessamento nunca move o item sozinho para "ignorado": se a InfinitePay não confirmar (ou a consulta falhar) ele volta exatamente como estava
+    public RevisaoDTOs.Detalhe reprocessar(Long id, RevisaoDTOs.ReprocessarRequest req) {
+        if (req == null || !Boolean.TRUE.equals(req.confirmar())) throw new ItemInvalidoException("Confirme o reprocessamento para continuar.");
+        String[] aviso = new String[1];
         baixa.serializado(() -> {
-            tx.executeWithoutResult(s -> {
+            record Original(InfinitePayEvento.Status status, String codigo, String motivo, int tentativas, LocalDateTime processadoEm) {
+            }
+            Original original = tx.execute(s -> {
                 InfinitePayEvento e = buscar(id);
                 exigirAberta(e);
                 MotivoRevisao codigo = MotivoRevisao.de(e.getMotivoCodigo());
                 if (codigo != null && !codigo.reprocessavel()) throw new ItemInvalidoException("Este item não pode ser reprocessado.");
+                Original o = new Original(e.getStatus(), e.getMotivoCodigo(), e.getMotivo(), e.getTentativas(), e.getProcessadoEm());
                 e.setStatus(InfinitePayEvento.Status.RECEBIDO);
                 e.setTentativas(0);
                 eventos.save(e);
+                return o;
             });
             baixa.processarEvento(id, new BaixaAutomaticaService.Resumo());
+            tx.executeWithoutResult(s -> {
+                InfinitePayEvento e = buscar(id);
+                boolean naoConfirmou = e.getStatus() == InfinitePayEvento.Status.IGNORADO && e.getResolvidoEm() == null
+                        && BaixaAutomaticaCalculo.MOTIVO_NAO_CONFIRMADO.equals(e.getMotivo());
+                boolean consultaFalhou = e.getStatus() == InfinitePayEvento.Status.ERRO_TEMPORARIO;
+                if (naoConfirmou || consultaFalhou) {
+                    e.setStatus(original.status());
+                    e.setMotivoCodigo(original.codigo());
+                    e.setMotivo(original.motivo());
+                    e.setTentativas(original.tentativas());
+                    e.setProcessadoEm(original.processadoEm());
+                    eventos.save(e);
+                    aviso[0] = naoConfirmou ? AVISO_NAO_CONFIRMADO : AVISO_CONSULTA_FALHOU;
+                }
+            });
             return null;
         });
-        return detalhe(id);
+        RevisaoDTOs.Detalhe d = detalhe(id);
+        // a InfinitePay confirmou o pagamento mas o item segue em revisão (ex.: forma não configurada): explica o que fazer, sem dizer que baixou
+        if (aviso[0] == null && "REVISAO".equals(d.status())) aviso[0] = avisoConfirmadoSemBaixa(d.motivoCodigo(), d.motivoRotulo());
+        return aviso[0] == null ? d : d.comAviso(aviso[0]);
+    }
+
+    static String avisoConfirmadoSemBaixa(String motivoCodigo, String rotulo) {
+        MotivoRevisao codigo = MotivoRevisao.de(motivoCodigo);
+        if (codigo == MotivoRevisao.FORMA_NAO_MAPEADA) {
+            return "O pagamento foi confirmado, mas o meio de pagamento não possui forma configurada. Utilize Aplicar informando banco e forma.";
+        }
+        if (codigo == MotivoRevisao.BANCO_DESATIVADO) {
+            return "O pagamento foi confirmado, mas o banco de destino do link está desativado. Utilize Aplicar informando outro banco e a forma de pagamento.";
+        }
+        return "O pagamento foi confirmado, mas não foi baixado automaticamente" + (rotulo == null ? "" : " (" + rotulo.toLowerCase(Locale.ROOT) + ")")
+                + ". O item permanece em revisão: confira o detalhe e utilize Aplicar ou Ignorar.";
     }
 
     public RevisaoDTOs.Detalhe aplicar(Long id, RevisaoDTOs.AplicarRequest req) {
@@ -238,7 +294,7 @@ public class RevisaoInfinitePayService {
             exigirAberta(e);
             MotivoRevisao codigo = MotivoRevisao.de(e.getMotivoCodigo());
             if (codigo == null || !codigo.aplicavel() || e.getLink() == null) {
-                throw new ItemInvalidoException("Este pagamento não pode ser aplicado ao título (" + (codigo == null ? "motivo não identificado" : codigo.rotulo().toLowerCase(Locale.ROOT))
+                throw new ItemInvalidoException("Este pagamento não pode ser aplicado ao título (" + (codigo == null ? "motivo não identificado" : codigo.rotulo())
                         + "). Ignore-o informando o motivo, se for o caso.");
             }
             BaixaAutomaticaCalculo.Payload p = BaixaAutomaticaCalculo.ler(e.getPayload(), objectMapper);

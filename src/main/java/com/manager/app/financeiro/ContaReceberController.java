@@ -45,6 +45,7 @@ public class ContaReceberController {
     private final CreditoAplicacaoService creditoAplicacaoService;
     private final ContaReceberAnexoService anexoService;
     private final SituacaoClienteService situacaoClienteService;
+    private final ClienteFinanceiroService clienteFinanceiroService;
 
     @PostMapping
     @PreAuthorize(GERENCIA)
@@ -75,8 +76,12 @@ public class ContaReceberController {
             @RequestParam(required = false) String origem,
             @RequestParam(required = false) String ordenar,
             @RequestParam(required = false) String direcao,
+            @RequestParam(required = false) String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+        var ord = com.manager.app.shared.OrdenacaoParametro.resolver(ordenar, direcao, sort, java.util.Set.of("vencimento", "valor", "numero", "cliente", "situacao"));
+        ordenar = ord.ordenar();
+        direcao = ord.direcao();
         ContaReceberFiltro filtro = new ContaReceberFiltro(vencimentoDe, vencimentoAte, emissaoDe, emissaoAte, recebimentoDe, recebimentoAte,
                 situacao, busca, clienteId, categoriaId, centroCustoId, formaPrevistaId, bancoId, valorMin, valorMax, tipoPagador, consignacaoId, origem);
         return ResponseEntity.ok(service.listar(filtro, ordenar, direcao, page, size));
@@ -94,15 +99,49 @@ public class ContaReceberController {
     @PreAuthorize(CONSULTA)
     public ResponseEntity<SituacaoClienteDTOs.Situacao> situacaoDoCliente(@PathVariable UUID clienteId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate recebimentoDe,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate recebimentoAte) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate recebimentoAte,
+            @RequestParam(required = false) String sort) {
+        com.manager.app.shared.OrdenacaoParametro.ordemFixa(sort);
         return ResponseEntity.ok(situacaoClienteService.situacao(clienteId, recebimentoDe, recebimentoAte));
+    }
+
+    // aba Financeiro do cliente: consignações (mais recente primeiro) com valores, selo e filtro rápido; títulos por consignação e sem consignação
+    @GetMapping("/clientes/{clienteId}/consignacoes")
+    @PreAuthorize(CONSULTA)
+    public ResponseEntity<com.manager.app.financeiro.dto.ClienteFinanceiroDTOs.ConsignacoesPagina> consignacoesDoCliente(@PathVariable UUID clienteId,
+            @RequestParam(defaultValue = "TODAS") String filtro, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sort) {
+        com.manager.app.shared.OrdenacaoParametro.ordemFixa(sort);
+        return ResponseEntity.ok(clienteFinanceiroService.consignacoes(clienteId, filtro, page, size));
+    }
+
+    @GetMapping("/clientes/{clienteId}/consignacoes/{consignacaoId}/titulos")
+    @PreAuthorize(CONSULTA)
+    public ResponseEntity<com.manager.app.financeiro.dto.ClienteFinanceiroDTOs.TitulosPagina> titulosDaConsignacaoDoCliente(@PathVariable UUID clienteId,
+            @PathVariable Long consignacaoId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sort) {
+        com.manager.app.shared.OrdenacaoParametro.ordemFixa(sort);
+        return ResponseEntity.ok(clienteFinanceiroService.titulosDaConsignacao(clienteId, consignacaoId, page, size));
+    }
+
+    @GetMapping("/clientes/{clienteId}/sem-consignacao/titulos")
+    @PreAuthorize(CONSULTA)
+    public ResponseEntity<com.manager.app.financeiro.dto.ClienteFinanceiroDTOs.TitulosPagina> titulosSemConsignacaoDoCliente(@PathVariable UUID clienteId,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sort) {
+        com.manager.app.shared.OrdenacaoParametro.ordemFixa(sort);
+        return ResponseEntity.ok(clienteFinanceiroService.titulosSemConsignacao(clienteId, page, size));
     }
 
     @GetMapping("/clientes/situacao")
     @PreAuthorize(CONSULTA)
     public ResponseEntity<SituacaoClienteDTOs.Geral> situacaoGeral(@RequestParam(required = false) String busca,
             @RequestParam(defaultValue = "false") boolean somenteVencidos, @RequestParam(required = false) String ordenar,
-            @RequestParam(required = false) String direcao, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(required = false) String direcao, @RequestParam(required = false) String sort,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        var ord = com.manager.app.shared.OrdenacaoParametro.resolver(ordenar, direcao, sort, java.util.Set.of("emaberto", "vencido", "diasmaioratraso", "nome"));
+        ordenar = ord.ordenar();
+        direcao = ord.direcao();
         return ResponseEntity.ok(situacaoClienteService.geral(busca, somenteVencidos, ordenar, direcao, page, size));
     }
 

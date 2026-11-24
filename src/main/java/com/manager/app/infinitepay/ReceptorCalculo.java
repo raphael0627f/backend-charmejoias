@@ -66,9 +66,14 @@ public final class ReceptorCalculo {
         return v;
     }
 
-    public static int validarIntervalo(Integer minutos) {
-        if (minutos == null || minutos < 1 || minutos > 60) throw new ItemInvalidoException("O intervalo de busca deve estar entre 1 e 60 minutos.");
-        return minutos;
+    // o intervalo é em minutos inteiros: 1,5 (ou qualquer fração) é recusado em vez de truncado
+    public static int validarIntervalo(java.math.BigDecimal minutos) {
+        String msg = "O intervalo de verificação deve ser um número inteiro de minutos, entre 1 e 60.";
+        if (minutos == null) throw new ItemInvalidoException(msg);
+        java.math.BigDecimal limpo = minutos.stripTrailingZeros();
+        if (limpo.scale() > 0) throw new ItemInvalidoException(msg);
+        if (minutos.compareTo(java.math.BigDecimal.ONE) < 0 || minutos.compareTo(new java.math.BigDecimal("60")) > 0) throw new ItemInvalidoException(msg);
+        return minutos.intValueExact();
     }
 
     // endereço que a InfinitePay chamará: <receptor>/w/<token>

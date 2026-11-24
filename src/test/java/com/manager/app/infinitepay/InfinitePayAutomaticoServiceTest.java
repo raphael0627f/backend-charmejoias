@@ -63,7 +63,7 @@ class InfinitePayAutomaticoServiceTest {
     }
 
     private InfinitePayDTOs.AutomaticoRequest req(Boolean ativa, String url, String token, String segredo, Integer intervalo, Long banco, Long pix, Long cartao) {
-        return new InfinitePayDTOs.AutomaticoRequest(ativa, null, url, token, segredo, intervalo, banco, pix, cartao);
+        return new InfinitePayDTOs.AutomaticoRequest(ativa, null, url, token, segredo, intervalo == null ? null : java.math.BigDecimal.valueOf(intervalo), banco, pix, cartao);
     }
 
     private void configurarCompleto() {
