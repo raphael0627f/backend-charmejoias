@@ -102,6 +102,30 @@ class IndicadorConsignacaoServiceTest {
     }
 
     @Test
+    void rankingPorPrazoMedioDeixaClientesSemDadoPorUltimoNasDuasDirecoes() {
+        // só a ANA tem prazo; BIA e CRIS são nulos
+        assertEquals("ANA", service.ranking(filtro(), "prazoMedio", "desc", 10).itens().get(0).cliente());
+        assertEquals("ANA", service.ranking(filtro(), "prazoMedio", "asc", 10).itens().get(0).cliente());
+        List<String> desc = service.ranking(filtro(), "prazoMedio", "desc", 10).itens().stream().map(IndicadorDTOs.ClienteRanking::cliente).toList();
+        assertEquals(List.of("ANA", "BIA", "CRIS"), desc);
+    }
+
+    @Test
+    void titulosDeDividaIncluemPreAcertoMesmoDepoisQueOAcertoExiste() {
+        // regressão do QA 6.7: o título aberto do pré-acerto não pode sumir da inadimplência quando o acerto é criado
+        String sql = IndicadorConsignacaoRepository.cteTitulos(filtro(), new org.springframework.jdbc.core.namedparam.MapSqlParameterSource());
+        assertTrue(sql.contains("t.pre_acerto_id IS NOT NULL"));
+        assertFalse(sql.contains("acertos_consignacao a2"));
+        assertTrue(sql.contains("t.situacao <> 'CANCELADO'"));
+    }
+
+    @Test
+    void periodoMaiorQueDezAnosTemMensagemFormalClara() {
+        assertEquals("O período selecionado excede o limite de 10 anos. Reduza o intervalo entre as datas e tente novamente.",
+                assertThrows(ItemInvalidoException.class, () -> service.filtro(LocalDate.parse("2010-01-01"), LocalDate.parse("2026-11-01"), null, null, null, HOJE)).getMessage());
+    }
+
+    @Test
     void rankingValidaParametros() {
         assertEquals("Campo de ordenação inválido.", assertThrows(ItemInvalidoException.class, () -> service.ranking(filtro(), "xpto", null, 5)).getMessage());
         assertThrows(ItemInvalidoException.class, () -> service.ranking(filtro(), "vendido", "cima", 5));

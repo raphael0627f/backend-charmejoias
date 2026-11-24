@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.UUID;
 
 // consultas agregadas dos indicadores de consignação (SQL nativo; tudo somado no banco).
-// Documento da consignação: ACERTO se existir, senão PRÉ-ACERTO (nunca os dois); consignação cancelada fora; título cancelado fora; recebimento estornado fora.
+// Vendas: documento da consignação = ACERTO se existir, senão PRÉ-ACERTO; consignação cancelada fora; título cancelado fora; recebimento estornado fora. Dívida (inadimplência): todo título não cancelado, de acerto ou de pré-acerto.
 @Repository
 @RequiredArgsConstructor
 public class IndicadorConsignacaoRepository {
@@ -102,13 +102,13 @@ public class IndicadorConsignacaoRepository {
         return sql.toString();
     }
 
-    // títulos do documento vigente de cada consignação (acerto; pré-acerto só se a consignação não tem acerto), não cancelados
-    private static String cteTitulos(Filtro f, MapSqlParameterSource p) {
+    // todos os títulos não cancelados de consignação, de acerto OU de pré-acerto: dívida em aberto é dívida mesmo depois que o acerto é criado.
+    // Não duplica: o sistema impede título de pré-acerto quando já há título do acerto e o saldo a titular do acerto desconta os títulos do pré-acerto (cada título é uma linha só).
+    static String cteTitulos(Filtro f, MapSqlParameterSource p) {
         StringBuilder sql = new StringBuilder("WITH tv AS (SELECT t.id AS id, COALESCE(t.cliente_id, c.cliente_id) AS cliente_id, t.valor AS valor, t.valor_recebido AS valor_recebido, "
                 + "t.vencimento AS vencimento, t.situacao AS situacao FROM conta_receber t LEFT JOIN acertos_consignacao a ON a.id = t.acerto_id "
                 + "LEFT JOIN pre_acertos_consignacao pa ON pa.id = t.pre_acerto_id JOIN consignacoes c ON c.id = COALESCE(t.consignacao_id, a.consignacao_id, pa.consignacao_id) "
-                + "WHERE t.situacao <> 'CANCELADO' AND c.cancelada = false AND (t.acerto_id IS NOT NULL OR (t.pre_acerto_id IS NOT NULL AND NOT EXISTS "
-                + "(SELECT 1 FROM acertos_consignacao a2 WHERE a2.consignacao_id = pa.consignacao_id)))");
+                + "WHERE t.situacao <> 'CANCELADO' AND c.cancelada = false AND (t.acerto_id IS NOT NULL OR t.pre_acerto_id IS NOT NULL)");
         filtroCliente("COALESCE(t.cliente_id, c.cliente_id)", f, sql, p);
         sql.append(")");
         return sql.toString();

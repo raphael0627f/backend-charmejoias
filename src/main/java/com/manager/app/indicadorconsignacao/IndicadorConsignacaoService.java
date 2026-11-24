@@ -35,7 +35,7 @@ public class IndicadorConsignacaoService {
         LocalDate fimPeriodo = fim == null ? hoje : fim;
         LocalDate inicioPeriodo = inicio == null ? hoje.minusMonths(11).withDayOfMonth(1) : inicio;
         if (inicioPeriodo.isAfter(fimPeriodo)) throw new ItemInvalidoException("A data inicial não pode ser posterior à data final.");
-        if (inicioPeriodo.plusYears(10).isBefore(fimPeriodo)) throw new ItemInvalidoException("O período não pode ser maior que 10 anos.");
+        if (inicioPeriodo.plusYears(10).isBefore(fimPeriodo)) throw new ItemInvalidoException("O período selecionado excede o limite de 10 anos. Reduza o intervalo entre as datas e tente novamente.");
         if (clienteId != null && !repository.clienteExiste(clienteId)) throw new ObjetoNaoEncontradoException("Cliente não encontrado.");
         List<String> ibges = null;
         if (cidadeId != null) {
@@ -111,11 +111,13 @@ public class IndicadorConsignacaoService {
         }
         Comparator<IndicadorDTOs.ClienteRanking> cmp = switch (ordenar) {
             case "inadimplencia" -> Comparator.comparing(IndicadorDTOs.ClienteRanking::inadimplenciaValor);
-            case "prazomedio" -> Comparator.comparing(IndicadorDTOs.ClienteRanking::prazoMedioDias, Comparator.nullsLast(Comparator.naturalOrder()));
+            // sem dado (nulo) fica sempre por último, nas duas direções
+            case "prazomedio" -> Comparator.comparing(IndicadorDTOs.ClienteRanking::prazoMedioDias,
+                    Comparator.nullsLast(desc ? Comparator.<BigDecimal>reverseOrder() : Comparator.<BigDecimal>naturalOrder()));
             case "cliente" -> Comparator.comparing(c -> c.cliente().toLowerCase(Locale.ROOT));
             default -> Comparator.comparing(IndicadorDTOs.ClienteRanking::valorVendido);
         };
-        if (desc) cmp = cmp.reversed();
+        if (desc && !ordenar.equals("prazomedio")) cmp = cmp.reversed();
         // empate pelo nome para a ordem ser estável
         itens.sort(cmp.thenComparing(c -> c.cliente().toLowerCase(Locale.ROOT)));
         return new IndicadorDTOs.Ranking(itens.size() > top ? new ArrayList<>(itens.subList(0, top)) : itens, itens.size());
