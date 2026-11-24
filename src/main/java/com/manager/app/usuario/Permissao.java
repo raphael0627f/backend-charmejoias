@@ -53,5 +53,8 @@ public enum Permissao {
     CREDITO_CLIENTE_APLICAR,
     // financeiro 3B (baixa automática InfinitePay): fila de revisão dos pagamentos; concedidas só ao perfil ADMIN na V80
     INFINITEPAY_REVISAO_VISUALIZAR,
-    INFINITEPAY_REVISAO_RESOLVER
+    INFINITEPAY_REVISAO_RESOLVER,
+    // financeiro 6.7: fluxo de caixa e indicadores de consignação (somente leitura); concedidas só ao perfil ADMIN na V84
+    FLUXO_CAIXA_VISUALIZAR,
+    INDICADOR_CONSIGNACAO_VISUALIZAR
 }
